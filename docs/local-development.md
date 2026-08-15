@@ -69,6 +69,8 @@ npm run dev:pos
 
 The API will start even if PostgreSQL or Redis are down. `GET /health` remains `200`. `GET /ready` returns `503` until both dependencies respond.
 
+The storefront uses `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=demo-jersey-store`. Switch tenants locally with `http://localhost:3000/?tenant=demo-jersey-store`. See [storefront.md](storefront.md) and [custom-orders.md](custom-orders.md).
+
 ## Quality checks
 
 ```powershell
@@ -98,7 +100,7 @@ npm run build
 | GET | `/api/v1/permissions` | Platform permission catalog (authenticated) |
 | GET | `/api/v1/{resource}` | Tenant-scoped lists (Bearer token) |
 
-Inventory APIs (`/api/v1/inventory`) are documented in [inventory.md](inventory.md). Auth is documented in [auth.md](auth.md). The ecommerce order engine is documented in [orders.md](orders.md). Suppliers and purchasing are documented in [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md).
+Inventory APIs (`/api/v1/inventory`) are documented in [inventory.md](inventory.md). Auth is documented in [auth.md](auth.md). The ecommerce order engine is documented in [orders.md](orders.md). The storefront is documented in [storefront.md](storefront.md). Custom and bulk jersey orders are documented in [custom-orders.md](custom-orders.md). Suppliers and purchasing are documented in [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md).
 
 Health and readiness stay unversioned so orchestrators can probe without API-prefix knowledge.
 

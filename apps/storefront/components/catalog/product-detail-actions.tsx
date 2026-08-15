@@ -1,0 +1,77 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@jersey-commerce/ui';
+import type { StorefrontProductDetail, StorefrontVariant } from '@jersey-commerce/types';
+import { ProductVariantSelector } from './product-variant-selector';
+import { QuantitySelector } from '../ui/quantity-selector';
+import { PriceDisplay } from './price-display';
+import { useCart } from '../providers/cart-provider';
+import { publicErrorMessage } from '../../lib/errors';
+import { Alert } from '../ui/alert';
+
+export function ProductDetailActions({
+  product,
+  currency,
+}: {
+  product: StorefrontProductDetail;
+  currency: string;
+}): React.JSX.Element {
+  const router = useRouter();
+  const { addItem } = useCart();
+  const [selected, setSelected] = useState<StorefrontVariant | undefined>(
+    product.variants.length === 1 ? product.variants[0] : undefined,
+  );
+  const [quantity, setQuantity] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const needsVariant = product.variants.length > 1;
+  const canBuy = Boolean(selected) && selected?.availability !== 'OUT_OF_STOCK';
+
+  async function add(redirect = false) {
+    if (!selected) {
+      setError('Select a variant before adding to cart.');
+      return;
+    }
+    setPending(true);
+    setError(null);
+    try {
+      await addItem(selected.id, quantity);
+      if (redirect) {
+        router.push('/checkout');
+      }
+    } catch (caught) {
+      setError(publicErrorMessage(caught, 'Could not add this item to cart.'));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <PriceDisplay
+        price={selected?.sellingPrice ?? product.variants[0]?.sellingPrice}
+        compareAt={selected?.compareAtPrice ?? product.variants[0]?.compareAtPrice}
+        currency={currency}
+        size="lg"
+      />
+      <ProductVariantSelector variants={product.variants} selectedId={selected?.id} onSelect={setSelected} />
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Quantity</p>
+        <div className="mt-2">
+          <QuantitySelector value={quantity} onChange={setQuantity} max={selected?.remaining ?? 99} disabled={!canBuy} />
+        </div>
+      </div>
+      {error ? <Alert tone="danger">{error}</Alert> : null}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button type="button" className="flex-1" disabled={!canBuy || pending} onClick={() => void add(false)}>
+          {needsVariant && !selected ? 'Select a variant' : 'Add to cart'}
+        </Button>
+        <Button type="button" variant="outline" className="flex-1" disabled={!canBuy || pending} onClick={() => void add(true)}>
+          Buy now
+        </Button>
+      </div>
+    </div>
+  );
+}

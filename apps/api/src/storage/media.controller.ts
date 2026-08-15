@@ -16,6 +16,9 @@ export class MediaController {
   @ApiOperation({ summary: 'Serve a stored catalog image by storage key' })
   async getFile(@Param('path') storagePath: string | string[], @Res({ passthrough: true }) response: Response) {
     const relative = (Array.isArray(storagePath) ? storagePath.join('/') : storagePath).replace(/\\/g, '/');
+    if (relative.split('/').includes('custom-orders') || relative.includes('..')) {
+      throw new NotFoundException('File not found.');
+    }
     let absolute: string;
     try {
       absolute = this.storage.resolveAbsolute(relative);

@@ -5,7 +5,7 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { Prisma } from '../prisma/client';
+import { CatalogStatus, Prisma, VariantStatus } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { asTx } from '../prisma/as-tx';
 import { AuditService } from '../audit/audit.service';
@@ -13,9 +13,15 @@ import { AUDIT_ACTIONS } from '../audit/audit-actions';
 import { TokenService } from '../auth/token.service';
 import { CustomersService } from '../customers/customers.service';
 import { RedisService } from '../redis/redis.service';
-import { parseMoney } from '../catalog/money';
+import { parseMoney, moneyString } from '../catalog/money';
 import { money } from '../pos/pos-money';
 import { OrderEngineService } from '../orders/order-engine.service';
+import { ShippingCalculator } from '../orders/shipping.calculator';
+import { priceOrderLines } from '../orders/order-pricing';
+import { parseTaxRate } from '../finance/tax';
+import { availableQuantity } from '../inventory/inventory-math';
+import type { CheckoutIssue, CheckoutQuote, FulfillmentMethod } from '@jersey-commerce/types';
+import { toCartDto } from './store-cart.mapper';
 import { toOrderDetail } from '../orders/order.mapper';
 import type { StaffCreateOrderDto, StoreCheckoutDto } from '../orders/dto/order.dto';
 import type { AuthPrincipal } from '../common/context/request-context';
@@ -39,7 +45,129 @@ export class StoreCheckoutService {
     private readonly customers: CustomersService,
     private readonly tokens: TokenService,
     private readonly redis: RedisService,
+    private readonly shipping: ShippingCalculator,
   ) {}
+
+  async quote(tenantId: string, token: string | undefined, fulfillmentMethod: FulfillmentMethod = 'DELIVERY'): Promise<CheckoutQuote> {
+    const issues: CheckoutIssue[] = [];
+    let cartRecord;
+    try {
+      cartRecord = await this.carts.requireActiveCart(tenantId, token);
+    } catch {
+      return {
+        cart: {
+          id: '',
+          status: 'EXPIRED',
+          itemCount: 0,
+          items: [],
+          totals: {
+            subtotal: '0.00',
+            discount: '0.00',
+            tax: '0.00',
+            shippingAmount: '0.00',
+            total: '0.00',
+            currency: 'INR',
+          },
+          expiresAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        totals: {
+          subtotal: '0.00',
+          discount: '0.00',
+          tax: '0.00',
+          shippingAmount: '0.00',
+          total: '0.00',
+          currency: 'INR',
+        },
+        fulfillmentMethod,
+        issues: [{ code: 'CART_EXPIRED', message: 'Your cart has expired. Add items again to continue.' }],
+        canCheckout: false,
+      };
+    }
+    const cart = toCartDto(cartRecord, { currency: await this.currency(tenantId) });
+    if (cart.items.length === 0) {
+      issues.push({ code: 'CART_EMPTY', message: 'Your cart is empty.' });
+    }
+    const tenant = await this.prisma.tenant.findFirst({ where: { id: tenantId } });
+    if (!tenant) {
+      throw new BadRequestException('Store is not available.');
+    }
+    const pricedInputs = [];
+    for (const item of cartRecord.items) {
+      const variant = item.productVariant;
+      const product = variant.product;
+      if (product.status !== CatalogStatus.ACTIVE || variant.status !== VariantStatus.ACTIVE) {
+        issues.push({
+          code: 'ITEM_UNAVAILABLE',
+          message: `${product.name} is no longer available.`,
+          itemId: item.publicId,
+          productName: product.name,
+        });
+        continue;
+      }
+      const available = availableQuantity(variant.inventory?.quantity ?? 0, variant.inventory?.reservedQuantity ?? 0);
+      if (available < item.quantity) {
+        issues.push({
+          code: 'INSUFFICIENT_STOCK',
+          message: `${product.name} does not have enough stock.`,
+          itemId: item.publicId,
+          productName: product.name,
+        });
+      }
+      const current = money(variant.sellingPrice.toString());
+      if (!current.eq(item.unitPrice)) {
+        issues.push({
+          code: 'PRICE_CHANGED',
+          message: `The price of ${product.name} has changed.`,
+          itemId: item.publicId,
+          productName: product.name,
+        });
+      }
+      pricedInputs.push({
+        productVariantId: variant.id,
+        productName: product.name,
+        sku: variant.sku,
+        size: variant.size,
+        color: variant.color,
+        quantity: item.quantity,
+        unitPrice: current,
+        costPrice: money(variant.costPrice.toString()),
+        taxRate: parseTaxRate(variant.taxRate ?? tenant.defaultTaxRate),
+        taxInclusive: variant.taxInclusive ?? tenant.taxInclusivePricing,
+      });
+    }
+    let totals = cart.totals;
+    if (pricedInputs.length > 0) {
+      const provisional = priceOrderLines(pricedInputs, 'NONE', money(0), money(0));
+      const shippingQuote = this.shipping.quote(fulfillmentMethod, provisional.total, {
+        shippingCalculationMode: tenant.shippingCalculationMode,
+        shippingFixedAmount: tenant.shippingFixedAmount,
+        freeShippingMinSubtotal: tenant.freeShippingMinSubtotal,
+      });
+      const priced = priceOrderLines(pricedInputs, 'NONE', money(0), shippingQuote.amount);
+      totals = {
+        subtotal: moneyString(priced.subtotal) ?? '0.00',
+        discount: moneyString(priced.discount) ?? '0.00',
+        tax: moneyString(priced.tax) ?? '0.00',
+        shippingAmount: moneyString(priced.shippingAmount) ?? '0.00',
+        total: moneyString(priced.total) ?? '0.00',
+        currency: tenant.currency,
+      };
+    }
+    return {
+      cart: { ...cart, totals },
+      totals,
+      fulfillmentMethod,
+      issues,
+      canCheckout: issues.filter((issue) => issue.code !== 'PRICE_CHANGED').length === 0 && pricedInputs.length > 0,
+    };
+  }
+
+  private async currency(tenantId: string) {
+    const tenant = await this.prisma.tenant.findFirst({ where: { id: tenantId }, select: { currency: true } });
+    return tenant?.currency ?? 'INR';
+  }
 
   async checkout(
     tenantId: string,
@@ -47,6 +175,7 @@ export class StoreCheckoutService {
     dto: StoreCheckoutDto,
     idempotencyKey: string | undefined,
     meta?: RequestMeta,
+    customerId?: string,
   ) {
     const cart = await this.carts.requireActiveCart(tenantId, token);
     if (cart.items.length === 0) {
@@ -101,6 +230,7 @@ export class StoreCheckoutService {
         const customer = await this.customers.resolveForOrder(
           tenantId,
           {
+            customerId,
             name: dto.customer?.name ?? dto.shippingAddress?.fullName,
             phone: dto.customer?.phone ?? dto.shippingAddress?.phone,
             email: dto.customer?.email,

@@ -1,27 +1,76 @@
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@jersey-commerce/ui';
-import { publicEnv } from '../lib/env';
+import type { Metadata } from 'next';
+import { storeApi } from '../lib/api';
+import { serverStoreOptions } from '../lib/server-options';
+import {
+  CtaSection,
+  FeaturedCategories,
+  FeaturedProducts,
+  HeroSection,
+  PromoBanner,
+  TrustSection,
+} from '../components/home/homepage-sections';
 
-export default function HomePage(): React.JSX.Element {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/40 p-6">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle>Storefront</CardTitle>
-            <Badge variant="secondary">Foundation</Badge>
-          </div>
-          <CardDescription>
-            Customer commerce surface. Tenant branding, catalog, and checkout are not hardcoded and
-            will be resolved per business in later phases.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">API: {publicEnv.NEXT_PUBLIC_API_URL}</p>
-          <Button type="button" variant="outline" disabled>
-            Storefront features belong to a later phase
-          </Button>
-        </CardContent>
-      </Card>
-    </main>
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const options = await serverStoreOptions();
+    const store = await storeApi.bootstrap(options);
+    return {
+      title: store.website.seoTitle || store.tenant.name,
+      description: store.website.seoDescription || undefined,
+      alternates: { canonical: '/' },
+      openGraph: {
+        title: store.website.seoTitle || store.tenant.name,
+        description: store.website.seoDescription || undefined,
+      },
+    };
+  } catch {
+    return { title: 'Store', description: 'Premium sportswear storefront.' };
+  }
+}
+
+export default async function HomePage(): Promise<React.JSX.Element> {
+  const options = await serverStoreOptions();
+  const store = await storeApi.bootstrap(options);
+  const currency = store.tenant.currency;
+  const sections = store.website.homepage.sections.filter((section) => section.enabled);
+
+  const rendered = await Promise.all(
+    sections.map(async (section) => {
+      if (section.type === 'hero') {
+        return <HeroSection key={section.type + (section.heading ?? '')} section={section} />;
+      }
+      if (section.type === 'featured-categories') {
+        const categories = section.categorySlugs?.length
+          ? (await storeApi.categories(options)).filter((item) => section.categorySlugs?.includes(item.slug))
+          : (await storeApi.categories(options)).filter((item) => !item.parentId).slice(0, 4);
+        return <FeaturedCategories key={section.type} section={section} categories={categories} />;
+      }
+      if (section.type === 'featured-products') {
+        const products = section.productSlugs?.length
+          ? (await storeApi.products({ pageSize: 12 }, options)).items.filter((item) => section.productSlugs?.includes(item.slug))
+          : await storeApi.featured(options);
+        return <FeaturedProducts key={section.type} section={section} products={products} currency={currency} />;
+      }
+      if (section.type === 'promo-banner') {
+        return <PromoBanner key={section.type} section={section} />;
+      }
+      if (section.type === 'best-sellers') {
+        const products = await storeApi.bestSellers(options);
+        return <FeaturedProducts key={section.type} section={section} products={products} currency={currency} />;
+      }
+      if (section.type === 'new-arrivals') {
+        const products = await storeApi.newest(options);
+        return <FeaturedProducts key={section.type} section={section} products={products} currency={currency} />;
+      }
+      if (section.type === 'trust') {
+        return <TrustSection key={section.type} section={section} />;
+      }
+      if (section.type === 'cta') {
+        return <CtaSection key={section.type} section={section} />;
+      }
+      return null;
+    }),
   );
+
+  return <div>{rendered}</div>;
 }

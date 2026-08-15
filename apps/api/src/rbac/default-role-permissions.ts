@@ -5,6 +5,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[
   OWNER: 'ALL',
   MANAGER: PERMISSION_CODES.filter((code) => code !== 'settings.manage'),
   CASHIER: [
+    'dashboard.read',
     'products.read',
     'categories.read',
     'customers.read',
@@ -23,8 +24,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[
     'pos.access',
     'pos.session.open',
     'pos.session.close',
+    'customOrders.read',
+    'customOrders.payment',
   ],
   INVENTORY_MANAGER: [
+    'dashboard.read',
     'products.read',
     'products.create',
     'products.update',
@@ -49,8 +53,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[
     'payments.read',
     'orders.read',
     'customers.read',
+    'customOrders.read',
   ],
   WEBSITE_MANAGER: [
+    'dashboard.read',
     'products.read',
     'products.create',
     'products.update',
@@ -63,5 +69,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[
     'orders.create',
     'orders.update',
     'orders.cancel',
+    'customOrders.read',
+    'customOrders.create',
+    'customOrders.update',
+    'customOrders.design',
   ],
 };

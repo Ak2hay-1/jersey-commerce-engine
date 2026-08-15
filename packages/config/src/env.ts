@@ -29,12 +29,15 @@ export const serverEnvSchema = z.object({
   BOOTSTRAP_SECRET: z.string().optional().default(''),
   TRUST_PROXY: booleanFromString.default(false),
   BACKUP_ALLOWED_ROOT: z.string().optional().default(''),
+  PLATFORM_DOMAIN: z.string().optional().default(''),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 export const publicEnvSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url().default('http://localhost:4000'),
+  NEXT_PUBLIC_DEFAULT_TENANT_SLUG: z.string().min(1).max(64).optional(),
+  NEXT_PUBLIC_PLATFORM_DOMAIN: z.string().min(1).max(180).optional(),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;

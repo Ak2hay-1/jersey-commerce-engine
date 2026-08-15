@@ -16,7 +16,8 @@ Admin / POS / future checkout
             └─ CustomerInsightsService   history, activity, metrics, segments, reports
                     │
                     ├─ Sale / SaleItem / Refund     POS
-                    └─ Order / OrderItem            website / WhatsApp / manual
+                    ├─ Order / OrderItem            website / WhatsApp / manual
+                    └─ CustomOrder                  team / bulk jersey work
 ```
 
 Walk-in POS sales keep `customerId = null`. Customer registration is never required to complete a sale.
@@ -40,7 +41,7 @@ Related models (no duplicated transaction data):
 - `CustomerNote` — internal staff notes with `createdBy`
 - `CustomerPreference` — `emailOptIn`, `smsOptIn`, `whatsappOptIn` (storage only; no messages are sent)
 
-`DELETE` does not destroy sales or orders. If the customer has any sale, order, or POS cart, status becomes `INACTIVE`. Customers without history may be deleted; notes, tag assignments, and preferences cascade.
+`DELETE` does not destroy sales, orders, or custom orders. If the customer has any sale, order, custom order, or POS cart, status becomes `INACTIVE`. Customers without history may be deleted; notes, tag assignments, and preferences cascade.
 
 ## CRM metrics
 
@@ -59,7 +60,7 @@ Excluded: cancelled/voided/fully refunded sales, cancelled/returned/refunded ord
 | Total items | Sale and order quantities minus refunded quantities |
 | First / last purchase | Min / max counted `createdAt` |
 
-`GET /api/v1/customers/:id` returns these fields plus `segments` and `primarySegment`.
+`GET /api/v1/customers/:id` returns these fields plus `segments` and `primarySegment`. Completed custom/team jersey orders are returned separately as `customOrderMetrics` so they are not mixed into POS or website spend. History and activity include `CUSTOM_ORDER` rows. See [custom-orders.md](custom-orders.md).
 
 ## Segmentation
 

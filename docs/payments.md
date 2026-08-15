@@ -9,6 +9,7 @@ PaymentProcessor
     ├── CashPaymentProvider
     ├── ManualUpiPaymentProvider
     ├── CardPaymentProvider
+    ├── BankTransferPaymentProvider
     ├── OtherPaymentProvider
     └── OnlinePaymentProvider   (not configured; never reports success)
 ```
@@ -17,7 +18,9 @@ The unconfigured ONLINE adapter never reports success. Ecommerce checkout create
 
 ## Methods and statuses
 
-Methods: `CASH`, `UPI`, `CARD`, `ONLINE`, `OTHER`.
+Methods: `CASH`, `UPI`, `CARD`, `ONLINE`, `BANK_TRANSFER`, `OTHER`.
+
+`PaymentProcessor.prepareCapture` records a single completed capture that may be less than a document total (custom-order deposits). `prepareCaptures` still requires the sum of completed amounts to equal a sale total.
 
 Statuses: `PENDING`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUNDED`, `PARTIALLY_REFUNDED`.
 
@@ -28,8 +31,11 @@ Statuses: `PENDING`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUNDED`, `PARTIALLY_
 | CASH | Cashier records tender | `amountReceived >= amount`. Change is `amountReceived - amount`. |
 | UPI | Cashier sets `confirmed: true` | Transaction `reference`. Metadata records `gatewayConfirmed: false`. |
 | CARD | Cashier sets `confirmed: true` | Terminal/approval `reference`. Sensitive keys are stripped. |
+| BANK_TRANSFER | Cashier sets `confirmed: true` | Transaction `reference`. |
 | OTHER | Cashier sets `confirmed: true` | Optional reference. |
 | ONLINE | Never in this phase | A gateway must exist before success can be recorded. |
+
+Custom jersey orders store payments on the same `Payment` table via `customOrderId`. A deposit must not mark the custom order `PAID`. See [custom-orders.md](custom-orders.md).
 
 Split payments are allowed. The sum of completed payment amounts must equal the sale total. Cash over-tender is change, not overpayment of the sale.
 

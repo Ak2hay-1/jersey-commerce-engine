@@ -38,6 +38,7 @@ export class SupplierPaymentsService {
     const [records, totalItems] = await this.prisma.$transaction([
       this.prisma.supplierPayment.findMany({
         where,
+        include: { supplier: { select: { id: true, name: true, status: true } } },
         orderBy: { createdAt: 'desc' },
         skip,
         take,

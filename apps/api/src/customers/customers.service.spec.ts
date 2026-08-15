@@ -17,6 +17,7 @@ describe('CustomersService', () => {
     sale: { count: jest.fn() },
     order: { count: jest.fn() },
     posCart: { count: jest.fn() },
+    customOrder: { count: jest.fn() },
     $transaction: jest.fn(),
   } as unknown as PrismaService;
   const audit = { log: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
@@ -85,6 +86,7 @@ describe('CustomersService', () => {
     (prisma.sale.count as jest.Mock).mockResolvedValue(2);
     (prisma.order.count as jest.Mock).mockResolvedValue(0);
     (prisma.posCart.count as jest.Mock).mockResolvedValue(0);
+    (prisma.customOrder.count as jest.Mock).mockResolvedValue(0);
     (prisma.customer.update as jest.Mock).mockResolvedValue({});
     const result = await service.remove('tenant-a', 'c1', actor);
     expect(result).toMatchObject({ archived: true, deleted: false, status: 'INACTIVE' });

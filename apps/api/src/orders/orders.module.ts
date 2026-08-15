@@ -13,11 +13,10 @@ import { StoreCartService } from '../store/store-cart.service';
 import { StoreCheckoutController } from '../store/store-checkout.controller';
 import { StoreCheckoutService } from '../store/store-checkout.service';
 import { StoreOrdersController } from '../store/store-orders.controller';
-import { StoreTenantGuard } from '../store/store-tenant.guard';
-import { CustomerAccessGuard } from '../store/customer-access.guard';
+import { StoreCoreModule } from '../store/store-core.module';
 
 @Module({
-  imports: [InventoryModule, CustomersModule, PaymentsModule],
+  imports: [InventoryModule, CustomersModule, PaymentsModule, StoreCoreModule],
   controllers: [OrdersController, StoreCartController, StoreCheckoutController, StoreOrdersController],
   providers: [
     OrdersService,
@@ -27,9 +26,7 @@ import { CustomerAccessGuard } from '../store/customer-access.guard';
     UnconfiguredOnlineGateway,
     StoreCartService,
     StoreCheckoutService,
-    StoreTenantGuard,
-    CustomerAccessGuard,
   ],
-  exports: [OrdersService, OrderEngineService, StoreCartService, StoreCheckoutService],
+  exports: [OrdersService, OrderEngineService, StoreCartService, StoreCheckoutService, ShippingCalculator],
 })
 export class OrdersModule {}

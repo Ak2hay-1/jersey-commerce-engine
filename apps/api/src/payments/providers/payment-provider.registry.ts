@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PaymentMethod } from '../../prisma/client';
 import type { PaymentProvider } from '../payment.types';
+import { BankTransferPaymentProvider } from './bank-transfer.provider';
 import { CardPaymentProvider } from './card.provider';
 import { CashPaymentProvider } from './cash.provider';
 import { ManualUpiPaymentProvider } from './manual-upi.provider';
@@ -17,6 +18,7 @@ export class PaymentProviderRegistry {
       new ManualUpiPaymentProvider(),
       new CardPaymentProvider(),
       new OnlinePaymentProvider(),
+      new BankTransferPaymentProvider(),
       new OtherPaymentProvider(),
     ];
     this.providers = new Map(list.map((provider) => [provider.method, provider]));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Badge,
   Button,
@@ -11,16 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@jersey-commerce/ui';
-import type { BackupIntervalUnit, BackupRun, BackupSettings, TenantSummary } from '@jersey-commerce/types';
-import {
-  getBackupSettings,
-  listBackupRuns,
-  listTenants,
-  readStoredTenantId,
-  runBackupNow,
-  saveBackupSettings,
-  storeTenantId,
-} from '@/lib/api';
+import type { BackupIntervalUnit, BackupRun, BackupSettings } from '@jersey-commerce/types';
+import { apiRequest, queryString } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 const INTERVAL_UNITS: { value: BackupIntervalUnit; label: string }[] = [
   { value: 'HOURS', label: 'Hours' },
@@ -53,8 +46,7 @@ function formatBytes(value: number | null): string {
 }
 
 export function BackupSettingsForm(): React.JSX.Element {
-  const [tenants, setTenants] = useState<TenantSummary[]>([]);
-  const [tenantId, setTenantId] = useState('');
+  const auth = useAuth();
   const [settings, setSettings] = useState<BackupSettings | null>(null);
   const [runs, setRuns] = useState<BackupRun[]>([]);
   const [error, setError] = useState('');
@@ -63,13 +55,11 @@ export function BackupSettingsForm(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
 
-  const selectedTenant = useMemo(
-    () => tenants.find((tenant) => tenant.id === tenantId) ?? null,
-    [tenants, tenantId],
-  );
-
-  async function loadForTenant(id: string): Promise<void> {
-    const [nextSettings, nextRuns] = await Promise.all([getBackupSettings(id), listBackupRuns(id)]);
+  async function load(): Promise<void> {
+    const [nextSettings, nextRuns] = await Promise.all([
+      apiRequest<BackupSettings>('/backups/settings'),
+      apiRequest<{ items: BackupRun[] }>(`/backups/runs${queryString({ page: 1, pageSize: 20 })}`),
+    ]);
     setSettings(nextSettings);
     setRuns(nextRuns.items);
   }
@@ -78,18 +68,7 @@ export function BackupSettingsForm(): React.JSX.Element {
     let cancelled = false;
     async function boot(): Promise<void> {
       try {
-        const page = await listTenants();
-        if (cancelled) {
-          return;
-        }
-        setTenants(page.items);
-        const stored = readStoredTenantId();
-        const initial = page.items.find((tenant) => tenant.id === stored)?.id ?? page.items[0]?.id ?? '';
-        setTenantId(initial);
-        if (initial) {
-          storeTenantId(initial);
-          await loadForTenant(initial);
-        }
+        await load();
       } catch (cause) {
         if (!cancelled) {
           setError(cause instanceof Error ? cause.message : 'Could not load backup settings.');
@@ -106,34 +85,25 @@ export function BackupSettingsForm(): React.JSX.Element {
     };
   }, []);
 
-  async function onTenantChange(nextId: string): Promise<void> {
-    setTenantId(nextId);
-    storeTenantId(nextId);
-    setError('');
-    setNotice('');
-    try {
-      await loadForTenant(nextId);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not load backup settings.');
-    }
-  }
-
   async function onSave(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!settings || !tenantId) {
+    if (!settings) {
       return;
     }
     setSaving(true);
     setError('');
     setNotice('');
     try {
-      const saved = await saveBackupSettings(tenantId, {
-        enabled: settings.enabled,
-        destinationPath: settings.destinationPath,
-        scheduleTime: settings.scheduleTime,
-        intervalValue: settings.intervalValue,
-        intervalUnit: settings.intervalUnit,
-        retainCopies: settings.retainCopies,
+      const saved = await apiRequest<BackupSettings>('/backups/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+          enabled: settings.enabled,
+          destinationPath: settings.destinationPath,
+          scheduleTime: settings.scheduleTime,
+          intervalValue: settings.intervalValue,
+          intervalUnit: settings.intervalUnit,
+          retainCopies: settings.retainCopies,
+        }),
       });
       setSettings(saved);
       setNotice(
@@ -149,16 +119,13 @@ export function BackupSettingsForm(): React.JSX.Element {
   }
 
   async function onRunNow(): Promise<void> {
-    if (!tenantId) {
-      return;
-    }
     setRunning(true);
     setError('');
     setNotice('');
     try {
-      const run = await runBackupNow(tenantId);
+      const run = await apiRequest<BackupRun>('/backups/run', { method: 'POST' });
       setNotice(`Backup finished: ${run.filePath ?? run.fileName ?? 'complete'}.`);
-      await loadForTenant(tenantId);
+      await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Backup failed.');
     } finally {
@@ -175,14 +142,14 @@ export function BackupSettingsForm(): React.JSX.Element {
       <Card>
         <CardHeader>
           <CardTitle>Automatic backups</CardTitle>
-          <CardDescription>{error || 'Create a tenant before configuring backups.'}</CardDescription>
+          <CardDescription>{error || 'Backup settings are not available for this tenant.'}</CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
   return (
-    <form className="space-y-6" onSubmit={onSave}>
+    <form className="space-y-6" onSubmit={(event) => void onSave(event)}>
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -192,22 +159,11 @@ export function BackupSettingsForm(): React.JSX.Element {
             </Badge>
           </div>
           <CardDescription>
-            Save a tenant-scoped copy of store data to a folder on the machine that runs the API. Choose the
-            destination, the time of day, and how often backups should repeat.
+            Save a tenant-scoped copy of store data to a folder on the machine that runs the API. Time of day uses{' '}
+            {auth.tenant?.timezone ?? 'the tenant timezone'}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="block text-sm font-medium">
-            Tenant
-            <select className={fieldClass} value={tenantId} onChange={(event) => void onTenantChange(event.target.value)}>
-              {tenants.map((tenant) => (
-                <option key={tenant.id} value={tenant.id}>
-                  {tenant.name} ({tenant.slug})
-                </option>
-              ))}
-            </select>
-          </label>
-
           <label className="flex items-center gap-2 text-sm font-medium">
             <input
               type="checkbox"
@@ -241,15 +197,12 @@ export function BackupSettingsForm(): React.JSX.Element {
                 required
                 value={settings.scheduleTime}
                 onChange={(event) =>
-                setSettings({
-                  ...settings,
-                  scheduleTime: event.target.value.slice(0, 5),
-                })
-              }
+                  setSettings({
+                    ...settings,
+                    scheduleTime: event.target.value.slice(0, 5),
+                  })
+                }
               />
-              <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                Time of day in {selectedTenant?.timezone ?? 'the tenant timezone'}.
-              </span>
             </label>
 
             <div className="grid grid-cols-[1fr_1fr] gap-3">
@@ -314,10 +267,15 @@ export function BackupSettingsForm(): React.JSX.Element {
           {notice ? <p className="text-sm text-emerald-700">{notice}</p> : null}
         </CardContent>
         <CardFooter className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" disabled={saving || !auth.can('settings.manage')}>
             {saving ? 'Saving…' : 'Save backup schedule'}
           </Button>
-          <Button type="button" variant="outline" disabled={running} onClick={() => void onRunNow()}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={running || !auth.can('settings.manage')}
+            onClick={() => void onRunNow()}
+          >
             {running ? 'Running…' : 'Run backup now'}
           </Button>
         </CardFooter>

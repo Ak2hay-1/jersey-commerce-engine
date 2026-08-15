@@ -1,0 +1,40 @@
+import type { StorefrontBootstrap } from '@jersey-commerce/types';
+
+export const fallbackStore: StorefrontBootstrap = {
+  tenant: {
+    slug: 'store',
+    name: 'Store',
+    legalName: null,
+    currency: 'INR',
+    timezone: 'UTC',
+    contactPhone: null,
+    contactEmail: null,
+    address: null,
+    city: null,
+    state: null,
+    country: 'IN',
+    postalCode: null,
+  },
+  theme: {
+    primaryColor: '#111827',
+    secondaryColor: '#6b7280',
+    accentColor: '#b45309',
+    backgroundColor: '#ffffff',
+    foregroundColor: '#111827',
+    headingFont: 'Barlow Condensed',
+    bodyFont: 'Inter',
+    logo: null,
+    favicon: null,
+  },
+  website: {
+    contactPhone: null,
+    contactEmail: null,
+    contactAddress: null,
+    socialLinks: {},
+    businessHours: null,
+    seoTitle: 'Store',
+    seoDescription: 'Premium sportswear storefront.',
+    homepage: { sections: [] },
+  },
+  navigation: [],
+};

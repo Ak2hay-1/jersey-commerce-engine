@@ -128,7 +128,7 @@ export class StoreCartService {
     }
     const cart = await this.findActiveByToken(tenantId, token);
     if (!cart) {
-      throw new NotFoundException('Cart not found');
+      throw new NotFoundException('Cart not found or has expired.');
     }
     return cart;
   }
@@ -158,24 +158,11 @@ export class StoreCartService {
     if (cart.status !== 'ACTIVE') {
       return null;
     }
-    return this.refreshPrices(cart);
+    return cart;
   }
 
   private async refreshPrices(cart: CartRecord): Promise<CartRecord> {
-    for (const item of cart.items) {
-      const current = money(item.productVariant.sellingPrice.toString());
-      if (!current.eq(item.unitPrice)) {
-        await this.prisma.cartItem.update({
-          where: { id: item.id },
-          data: { unitPrice: current },
-        });
-      }
-    }
-    const reloaded = await this.prisma.cart.findFirst({
-      where: { id: cart.id, tenantId: cart.tenantId },
-      include: cartInclude,
-    });
-    return reloaded ?? cart;
+    return cart;
   }
 
   private async reload(tenantId: string, cartId: string) {

@@ -52,6 +52,13 @@ export class InventoryController {
     return this.inventory.lookupBySku(tenantId, decodeURIComponent(sku));
   }
 
+  @Get('movements')
+  @RequirePermissions('inventory.read')
+  @ApiOperation({ summary: 'Paginated stock movement ledger for the current tenant' })
+  recentMovements(@TenantId() tenantId: string, @Query() query: InventoryMovementQueryDto) {
+    return this.inventory.getRecentMovements(tenantId, query);
+  }
+
   @Post('adjust')
   @RequirePermissions('inventory.adjust')
   @ApiOperation({ summary: 'Apply a signed inventory adjustment or damage write-off' })

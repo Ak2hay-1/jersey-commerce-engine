@@ -4,6 +4,8 @@ export const DOCUMENT_TYPES = {
   SALE_INVOICE: 'SALE_INVOICE',
   PURCHASE_ORDER: 'PURCHASE_ORDER',
   ORDER: 'ORDER',
+  CUSTOM_ORDER: 'CUSTOM_ORDER',
+  CUSTOM_ORDER_QUOTE: 'CUSTOM_ORDER_QUOTE',
 } as const;
 
 export type DocumentType = (typeof DOCUMENT_TYPES)[keyof typeof DOCUMENT_TYPES];
@@ -12,6 +14,8 @@ export const DOCUMENT_SEQUENCE_DEFAULTS: Record<DocumentType, { prefix: string; 
   SALE_INVOICE: { prefix: 'INV', padLength: 6 },
   PURCHASE_ORDER: { prefix: 'PO', padLength: 6 },
   ORDER: { prefix: 'ORD', padLength: 6 },
+  CUSTOM_ORDER: { prefix: 'CO', padLength: 6 },
+  CUSTOM_ORDER_QUOTE: { prefix: 'QT', padLength: 6 },
 };
 
 /**

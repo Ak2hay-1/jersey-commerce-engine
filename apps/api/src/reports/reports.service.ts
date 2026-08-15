@@ -81,7 +81,7 @@ export class ReportsService {
         _sum: { amount: true },
       }),
     ]);
-    const methods: PaymentMethod[] = ['CASH', 'UPI', 'CARD', 'ONLINE', 'OTHER'];
+    const methods: PaymentMethod[] = ['CASH', 'UPI', 'CARD', 'ONLINE', 'BANK_TRANSFER', 'OTHER'];
     const collectedMap = new Map(collected.map((row) => [row.method, money(row._sum.amount?.toString() ?? '0')]));
     const refundMap = new Map(refunds.map((row) => [row.method, money(row._sum.amount?.toString() ?? '0')]));
     const rows = methods.map((method) => {

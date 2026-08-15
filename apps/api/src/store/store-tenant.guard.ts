@@ -6,25 +6,24 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { PrismaService } from '../prisma/prisma.service';
 import type { TenantScopedRequest } from '../common/decorators/tenant-id.decorator';
+import { StoreBootstrapService } from './store-bootstrap.service';
 
 export const TENANT_SLUG_HEADER = 'x-tenant-slug';
 
 @Injectable()
 export class StoreTenantGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly bootstrap: StoreBootstrapService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<TenantScopedRequest>();
     const raw = request.headers[TENANT_SLUG_HEADER];
     const slug = (Array.isArray(raw) ? raw[0] : raw)?.trim().toLowerCase();
-    if (!slug) {
+    const host = request.headers.host;
+    const tenant = await this.bootstrap.findTenant({ slug, host: typeof host === 'string' ? host : undefined });
+    if (!slug && !tenant) {
       throw new BadRequestException('X-Tenant-Slug is required.');
     }
-    const tenant = await this.prisma.withoutTenantScope(() =>
-      this.prisma.tenant.findUnique({ where: { slug } }),
-    );
     if (!tenant || tenant.status === 'SUSPENDED' || tenant.status === 'CANCELLED') {
       throw new UnauthorizedException('Store is not available.');
     }

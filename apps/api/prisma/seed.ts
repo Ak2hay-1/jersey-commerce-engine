@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import { DEFAULT_ROLE_PERMISSIONS } from '../src/rbac/default-role-permissions';
 import { ROLE_CODES, type RoleCode as SharedRoleCode } from '../../../packages/types/src/enums';
 import { PERMISSION_CATALOG, type PermissionCode } from '../../../packages/types/src/permissions';
+import { reconcileInventoryFromMovements, seedErpDashboard } from './seed-erp-dashboard';
 
 const prisma = new PrismaClient();
 
@@ -288,8 +289,6 @@ async function seedPurchasingDemo(tenantId: string, ownerId: string): Promise<vo
     subtotal: '22800.00',
     total: '22800.00',
   });
-
-  await reconcilePurchaseStock(tenantId);
 }
 
 async function ensureDemoPurchase(input: {
@@ -445,34 +444,6 @@ async function ensureDemoPayment(input: {
   });
 }
 
-async function reconcilePurchaseStock(tenantId: string): Promise<void> {
-  const received = await prisma.purchaseItem.groupBy({
-    by: ['productVariantId'],
-    where: { tenantId, receivedQuantity: { gt: 0 } },
-    _sum: { receivedQuantity: true },
-  });
-  for (const row of received) {
-    const extra = row._sum.receivedQuantity ?? 0;
-    if (extra <= 0) {
-      continue;
-    }
-    const inventory = await prisma.inventory.findFirst({
-      where: { tenantId, productVariantId: row.productVariantId },
-    });
-    if (!inventory) {
-      continue;
-    }
-    const nextQty = inventory.quantity + extra;
-    await prisma.inventory.update({
-      where: { id: inventory.id },
-      data: {
-        quantity: nextQty,
-        availableQuantity: nextQty - inventory.reservedQuantity,
-      },
-    });
-  }
-}
-
 async function main(): Promise<void> {
   console.warn('=== DEVELOPMENT SEED ONLY — do not use these credentials in production ===');
 
@@ -508,6 +479,7 @@ async function main(): Promise<void> {
       favicon: PLACEHOLDER_IMAGE('DJS'),
       primaryColor: '#0f172a',
       secondaryColor: '#f97316',
+      accentColor: '#ea580c',
       contactPhone: '+91 98765 00000',
       contactEmail: 'hello@demo.local',
       address: '12 Stadium Road',
@@ -527,6 +499,7 @@ async function main(): Promise<void> {
       favicon: PLACEHOLDER_IMAGE('DJS'),
       primaryColor: '#0f172a',
       secondaryColor: '#f97316',
+      accentColor: '#ea580c',
       contactPhone: '+91 98765 00000',
       contactEmail: 'hello@demo.local',
       address: '12 Stadium Road',
@@ -538,6 +511,23 @@ async function main(): Promise<void> {
       currency: 'INR',
     },
   });
+
+  for (const host of ['demo-jersey-store.localhost', 'demo-jersey-store.platform.local']) {
+    await prisma.tenantHost.upsert({
+      where: { host },
+      update: {
+        tenantId: tenant.id,
+        kind: host.endsWith('.localhost') ? 'SUBDOMAIN' : 'DOMAIN',
+        isPrimary: host.endsWith('.localhost'),
+      },
+      create: {
+        tenantId: tenant.id,
+        host,
+        kind: host.endsWith('.localhost') ? 'SUBDOMAIN' : 'DOMAIN',
+        isPrimary: host.endsWith('.localhost'),
+      },
+    });
+  }
 
   const roleRecords = new Map<SharedRoleCode, { id: string }>();
 
@@ -625,13 +615,14 @@ async function main(): Promise<void> {
     const slug = slugify(category.name);
     const record = await prisma.category.upsert({
       where: { tenantId_slug: { tenantId: tenant.id, slug } },
-      update: { name: category.name, parentId: parentId ?? null, status: 'ACTIVE' },
+      update: { name: category.name, parentId: parentId ?? null, status: 'ACTIVE', image: PLACEHOLDER_IMAGE(category.name) },
       create: {
         tenantId: tenant.id,
         parentId: parentId ?? null,
         name: category.name,
         slug,
         description: `${category.name} category`,
+        image: PLACEHOLDER_IMAGE(category.name),
         sortOrder: categoryTree.indexOf(category),
         status: 'ACTIVE',
       },
@@ -913,10 +904,71 @@ async function main(): Promise<void> {
     favicon: tenant.favicon,
     primaryColor: tenant.primaryColor,
     secondaryColor: tenant.secondaryColor,
+    accentColor: tenant.accentColor,
+    backgroundColor: '#ffffff',
+    foregroundColor: '#0f172a',
+    headingFont: 'Barlow Condensed',
+    bodyFont: 'Inter',
     homepageConfig: {
-      heroTitle: 'Match-day jerseys for every fan',
-      heroSubtitle: 'Club, national, IPL, and custom kits.',
-      featuredCategorySlugs: ['club-jerseys', 'ipl', 'custom-jerseys'],
+      sections: [
+        {
+          type: 'hero',
+          enabled: true,
+          heading: 'Rep Your Team.',
+          subheading: 'Premium Jerseys. Built for Fans.',
+          ctaLabel: 'Shop Jerseys',
+          ctaHref: '/products',
+          image: PLACEHOLDER_IMAGE('Rep Your Team'),
+        },
+        {
+          type: 'featured-categories',
+          enabled: true,
+          heading: 'Shop the pitch',
+          categorySlugs: ['football', 'cricket', 'ipl', 'custom-jerseys'],
+        },
+        {
+          type: 'featured-products',
+          enabled: true,
+          heading: 'Featured kits',
+        },
+        {
+          type: 'promo-banner',
+          enabled: true,
+          heading: 'Custom names and numbers',
+          subheading: 'Build a fan jersey with your name on the back.',
+          ctaLabel: 'Shop custom jerseys',
+          ctaHref: '/category/custom-jerseys',
+        },
+        {
+          type: 'best-sellers',
+          enabled: true,
+          heading: 'Best sellers',
+        },
+        {
+          type: 'new-arrivals',
+          enabled: true,
+          heading: 'New arrivals',
+        },
+        {
+          type: 'trust',
+          enabled: true,
+          heading: 'Built for match day',
+          items: [
+            { title: 'Premium Quality', description: 'Durable fabrics and sharp prints that hold up on the pitch.' },
+            { title: 'Fast Delivery', description: 'Packed from the store warehouse and sent out quickly.' },
+            { title: 'Secure Payments', description: 'Checkout totals are calculated by the commerce engine.' },
+            { title: 'Easy Returns', description: 'Contact the store if a kit does not fit as expected.' },
+          ],
+        },
+        {
+          type: 'cta',
+          enabled: true,
+          heading: 'Find your jersey',
+          subheading: 'Club, national, IPL, and custom kits in one catalog.',
+          ctaLabel: 'Browse all jerseys',
+          ctaHref: '/products',
+        },
+      ],
     } as Prisma.InputJsonValue,
     contactPhone: tenant.contactPhone,
     contactEmail: tenant.contactEmail,
@@ -948,6 +1000,36 @@ async function main(): Promise<void> {
     },
   });
 
+  const customizationDefaults: Array<{
+    name: string;
+    description: string;
+    pricingType: 'FIXED' | 'PER_ITEM' | 'PERCENTAGE';
+    price: string;
+    sortOrder: number;
+  }> = [
+    { name: 'Name printing', description: 'Player name on the back', pricingType: 'PER_ITEM', price: '150.00', sortOrder: 1 },
+    { name: 'Number printing', description: 'Jersey number on the back', pricingType: 'PER_ITEM', price: '120.00', sortOrder: 2 },
+    { name: 'Team logo', description: 'Club or team crest', pricingType: 'FIXED', price: '2500.00', sortOrder: 3 },
+    { name: 'Sponsor logo', description: 'Front sponsor print', pricingType: 'FIXED', price: '3500.00', sortOrder: 4 },
+    { name: 'Sleeve patch', description: 'Sleeve competition or sponsor patch', pricingType: 'PER_ITEM', price: '80.00', sortOrder: 5 },
+    { name: 'Custom design', description: 'Bespoke artwork and layout', pricingType: 'PERCENTAGE', price: '10.00', sortOrder: 6 },
+  ];
+  for (const option of customizationDefaults) {
+    const existing = await prisma.customizationOption.findFirst({
+      where: { tenantId: tenant.id, name: option.name },
+    });
+    if (existing) {
+      await prisma.customizationOption.update({
+        where: { id: existing.id },
+        data: option,
+      });
+    } else {
+      await prisma.customizationOption.create({
+        data: { tenantId: tenant.id, ...option, status: 'ACTIVE' },
+      });
+    }
+  }
+
   for (const name of EXPENSE_CATEGORIES) {
     const slug = slugify(name);
     await prisma.expenseCategory.upsert({
@@ -967,6 +1049,10 @@ async function main(): Promise<void> {
     postalCode: '400053',
     notes: 'Development customer — frequent club jersey buyer',
   });
+  await prisma.customer.update({
+    where: { id: rahul.id },
+    data: { passwordHash },
+  });
   const ananya = await upsertCustomer(tenant.id, {
     name: 'Ananya Iyer',
     phone: '9988776655',
@@ -976,10 +1062,6 @@ async function main(): Promise<void> {
     state: 'Karnataka',
     postalCode: '560001',
     notes: 'Development customer — IPL kits',
-  });
-
-  const owner = await prisma.user.findFirst({
-    where: { tenantId: tenant.id, email: ROLE_NAMES.OWNER.email },
   });
 
   const seedTags = ['Football', 'Cricket', 'IPL', 'VIP'] as const;
@@ -1061,6 +1143,30 @@ async function main(): Promise<void> {
   });
 
   await prisma.documentSequence.upsert({
+    where: { tenantId_documentType: { tenantId: tenant.id, documentType: 'CUSTOM_ORDER' } },
+    update: { prefix: 'CO', padLength: 6 },
+    create: {
+      tenantId: tenant.id,
+      documentType: 'CUSTOM_ORDER',
+      prefix: 'CO',
+      nextNumber: 1,
+      padLength: 6,
+    },
+  });
+
+  await prisma.documentSequence.upsert({
+    where: { tenantId_documentType: { tenantId: tenant.id, documentType: 'CUSTOM_ORDER_QUOTE' } },
+    update: { prefix: 'QT', padLength: 6 },
+    create: {
+      tenantId: tenant.id,
+      documentType: 'CUSTOM_ORDER_QUOTE',
+      prefix: 'QT',
+      nextNumber: 1,
+      padLength: 6,
+    },
+  });
+
+  await prisma.documentSequence.upsert({
     where: { tenantId_documentType: { tenantId: tenant.id, documentType: 'PURCHASE_ORDER' } },
     update: { prefix: 'PO', padLength: 6 },
     create: {
@@ -1075,6 +1181,18 @@ async function main(): Promise<void> {
     where: { tenantId: tenant.id, documentType: 'PURCHASE_ORDER', nextNumber: { lt: 4 } },
     data: { nextNumber: 4 },
   });
+
+  const cashier = await prisma.user.findFirst({
+    where: { tenantId: tenant.id, email: ROLE_NAMES.CASHIER.email },
+  });
+  if (owner) {
+    await seedErpDashboard(prisma, {
+      tenantId: tenant.id,
+      ownerId: owner.id,
+      cashierId: cashier?.id ?? owner.id,
+    });
+    await reconcileInventoryFromMovements(prisma, tenant.id);
+  }
 
   console.warn('Seed complete. DEVELOPMENT-ONLY login emails:');
   for (const code of ROLE_CODES) {

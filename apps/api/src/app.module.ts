@@ -22,6 +22,7 @@ import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { WebsiteModule } from './website/website.module';
+import { StoreModule } from './store/store.module';
 import { AuditModule } from './audit/audit.module';
 import { BackupsModule } from './backups/backups.module';
 import { Phase2Module } from './phase2/phase2.module';
@@ -29,6 +30,8 @@ import { StorageModule } from './storage/storage.module';
 import { CoreModule } from './common/core.module';
 import { PosModule } from './pos/pos.module';
 import { ReportsModule } from './reports/reports.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { CustomOrdersModule } from './custom-orders/custom-orders.module';
 
 @Module({
   imports: [
@@ -73,10 +76,13 @@ import { ReportsModule } from './reports/reports.module';
     PaymentsModule,
     ExpensesModule,
     WebsiteModule,
+    StoreModule,
     AuditModule,
     BackupsModule,
     PosModule,
     ReportsModule,
+    DashboardModule,
+    CustomOrdersModule,
   ],
   controllers: [AppController],
 })

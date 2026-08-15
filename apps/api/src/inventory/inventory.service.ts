@@ -266,6 +266,56 @@ export class InventoryService {
     };
   }
 
+  async getRecentMovements(tenantId: string, query: InventoryMovementQueryDto) {
+    const { page, pageSize, skip, take } = toPaginationArgs(query);
+    const createdAt: Prisma.DateTimeFilter = {};
+    if (query.from) {
+      createdAt.gte = new Date(query.from);
+    }
+    if (query.to) {
+      createdAt.lte = new Date(query.to);
+    }
+    const search = query.search?.trim();
+    const where: Prisma.InventoryMovementWhereInput = {
+      tenantId,
+      ...(query.type ? { type: query.type } : {}),
+      ...(query.from || query.to ? { createdAt } : {}),
+      ...(search
+        ? {
+            OR: [
+              { reason: { contains: search, mode: 'insensitive' } },
+              { referenceId: { contains: search, mode: 'insensitive' } },
+              { referenceType: { contains: search, mode: 'insensitive' } },
+              { productVariant: { sku: { contains: search, mode: 'insensitive' } } },
+              { productVariant: { product: { name: { contains: search, mode: 'insensitive' } } } },
+            ],
+          }
+        : {}),
+    };
+    const [rows, totalItems] = await this.prisma.$transaction([
+      this.prisma.inventoryMovement.findMany({
+        where,
+        include: {
+          createdByUser: { select: { id: true, name: true } },
+          productVariant: { select: { sku: true, size: true, color: true, product: { select: { name: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.inventoryMovement.count({ where }),
+    ]);
+    return {
+      items: rows.map((row) => ({
+        ...toMovementItem(row),
+        productName: row.productVariant.product.name,
+        sku: row.productVariant.sku,
+        variantLabel: [row.productVariant.size, row.productVariant.color].filter(Boolean).join(' / ') || 'Default',
+      })),
+      meta: toPaginationMeta(page, pageSize, totalItems),
+    };
+  }
+
   async lookupByBarcode(tenantId: string, barcode: string) {
     const normalized = normalizeBarcode(barcode);
     if (!normalized) {

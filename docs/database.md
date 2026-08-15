@@ -90,14 +90,15 @@ Never use seeded credentials in production.
 | POS | `PosSession`, `PosCart`, `PosCartItem`, `DocumentSequence` |
 | Storefront cart | `Cart`, `CartItem` |
 | Orders | `Order`, `OrderItem`, `OrderShippingAddress`, `CheckoutIdempotency` |
-| Payments | `Payment` (sale or order) |
+| Custom orders | `CustomOrder`, `CustomOrderItem`, `CustomOrderQuote`, `CustomOrderDesign`, `CustomOrderDesignApproval`, `CustomOrderFile`, `CustomizationOption`, `CustomOrderCustomization`, timeline/notes/production/communication events |
+| Payments | `Payment` (sale, order, or custom order) |
 | Refunds | `Refund`, `RefundItem`, `RefundPayment` |
 | Expenses | `ExpenseCategory`, `Expense` |
-| Website | `WebsiteSettings` |
+| Website | `WebsiteSettings`, `TenantHost` |
 | Audit | `AuditLog` |
 | Backup (schema only) | `BackupSettings`, `BackupRun` |
 
-Customer payments for sales and orders use one generic `Payment` table (`saleId` / `orderId`). That table is the SalePayment and OrderPayment ledger. Supplier payouts are separate (`SupplierPayment`) because they are accounts-payable records.
+Customer payments for sales, ecommerce orders, and custom jersey orders use one generic `Payment` table (`saleId` / `orderId` / `customOrderId`). That table is the SalePayment, OrderPayment, and CustomOrderPayment ledger. Supplier payouts are separate (`SupplierPayment`) because they are accounts-payable records.
 
 ## Indexes and uniqueness
 
@@ -112,6 +113,9 @@ Composite unique constraints include:
 - `sales (tenantId, invoiceNumber)`
 - `document_sequences (tenantId, documentType)`
 - `orders (tenantId, orderNumber)`
+- `custom_orders (tenantId, orderNumber)` and `custom_orders.public_id`
+- `custom_order_quotes (customOrderId, version)` and `(tenantId, quoteNumber, version)`
+- `custom_order_designs (customOrderId, version)`
 - `carts.public_id`, `carts.token_hash`
 - `checkout_idempotency (tenantId, keyHash)`
 - `tags (tenantId, slug)`
@@ -166,12 +170,19 @@ erDiagram
   Order ||--o{ OrderItem : lines
   Order ||--o| OrderShippingAddress : ships
   Order ||--o| Cart : converted_from
+  Customer ||--o{ CustomOrder : commissions
+  CustomOrder ||--o{ CustomOrderItem : lines
+  CustomOrder ||--o{ CustomOrderQuote : quotes
+  CustomOrder ||--o{ CustomOrderDesign : designs
   Sale ||--o{ Payment : collected
   Order ||--o{ Payment : collected
+  CustomOrder ||--o{ Payment : collected
   Tenant ||--o{ ExpenseCategory : has
   ExpenseCategory ||--o{ Expense : classified
   User ||--o{ AuditLog : performs
 ```
+
+`Expense.status` is `ACTIVE` or `VOIDED`. Voiding retains the row. Dashboard and expense reports sum only `ACTIVE` expenses. See [expenses.md](expenses.md) and [dashboard.md](dashboard.md).
 
 Category hierarchy example:
 

@@ -102,13 +102,18 @@ export interface CartItemDto {
   id: string;
   productVariantId: string;
   productName: string;
+  productSlug: string;
   sku: string;
   size: string | null;
   color: string | null;
   quantity: number;
   unitPrice: MoneyString;
+  currentUnitPrice: MoneyString;
   lineTotal: MoneyString;
   availableQuantity: number;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  priceChanged: boolean;
 }
 
 export interface CartTotalsDto {

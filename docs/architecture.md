@@ -4,7 +4,7 @@
 
 Jersey Commerce Engine is a multi-application commerce platform. It includes a customer storefront, POS, ERP/admin, inventory, purchasing, CRM, payments, expenses, reporting, CMS, roles, audit logs, and multi-tenant isolation.
 
-Phase 1 delivered the **database and backend foundation**. Later phases add authentication, the product catalog, and the inventory ledger. POS checkout UI, storefront checkout, and payment gateways belong to later phases.
+Phase 1 delivered the **database and backend foundation**. Authentication, catalog, inventory, POS backend, CRM, purchasing, ecommerce orders, the premium storefront, and custom jersey orders are implemented. POS checkout UI, website CMS, and live payment gateways belong to later phases.
 
 ## System shape
 
@@ -36,10 +36,10 @@ All HTTP clients talk to one API. The API owns persistence, caching, validation,
 
 | App | Responsibility now | Responsibility later |
 | --- | --- | --- |
-| Storefront | Tenant-agnostic Next.js shell | Catalog, checkout, CMS-driven pages |
-| Admin | Tenant-agnostic Next.js shell | ERP, inventory, purchases, CRM, reports, users |
+| Storefront | Tenant-aware catalog, cart, checkout, accounts, custom-order enquiry | CMS-driven pages and policy content |
+| Admin | Tenant-aware ERP: dashboard, sales, inventory, purchasing, CRM, expenses, reports, users | Website CMS and marketing automation |
 | POS | Tenant-agnostic Next.js shell | Register sales, in-store payments, receipts |
-| API | Health, versioned read APIs, Prisma domain model, Redis | Auth, write APIs, tenancy enforcement from sessions |
+| API | Versioned commerce APIs, Prisma, Redis, tenant isolation, RBAC | Live payment gateways and messaging |
 
 ## Shared packages
 
@@ -64,9 +64,9 @@ Every independent business is a tenant. `Tenant` owns shop names, branding, cata
 - brand colors
 - other business-specific copy
 
-Theme tokens in `@jersey-commerce/ui` are generic defaults. Tenant branding will override tokens at runtime in a later phase.
+Theme tokens in `@jersey-commerce/ui` are generic defaults. The storefront overrides them at runtime from `WebsiteSettings` and tenant branding. See [storefront.md](storefront.md).
 
-Authentication, RBAC, tenant isolation, and the product catalog are implemented. See [auth.md](auth.md). The inventory ledger is implemented in Phase 4; see [inventory.md](inventory.md). The POS backend (sessions, carts, transactional sales) is implemented in Phase 5; see [pos.md](pos.md). Customers and CRM are implemented in Phase 7; see [customers.md](customers.md). Suppliers, purchase orders, receiving, and supplier payables are implemented in Phase 8; see [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md). The ecommerce order engine is implemented in Phase 9; see [orders.md](orders.md). POS checkout UI, storefront UI, and payment gateways belong to later phases.
+Authentication, RBAC, tenant isolation, and the product catalog are implemented. See [auth.md](auth.md). The inventory ledger is implemented in Phase 4; see [inventory.md](inventory.md). The POS backend (sessions, carts, transactional sales) is implemented in Phase 5; see [pos.md](pos.md). Customers and CRM are implemented in Phase 7; see [customers.md](customers.md). Suppliers, purchase orders, receiving, and supplier payables are implemented in Phase 8; see [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md). The ecommerce order engine is implemented in Phase 9; see [orders.md](orders.md). The storefront catalog and checkout UI are implemented in Phase 10. Custom and bulk jersey orders are implemented in Phase 11; see [custom-orders.md](custom-orders.md). The ERP dashboard, reporting engine, and expenses module are implemented in Phase 12; see [dashboard.md](dashboard.md), [reports.md](reports.md), and [expenses.md](expenses.md). Payment gateways and messaging campaigns belong to later phases.
 
 ## API conventions
 
@@ -82,7 +82,7 @@ Authentication, RBAC, tenant isolation, and the product catalog are implemented.
 - Structured request logs via `nestjs-pino`, with authorization headers redacted
 - DTO validation via `class-validator` / `class-transformer`
 
-Domain modules exist for auth, tenants, users, roles, permissions, products, categories, inventory, customers, suppliers, purchases, sales, orders, payments, expenses, website, and audit. Catalog, inventory, purchasing, and order writes go through their dedicated services. Storefront UI and payment gateways belong to later phases.
+Domain modules exist for auth, tenants, users, roles, permissions, products, categories, inventory, customers, suppliers, purchases, sales, orders, custom orders, payments, expenses, website, storefront, and audit. Catalog, inventory, purchasing, order, and custom-order writes go through their dedicated services. WhatsApp/email campaigns and payment gateways belong to later phases.
 
 ## Backend module map
 
@@ -99,7 +99,6 @@ apps/api/src/
   categories/
   inventory/     Variant stock, reservations, and append-only movement ledger
   pos/           Register sessions, carts, lookup, and transactional sales
-  payments/      Provider-agnostic payment capture and history
   reports/       Sales, payment, POS session, and purchasing summaries from ledgers
   receipts/      Frozen receipt payloads and printable HTML
   customers/     CRM profiles, notes, tags, derived spend and segments
@@ -107,8 +106,9 @@ apps/api/src/
   purchases/     Purchase orders, receiving, and supplier payments
   sales/
   orders/        Ecommerce, WhatsApp, and manual orders; status machine; payment intents
-  store/         Public cart, checkout, and customer order history
-  payments/      Gateway-agnostic Payment ledger
+  custom-orders/ Team/bulk jersey enquiries, quotes, designs, deposits, production
+  store/         Public cart, checkout, customer orders, and custom-order enquiry
+  payments/      Gateway-agnostic Payment ledger (sales, orders, custom orders)
   expenses/
   website/
   audit/

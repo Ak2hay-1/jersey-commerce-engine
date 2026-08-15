@@ -59,6 +59,33 @@ export class PaymentProcessor {
     return prepared;
   }
 
+  prepareCapture(input: SplitPaymentInput & { amount: Prisma.Decimal | string }): PreparedPayment {
+    const billed =
+      input.amount instanceof Prisma.Decimal ? roundMoney(input.amount) : roundMoney(parseMoney(String(input.amount), 'amount'));
+    if (billed.lte(0)) {
+      throw new BadRequestException('Payment amount must be greater than zero.');
+    }
+    const provider = this.registry.resolve(input.method);
+    const amountReceived =
+      input.amountReceived == null || input.amountReceived === ''
+        ? null
+        : input.amountReceived instanceof Prisma.Decimal
+          ? input.amountReceived
+          : parseMoney(String(input.amountReceived), 'amountReceived');
+    return provider.capture(
+      {
+        method: input.method,
+        amount: billed,
+        amountReceived,
+        reference: input.reference,
+        provider: input.provider,
+        confirmed: input.confirmed,
+        metadata: input.metadata,
+      },
+      billed,
+    );
+  }
+
   prepareRefund(input: {
     method: PaymentMethod;
     amount: Prisma.Decimal;

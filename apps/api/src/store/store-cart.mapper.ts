@@ -8,7 +8,11 @@ export const cartInclude = {
     include: {
       productVariant: {
         include: {
-          product: true,
+          product: {
+            include: {
+              images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 },
+            },
+          },
           inventory: true,
         },
       },
@@ -22,17 +26,24 @@ export type CartRecord = Prisma.CartGetPayload<{ include: typeof cartInclude }>;
 function toItem(item: CartRecord['items'][number], unitPrice: Prisma.Decimal): CartItemDto {
   const onHand = item.productVariant.inventory?.quantity ?? 0;
   const reserved = item.productVariant.inventory?.reservedQuantity ?? 0;
+  const currentUnitPrice = money(item.productVariant.sellingPrice.toString());
+  const image = item.productVariant.product.images[0];
   return {
     id: item.publicId,
     productVariantId: item.productVariantId,
     productName: item.productVariant.product.name,
+    productSlug: item.productVariant.product.slug,
     sku: item.productVariant.sku,
     size: item.productVariant.size,
     color: item.productVariant.color,
     quantity: item.quantity,
     unitPrice: moneyString(unitPrice),
-    lineTotal: moneyString(lineGross(unitPrice, item.quantity)),
+    currentUnitPrice: moneyString(currentUnitPrice),
+    lineTotal: moneyString(lineGross(currentUnitPrice, item.quantity)),
     availableQuantity: availableQuantity(onHand, reserved),
+    imageUrl: image?.url ?? null,
+    imageAlt: image?.altText ?? item.productVariant.product.name,
+    priceChanged: moneyString(unitPrice) !== moneyString(currentUnitPrice),
   };
 }
 

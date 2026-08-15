@@ -40,6 +40,12 @@ export const PERMISSION_CODES = [
   'supplierPayments.read',
   'supplierPayments.create',
   'reports.read',
+  'reports.export',
+  'dashboard.read',
+  'expenses.read',
+  'expenses.create',
+  'expenses.update',
+  'expenses.delete',
   'users.read',
   'users.manage',
   'settings.read',
@@ -49,6 +55,14 @@ export const PERMISSION_CODES = [
   'pos.access',
   'pos.session.open',
   'pos.session.close',
+  'customOrders.read',
+  'customOrders.create',
+  'customOrders.update',
+  'customOrders.quote',
+  'customOrders.design',
+  'customOrders.approve',
+  'customOrders.production',
+  'customOrders.payment',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
@@ -157,6 +171,76 @@ const PERMISSION_META: Partial<
     group: 'orders',
     name: 'Cancel orders',
     description: 'Cancel an ecommerce, WhatsApp, or manual order and release reserved stock.',
+  },
+  'customOrders.read': {
+    group: 'customOrders',
+    name: 'Read custom orders',
+    description: 'View custom, team, and bulk jersey orders, quotes, designs, and timelines.',
+  },
+  'customOrders.create': {
+    group: 'customOrders',
+    name: 'Create custom orders',
+    description: 'Create custom jersey enquiries and convert them into structured orders.',
+  },
+  'customOrders.update': {
+    group: 'customOrders',
+    name: 'Update custom orders',
+    description: 'Update custom-order details, items, and limited enquiry fields.',
+  },
+  'customOrders.quote': {
+    group: 'customOrders',
+    name: 'Quote custom orders',
+    description: 'Create and version quotations for custom jersey orders.',
+  },
+  'customOrders.design': {
+    group: 'customOrders',
+    name: 'Manage custom-order designs',
+    description: 'Upload design versions and request customer approval.',
+  },
+  'customOrders.approve': {
+    group: 'customOrders',
+    name: 'Approve custom-order designs',
+    description: 'Mark a design version as approved on behalf of the business.',
+  },
+  'customOrders.production': {
+    group: 'customOrders',
+    name: 'Manage custom-order production',
+    description: 'Update production status and write internal production notes.',
+  },
+  'customOrders.payment': {
+    group: 'customOrders',
+    name: 'Record custom-order payments',
+    description: 'Record deposits and balance payments against custom orders.',
+  },
+  'dashboard.read': {
+    group: 'dashboard',
+    name: 'Read dashboard',
+    description: 'View the ERP dashboard. Individual widgets still require their domain permissions.',
+  },
+  'reports.export': {
+    group: 'reports',
+    name: 'Export reports',
+    description: 'Download report CSV exports. Exports are audited and remain tenant-scoped.',
+  },
+  'expenses.read': {
+    group: 'expenses',
+    name: 'Read expenses',
+    description: 'View expense records and expense totals for the tenant.',
+  },
+  'expenses.create': {
+    group: 'expenses',
+    name: 'Create expenses',
+    description: 'Record a new operating expense.',
+  },
+  'expenses.update': {
+    group: 'expenses',
+    name: 'Update expenses',
+    description: 'Edit an active expense. Historical voided expenses cannot be rewritten.',
+  },
+  'expenses.delete': {
+    group: 'expenses',
+    name: 'Void expenses',
+    description: 'Void an expense. Financial history is preserved; records are not deleted.',
   },
 };
 

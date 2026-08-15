@@ -33,6 +33,6 @@ import { AuthRateLimiterService } from './rate-limit/auth-rate-limiter.service';
     JwtStrategy,
     AuthRateLimiterService,
   ],
-  exports: [PasswordService, TokenService, AuthSessionService],
+  exports: [PasswordService, TokenService, AuthSessionService, AuthRateLimiterService],
 })
 export class AuthModule {}

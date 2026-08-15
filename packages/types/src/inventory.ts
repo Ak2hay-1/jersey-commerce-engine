@@ -86,6 +86,9 @@ export interface InventoryMovementItem {
   unitCost: MoneyString | null;
   user: { id: string; name: string } | null;
   createdAt: string;
+  productName?: string;
+  sku?: string;
+  variantLabel?: string;
 }
 
 export interface InventoryMutationResult {

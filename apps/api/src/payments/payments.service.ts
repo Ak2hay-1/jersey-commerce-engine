@@ -172,6 +172,7 @@ export class PaymentsService {
       tenantId: string;
       saleId: string | null;
       orderId: string | null;
+      customOrderId?: string | null;
       posSessionId: string | null;
       createdById: string | null;
       payments: PreparedPayment[];
@@ -186,6 +187,7 @@ export class PaymentsService {
           tenantId: input.tenantId,
           saleId: input.saleId,
           orderId: input.orderId,
+          customOrderId: input.customOrderId ?? null,
           posSessionId: input.posSessionId,
           createdById: input.createdById,
           amount: payment.amount,
@@ -232,6 +234,7 @@ export class PaymentsService {
     tenantId: string;
     saleId: string | null;
     orderId: string | null;
+    customOrderId?: string | null;
     posSessionId: string | null;
     amount: Prisma.Decimal;
     method: string;
@@ -251,6 +254,7 @@ export class PaymentsService {
       tenantId: payment.tenantId,
       saleId: payment.saleId,
       orderId: payment.orderId,
+      customOrderId: payment.customOrderId ?? null,
       posSessionId: payment.posSessionId,
       amount: moneyString(payment.amount),
       method: payment.method,

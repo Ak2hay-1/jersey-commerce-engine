@@ -22,9 +22,9 @@ Roles are tenant-scoped. Permissions are a global catalog keyed by `code`. Seede
 | --- | --- |
 | OWNER | All catalog codes |
 | MANAGER | All catalog codes except `settings.manage`. Includes `users.manage`. Cannot assign OWNER. |
-| CASHIER | catalog/customer/`sales.read`/`sales.create`/`sales.refund`; `orders.read/create/update/cancel`; `inventory.read`; `pos.access`, `pos.session.open`, `pos.session.close`. No `sales.discount`, `sales.cancel`, `customers.update`, `customers.notes`, or `customers.tags` by default. |
-| INVENTORY_MANAGER | catalog/stock/purchase/supplier including `inventory.read`, `inventory.adjust`, `inventory.manage`; `customers.read` |
-| WEBSITE_MANAGER | `products.read/create/update`, `website.read/update`, `customers.read`, `orders.read/create/update/cancel`; no inventory modification |
+| CASHIER | `dashboard.read`; catalog/customer/`sales.read`/`sales.create`/`sales.refund`; `orders.read/create/update/cancel`; `inventory.read`; `pos.access`, `pos.session.open`, `pos.session.close`. No `reports.read`, `expenses.*`, `sales.discount`, or `settings.manage`. |
+| INVENTORY_MANAGER | `dashboard.read`; catalog/stock/purchase/supplier including `inventory.read`, `inventory.adjust`, `inventory.manage`; `customers.read`. No `expenses.*` or `reports.read`. |
+| WEBSITE_MANAGER | `dashboard.read`; `products.read/create/update`, `website.read/update`, `customers.read`, `orders.read/create/update/cancel`; no inventory modification or financial reports |
 
 `@RequirePermissions('products.create')` is enforced by `PermissionsGuard`. Missing permission → **403**. Missing/invalid token → **401**.
 

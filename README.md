@@ -4,7 +4,7 @@ Production-ready, multi-tenant commerce platform for storefront, in-store POS, a
 
 The first deployment target is a jersey and sportswear business. The architecture does not hard-code shop names, logos, products, domains, colors, or other business identity. Those values belong to tenants and will be loaded at runtime in later phases.
 
-This repository currently contains the **Phase 1–9 backend**: monorepo layout, authentication, catalog, inventory, POS sales, payments, CRM, purchasing, the ecommerce order engine, PostgreSQL/Redis, Prisma domain models, NestJS modules, API versioning, seed data, and documentation.
+This repository currently contains **Phases 1–11**: monorepo layout, authentication, catalog, inventory, POS sales, payments, CRM, purchasing, the ecommerce order engine, a tenant-aware premium storefront, custom/bulk jersey orders, PostgreSQL/Redis, Prisma domain models, NestJS modules, API versioning, seed data, and documentation. POS checkout UI, website CMS, and live payment gateways belong to later phases.
 
 ## Architecture
 
@@ -92,7 +92,7 @@ Liveness: http://localhost:4000/health
 Readiness: http://localhost:4000/ready  
 Versioned API: http://localhost:4000/api/v1/...
 
-Details: [docs/local-development.md](docs/local-development.md) and [docs/database.md](docs/database.md).
+Details: [docs/local-development.md](docs/local-development.md), [docs/storefront.md](docs/storefront.md), [docs/custom-orders.md](docs/custom-orders.md), and [docs/database.md](docs/database.md).
 
 ## Available commands
 
@@ -108,7 +108,7 @@ Details: [docs/local-development.md](docs/local-development.md) and [docs/databa
 | `npm run typecheck` | TypeScript checks across the workspace |
 | `npm run lint` | ESLint across the workspace |
 | `npm run format` | Format files with Prettier |
-| `npm run test` | API unit tests |
+| `npm run test` | API unit tests and storefront Vitest |
 | `npm run docker:up` | Start PostgreSQL and Redis |
 | `npm run docker:down` | Stop Docker services |
 | `npm run prisma:validate` | Validate the Prisma schema |

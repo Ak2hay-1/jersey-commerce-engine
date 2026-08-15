@@ -66,6 +66,7 @@ export function toCustomerProfile(input: {
   preference?: { emailOptIn: boolean; smsOptIn: boolean; whatsappOptIn: boolean } | null;
   tags: Array<{ id: string; name: string; slug: string }>;
   metrics: CustomerMetricsDto;
+  customOrderMetrics: CustomerMetricsDto;
   segments: CustomerSegment[];
   primarySegment: CustomerSegment | null;
 }): CustomerProfile {
@@ -79,6 +80,7 @@ export function toCustomerProfile(input: {
     preference: toPreferenceDto(input.preference),
     tags: input.tags.map(toTagDto),
     metrics: input.metrics,
+    customOrderMetrics: input.customOrderMetrics,
     segments: input.segments,
     primarySegment: input.primarySegment,
   };

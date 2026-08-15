@@ -155,6 +155,7 @@ export class CustomersService {
       inactiveDays: query?.inactiveDays,
     });
     const metrics = await this.insights.metricsForCustomer(tenantId, id);
+    const customOrderMetrics = await this.insights.customOrderMetricsForCustomer(tenantId, id);
     const { segments, primarySegment } = segmentsFor({
       completedPurchaseCount: metrics.totalOrders,
       totalSpent: moneyNumber(metrics.totalSpent),
@@ -166,6 +167,7 @@ export class CustomersService {
       ...customer,
       tags: customer.tags.map((row) => row.tag),
       metrics,
+      customOrderMetrics,
       segments,
       primarySegment,
     });
@@ -222,6 +224,7 @@ export class CustomersService {
       ...created,
       tags: created.tags.map((row) => row.tag),
       metrics,
+      customOrderMetrics: computePurchaseMetrics([]),
       segments,
       primarySegment,
     });
@@ -279,12 +282,13 @@ export class CustomersService {
 
   async remove(tenantId: string, id: string, actor: AuthPrincipal) {
     const existing = await this.findById(tenantId, id);
-    const [sales, orders, carts] = await Promise.all([
+    const [sales, orders, carts, customOrders] = await Promise.all([
       this.prisma.sale.count({ where: { tenantId, customerId: id } }),
       this.prisma.order.count({ where: { tenantId, customerId: id } }),
       this.prisma.posCart.count({ where: { tenantId, customerId: id } }),
+      this.prisma.customOrder.count({ where: { tenantId, customerId: id } }),
     ]);
-    if (sales + orders + carts > 0) {
+    if (sales + orders + carts + customOrders > 0) {
       await this.prisma.customer.update({
         where: { id: existing.id },
         data: { status: 'INACTIVE' },

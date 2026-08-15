@@ -1,1 +1,36 @@
 @import '@jersey-commerce/ui/styles';
+
+:root {
+  --font-heading: 'Barlow Condensed', Inter, sans-serif;
+  --font-body: Inter, system-ui, sans-serif;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 60;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  padding: 0.5rem 0.75rem;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}

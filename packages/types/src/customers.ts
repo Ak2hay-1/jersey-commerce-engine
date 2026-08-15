@@ -53,6 +53,7 @@ export interface CustomerProfile extends CustomerSummary, CustomerAddressDto {
   preference: CustomerPreferenceDto;
   tags: CustomerTagDto[];
   metrics: CustomerMetricsDto;
+  customOrderMetrics: CustomerMetricsDto;
   segments: CustomerSegment[];
   primarySegment: CustomerSegment | null;
 }
@@ -60,11 +61,11 @@ export interface CustomerProfile extends CustomerSummary, CustomerAddressDto {
 export interface CustomerHistoryItem {
   id: string;
   type: CustomerHistoryType;
-  source: OrderSource | 'POS';
+  source: OrderSource | 'POS' | 'CUSTOM_ORDER';
   reference: string;
   date: string;
   total: MoneyString;
-  status: SaleStatus | OrderStatus;
+  status: SaleStatus | OrderStatus | string;
   itemCount: number;
 }
 

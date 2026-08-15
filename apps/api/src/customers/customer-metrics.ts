@@ -4,6 +4,7 @@ import { DEFAULT_CRM_SETTINGS, resolveCrmSettings, type CrmSettings } from './cr
 export const CRM_COUNTED_SALE_STATUSES = ['COMPLETED', 'PARTIALLY_REFUNDED'] as const;
 export const CRM_EXCLUDED_SALE_STATUSES = ['CANCELLED', 'VOIDED', 'REFUNDED'] as const;
 export const CRM_COUNTED_ORDER_STATUSES = ['COMPLETED'] as const;
+export const CRM_COUNTED_CUSTOM_ORDER_STATUSES = ['COMPLETED'] as const;
 export const CRM_EXCLUDED_ORDER_STATUSES = ['CANCELLED', 'RETURNED', 'REFUNDED'] as const;
 
 export type CountedPurchase = {

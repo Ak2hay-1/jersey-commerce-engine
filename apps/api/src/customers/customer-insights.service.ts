@@ -11,6 +11,7 @@ import { Prisma } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPaginationArgs, toPaginationMeta } from '../common/dto/pagination-query.dto';
 import {
+  CRM_COUNTED_CUSTOM_ORDER_STATUSES,
   CRM_COUNTED_ORDER_STATUSES,
   CRM_COUNTED_SALE_STATUSES,
   computePurchaseMetrics,
@@ -84,9 +85,24 @@ export class CustomerInsightsService {
     return computePurchaseMetrics(await this.purchasesForCustomer(tenantId, customerId, range));
   }
 
+  async customOrderMetricsForCustomer(tenantId: string, customerId: string, range?: DateRange) {
+    const createdAt = this.createdAtFilter(range);
+    const orders = await this.prisma.customOrder.findMany({
+      where: { tenantId, customerId, status: { in: [...CRM_COUNTED_CUSTOM_ORDER_STATUSES] }, ...(createdAt ? { createdAt } : {}) },
+      select: { total: true, createdAt: true, estimatedQuantity: true, items: { select: { quantity: true } } },
+    });
+    return computePurchaseMetrics(
+      orders.map((order) => ({
+        total: moneyNumber(order.total),
+        itemQuantity: order.items.reduce((sum, item) => sum + item.quantity, 0) || order.estimatedQuantity,
+        createdAt: order.createdAt,
+      })),
+    );
+  }
+
   async history(tenantId: string, customerId: string, query: CustomerHistoryQueryDto) {
     const { page, pageSize, skip, take } = toPaginationArgs(query);
-    const [sales, orders] = await Promise.all([
+    const [sales, orders, customOrders] = await Promise.all([
       this.prisma.sale.findMany({
         where: { tenantId, customerId },
         select: {
@@ -108,6 +124,19 @@ export class CustomerInsightsService {
           total: true,
           status: true,
           createdAt: true,
+          items: { select: { quantity: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.customOrder.findMany({
+        where: { tenantId, customerId },
+        select: {
+          id: true,
+          orderNumber: true,
+          total: true,
+          status: true,
+          createdAt: true,
+          estimatedQuantity: true,
           items: { select: { quantity: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -135,6 +164,16 @@ export class CustomerInsightsService {
         status: order.status,
         itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
       })),
+      ...customOrders.map((order) => ({
+        id: order.id,
+        type: 'CUSTOM_ORDER' as const,
+        source: 'CUSTOM_ORDER' as const,
+        reference: order.orderNumber,
+        date: toIso(order.createdAt),
+        total: moneyString(moneyNumber(order.total)),
+        status: order.status,
+        itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0) || order.estimatedQuantity,
+      })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return {
@@ -145,7 +184,7 @@ export class CustomerInsightsService {
 
   async activity(tenantId: string, customerId: string, createdAt: Date, query: CustomerHistoryQueryDto) {
     const { page, pageSize, skip, take } = toPaginationArgs(query);
-    const [sales, orders, notes, tags] = await Promise.all([
+    const [sales, orders, customOrders, notes, tags] = await Promise.all([
       this.prisma.sale.findMany({
         where: { tenantId, customerId },
         select: { invoiceNumber: true, total: true, status: true, createdAt: true },
@@ -153,6 +192,10 @@ export class CustomerInsightsService {
       this.prisma.order.findMany({
         where: { tenantId, customerId },
         select: { orderNumber: true, source: true, total: true, status: true, createdAt: true },
+      }),
+      this.prisma.customOrder.findMany({
+        where: { tenantId, customerId },
+        select: { orderNumber: true, total: true, status: true, createdAt: true },
       }),
       this.prisma.customerNote.findMany({
         where: { tenantId, customerId },
@@ -183,6 +226,15 @@ export class CustomerInsightsService {
         amount: moneyString(moneyNumber(order.total)),
         status: order.status,
         source: order.source,
+      })),
+      ...customOrders.map((order) => ({
+        at: toIso(order.createdAt),
+        type: 'CUSTOM_ORDER' as const,
+        title: 'Custom jersey order',
+        reference: order.orderNumber,
+        amount: moneyString(moneyNumber(order.total)),
+        status: order.status,
+        source: 'CUSTOM_ORDER',
       })),
       ...notes.map((note) => ({
         at: toIso(note.createdAt),
@@ -360,7 +412,7 @@ export class CustomerInsightsService {
 
   private async aggregatesByCustomer(tenantId: string, range?: DateRange) {
     const createdAt = this.createdAtFilter(range);
-    const [sales, orders, refunds] = await Promise.all([
+    const [sales, orders, customOrders, refunds] = await Promise.all([
       this.prisma.sale.groupBy({
         by: ['customerId'],
         where: {
@@ -380,6 +432,18 @@ export class CustomerInsightsService {
           tenantId,
           customerId: { not: null },
           status: { in: [...CRM_COUNTED_ORDER_STATUSES] },
+          ...(createdAt ? { createdAt } : {}),
+        },
+        _sum: { total: true },
+        _count: { _all: true },
+        _min: { createdAt: true },
+        _max: { createdAt: true },
+      }),
+      this.prisma.customOrder.groupBy({
+        by: ['customerId'],
+        where: {
+          tenantId,
+          status: { in: [...CRM_COUNTED_CUSTOM_ORDER_STATUSES] },
           ...(createdAt ? { createdAt } : {}),
         },
         _sum: { total: true },
@@ -451,6 +515,15 @@ export class CustomerInsightsService {
       );
     }
     for (const row of orders) {
+      apply(
+        row.customerId,
+        moneyNumber(row._sum.total),
+        row._count._all,
+        row._min.createdAt,
+        row._max.createdAt,
+      );
+    }
+    for (const row of customOrders) {
       apply(
         row.customerId,
         moneyNumber(row._sum.total),

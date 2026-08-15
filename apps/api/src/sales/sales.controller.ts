@@ -1,10 +1,10 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { TenantId } from '../common/decorators/tenant-id.decorator';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { TenantScoped } from '../common/guards/tenant.guard';
 import { SalesService } from './sales.service';
+import { SaleQueryDto } from './dto/sale-query.dto';
 
 @Controller('sales')
 @ApiTags('sales')
@@ -15,7 +15,7 @@ export class SalesController {
 
   @Get()
   @ApiOperation({ summary: 'List POS sales for the current tenant' })
-  findAll(@TenantId() tenantId: string, @Query() query: PaginationQueryDto) {
+  findAll(@TenantId() tenantId: string, @Query() query: SaleQueryDto) {
     return this.salesService.findAll(tenantId, query);
   }
 

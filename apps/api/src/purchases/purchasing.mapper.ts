@@ -152,6 +152,7 @@ export function toSupplierPaymentDto(record: {
   paidAt: Date;
   createdAt: Date;
   createdById?: string | null;
+  supplier?: { id: string; name: string; status: string } | null;
 }) {
   return {
     id: record.id,
@@ -165,5 +166,6 @@ export function toSupplierPaymentDto(record: {
     paidAt: toIso(record.paidAt),
     createdAt: toIso(record.createdAt),
     createdById: record.createdById ?? null,
+    supplier: record.supplier ?? null,
   };
 }
