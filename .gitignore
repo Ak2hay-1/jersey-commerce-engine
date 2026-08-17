@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!**/.env.example
+
+# Build artifacts
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing and coverage
+coverage/
+.nyc_output/
+
+# Prisma generated client
+apps/api/generated/
+
+# Local object storage
+uploads/
+apps/api/uploads/
+
+# Caches and tooling
+.eslintcache
+.prettiercache
+.cache/
+.npm/
+.pnpm-store/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# Docker
+infra/docker/data/
+
+# Misc
+*.pem
+*.key
+.vercel
+.DS_Store

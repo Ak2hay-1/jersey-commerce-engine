@@ -1,0 +1,47 @@
+{
+  "name": "jersey-commerce-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant commerce engine for storefront, POS, and ERP/admin operations.",
+  "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npx --yes concurrently -k -n api,storefront,admin,pos -c blue,green,magenta,cyan \"npm run dev:api\" \"npm run dev:storefront\" \"npm run dev:admin\" \"npm run dev:pos\"",
+    "dev:storefront": "npm run dev -w @jersey-commerce/storefront",
+    "dev:admin": "npm run dev -w @jersey-commerce/admin",
+    "dev:pos": "npm run dev -w @jersey-commerce/pos",
+    "dev:api": "npm run build:packages && npm run dev -w @jersey-commerce/api",
+    "build:packages": "npm run build -w @jersey-commerce/types -w @jersey-commerce/validation -w @jersey-commerce/config -w @jersey-commerce/utils -w @jersey-commerce/ui",
+    "build:apps": "npm run build -w @jersey-commerce/api -w @jersey-commerce/storefront -w @jersey-commerce/admin -w @jersey-commerce/pos",
+    "build": "npm run build:packages && npm run build:apps",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "docker:logs": "docker compose -f infra/docker/docker-compose.yml logs -f",
+    "prisma:generate": "npm run prisma:generate -w apps/api",
+    "prisma:validate": "npm run prisma:validate -w apps/api",
+    "prisma:migrate": "npm run prisma:migrate -w apps/api",
+    "prisma:migrate:deploy": "npm run prisma:migrate:deploy -w apps/api",
+    "prisma:seed": "npm run prisma:seed -w apps/api",
+    "prisma:studio": "npm run prisma:studio -w apps/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.1"
+  }
+}
