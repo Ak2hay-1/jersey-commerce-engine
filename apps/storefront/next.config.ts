@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { NextConfig } from 'next';
 
-function apiImagePattern(): NonNullable<NextConfig['images']>['remotePatterns'] {
+function apiImagePattern(): Array<{ protocol: 'http' | 'https'; hostname: string; port?: string }> {
   const raw = process.env.NEXT_PUBLIC_API_URL;
   if (!raw) {
     return [];
