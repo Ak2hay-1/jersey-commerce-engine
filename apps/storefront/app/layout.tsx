@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
-import { Instrument_Serif, Inter } from 'next/font/google';
 import { headers } from 'next/headers';
 import './globals.css';
+import { instrument, inter } from '../lib/fonts';
 import { storeApi } from '../lib/api';
 import { serverStoreOptions } from '../lib/server-options';
 import { fallbackStore } from '../lib/fallback-store';
@@ -22,18 +22,6 @@ import { JsonLd, organizationJsonLd } from '../components/seo/json-ld';
 import { SmoothScroll } from '../components/motion/smooth-scroll';
 import { CustomCursor } from '../components/motion/custom-cursor';
 import { FilmGrain } from '../components/motion/film-grain';
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-body-face',
-});
-
-const instrument = Instrument_Serif({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-heading-face',
-});
 
 export const dynamic = 'force-dynamic';
 

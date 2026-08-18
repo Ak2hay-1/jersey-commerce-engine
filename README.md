@@ -96,7 +96,13 @@ Details: [docs/local-development.md](docs/local-development.md), [docs/storefron
 
 ## Production (Vultr IP, no domain)
 
-The shop is served at `http://YOUR_IP/`, admin at `:3001`, POS at `:3002`, and the API at `:4000`. See [docs/deployment.md](docs/deployment.md).
+From Windows PowerShell, after the repo is public:
+
+```powershell
+.\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root
+```
+
+Shop: `http://YOUR_IP/` · Admin: `:3001` · POS: `:3002` · API: `:4000`. See [docs/deployment.md](docs/deployment.md).
 
 ## Available commands
 

@@ -1,6 +1,8 @@
 # Production on a Vultr Ubuntu VM (IP access, no domain)
 
-Without a domain the apps are reached by **IP and port** over HTTP.
+Drive the Ubuntu VM from **Windows PowerShell**. The VM only needs git + Docker.
+
+Public repo: https://github.com/Ak2hay-1/jersey-commerce-engine.git
 
 | App | URL |
 | --- | --- |
@@ -8,92 +10,85 @@ Without a domain the apps are reached by **IP and port** over HTTP.
 | Admin | `http://YOUR_IP:3001/` |
 | POS | `http://YOUR_IP:3002/` |
 | API | `http://YOUR_IP:4000/` |
-| API health | `http://YOUR_IP:4000/health` |
+| Health | `http://YOUR_IP:4000/health` |
 | API docs | `http://YOUR_IP:4000/docs` |
 
-Postgres and Redis stay on the Docker network and are not published.
+Postgres and Redis stay private on the Docker network.
 
-`NEXT_PUBLIC_*` values are baked into the Next.js images at **build** time. If you change `PUBLIC_IP`, rebuild the frontend images.
+`NEXT_PUBLIC_*` values are baked into Next.js images at **build** time. If `PUBLIC_IP` changes, rebuild.
 
-## 1. Prepare the VM
+## From Windows PowerShell
 
-SSH in as root (or use sudo):
+Replace `YOUR_IP` and the SSH user (`root` on many Vultr images, sometimes `ubuntu` or `linuxuser`).
 
-```bash
-# after the repo is on the server
-sudo bash infra/docker/vm-setup.sh
+```powershell
+cd a:\jerzyfy
+.\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root
 ```
 
-That installs Docker, adds 4 GB swap, and opens ports 22, 80, 3001, 3002, and 4000.
+If you log in with a key:
 
-Copy the project to `/opt/jersey` with `git clone` or `scp -r`.
-
-## 2. Production env
-
-```bash
-cd /opt/jersey
-cp infra/docker/.env.production.example infra/docker/.env.production
-nano infra/docker/.env.production
+```powershell
+.\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root -SshKey $env:USERPROFILE\.ssh\id_ed25519
 ```
 
-Set `PUBLIC_IP` to the Vultr IPv4 address (no `http://`). Replace every `replace-with-…` secret. Use a Postgres password with letters and numbers only.
+The script will:
 
-## 3. Build and start
+1. SSH to the VM
+2. `git clone` (or `git pull`) the public GitHub repo into `/opt/jersey`
+3. Install Docker, add 4 GB swap, open ports 22 / 80 / 3001 / 3002 / 4000
+4. Create `.env.production` with random secrets the first time (printed once)
+5. Build and start the stack (15–30 minutes on 4 GB)
 
-On 4 GB RAM, build one service at a time:
+Also allow those ports in the **Vultr** firewall if you use one.
 
-```bash
-cd /opt/jersey
-export COMPOSE_PARALLEL_LIMIT=1
-npm run prod:up
-```
+## Create the first shop
 
-First build can take 15–30 minutes. Watch:
+Do **not** run `prisma:seed` in production. After `http://YOUR_IP:4000/health` returns 200, in PowerShell:
 
-```bash
-npm run prod:logs
-```
+```powershell
+$ip = "YOUR_IP"
+$bootstrap = "BOOTSTRAP_SECRET_PRINTED_BY_DEPLOY"
+$body = @{
+  name          = "My Jersey Store"
+  slug          = "demo-jersey-store"
+  ownerEmail    = "owner@example.com"
+  ownerPassword = "ChangeMe1!"
+  ownerName     = "Store Owner"
+} | ConvertTo-Json
 
-When API health returns 200:
-
-```bash
-curl http://127.0.0.1:4000/health
-curl http://127.0.0.1:4000/ready
-```
-
-## 4. Create the first shop
-
-Do **not** run `prisma:seed` in production. Create a tenant and owner:
-
-```bash
-curl -X POST "http://YOUR_IP:4000/api/v1/admin/tenants" \
-  -H "Content-Type: application/json" \
-  -H "X-Bootstrap-Secret: THE_BOOTSTRAP_SECRET_FROM_ENV" \
-  -d '{
-    "name": "My Jersey Store",
-    "slug": "demo-jersey-store",
-    "ownerEmail": "owner@example.com",
-    "ownerPassword": "ChangeMe1!",
-    "ownerName": "Store Owner"
-  }'
+Invoke-RestMethod -Method Post `
+  -Uri "http://${ip}:4000/api/v1/admin/tenants" `
+  -Headers @{ "X-Bootstrap-Secret" = $bootstrap } `
+  -ContentType "application/json" `
+  -Body $body
 ```
 
 Password must include uppercase, lowercase, a number, and a special character.
 
-Log in at `http://YOUR_IP:3001/` with that owner email and password. Open the shop at `http://YOUR_IP/` (default slug is `NEXT_PUBLIC_DEFAULT_TENANT_SLUG`).
+Log in at `http://YOUR_IP:3001/` with that owner email and password.
 
-## 5. Useful commands
+## Manual SSH (same steps)
 
-```bash
-npm run prod:logs
-npm run prod:down
-docker compose -f infra/docker/docker-compose.prod.yml --env-file infra/docker/.env.production ps
+```powershell
+ssh root@YOUR_IP
 ```
 
-Rebuild after an IP or env change:
+On the VM:
 
 ```bash
-npm run prod:up -- --build
+apt-get update && apt-get install -y git
+git clone https://github.com/Ak2hay-1/jersey-commerce-engine.git /opt/jersey
+bash /opt/jersey/infra/docker/vm-setup.sh
+cp /opt/jersey/infra/docker/.env.production.example /opt/jersey/infra/docker/.env.production
+nano /opt/jersey/infra/docker/.env.production
+bash /opt/jersey/infra/docker/prod-up.sh
+```
+
+## Later updates from PowerShell
+
+```powershell
+.\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root -SkipSetup
 ```
 
 When you later attach a domain, switch to HTTPS, set `COOKIE_SECURE=true`, and rebuild with `https://` API URLs.

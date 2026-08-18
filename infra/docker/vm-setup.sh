@@ -46,9 +46,8 @@ ufw allow 4000/tcp
 ufw --force enable
 
 echo
-echo "VM ready. Next:"
-echo "  1. Copy the repo to /opt/jersey (git clone or scp)"
-echo "  2. cp /opt/jersey/infra/docker/.env.production.example /opt/jersey/infra/docker/.env.production"
-echo "  3. Set PUBLIC_IP and secrets in that file"
-echo "  4. From /opt/jersey:  npm run prod:up"
+echo "VM ready. Next (from /opt/jersey):"
+echo "  1. cp infra/docker/.env.production.example infra/docker/.env.production"
+echo "  2. Set PUBLIC_IP and secrets in that file"
+echo "  3. bash infra/docker/prod-up.sh"
 echo "Build one image at a time on 4GB. First start can take 15–30 minutes."

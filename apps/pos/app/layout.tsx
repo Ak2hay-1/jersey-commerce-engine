@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth';
+import { inter } from '@/lib/fonts';
 import './globals.css';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'POS',
