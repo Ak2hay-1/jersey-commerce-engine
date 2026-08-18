@@ -1,0 +1,117 @@
+import { DEMO_CTA_IMAGE, DEMO_HERO_IMAGE } from './demo-media';
+import type { StorefrontBootstrap } from '@jersey-commerce/types';
+
+export const fallbackStore: StorefrontBootstrap = {
+  tenant: {
+    slug: 'demo-jersey-store',
+    name: 'Jerzyfy',
+    legalName: 'Jerzyfy LLP',
+    currency: 'INR',
+    timezone: 'Asia/Kolkata',
+    contactPhone: '+91 98765 00000',
+    contactEmail: 'hello@jerzyfy.local',
+    address: '12 Stadium Road',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    country: 'IN',
+    postalCode: '400001',
+  },
+  theme: {
+    primaryColor: '#111111',
+    secondaryColor: '#8A8178',
+    accentColor: '#7A1F1F',
+    backgroundColor: '#F4F1EC',
+    foregroundColor: '#111111',
+    headingFont: 'Instrument Serif',
+    bodyFont: 'Inter',
+    logo: '/demo/logo.png',
+    favicon: '/demo/favicon.png',
+  },
+  website: {
+    contactPhone: '+91 98765 00000',
+    contactEmail: 'hello@jerzyfy.local',
+    contactAddress: '12 Stadium Road, Mumbai',
+    socialLinks: {},
+    businessHours: null,
+    seoTitle: 'Jerzyfy',
+    seoDescription: 'Not for everyone. Premium streetwear and match kits.',
+    homepage: {
+      sections: [
+        {
+          type: 'hero',
+          enabled: true,
+          heading: 'New collection launched',
+          subheading: 'Streetwear cut for the stands. Kits cut for the street.',
+          ctaLabel: 'Shop the drop',
+          ctaHref: '/products',
+          image: DEMO_HERO_IMAGE,
+        },
+        {
+          type: 'marquee',
+          enabled: true,
+          heading: 'UNLEASH THE DROP',
+          subheading: 'UNLEASH THE DROP',
+        },
+        {
+          type: 'statement',
+          enabled: true,
+          heading: 'NOT FOR EVERYONE',
+        },
+        {
+          type: 'new-arrivals',
+          enabled: true,
+          heading: 'Latest drop',
+        },
+        {
+          type: 'promo-banner',
+          enabled: true,
+          heading: 'Jerzyfy premium',
+          subheading: 'Experience unparalleled quality and timeless design. Each piece is crafted to elevate everyday style.',
+        },
+        {
+          type: 'featured-products',
+          enabled: true,
+          heading: 'Featured products',
+        },
+        {
+          type: 'marquee',
+          enabled: true,
+          heading: 'THE TREND IS IN U',
+          subheading: 'THE TREND IS IN U',
+          ctaLabel: 'dark',
+        },
+        {
+          type: 'featured-categories',
+          enabled: true,
+          heading: 'Premium collection',
+          categorySlugs: ['oversized-tees', 'football', 'custom-jerseys'],
+        },
+        {
+          type: 'trust',
+          enabled: true,
+          heading: 'Why shop with us',
+          items: [
+            { title: 'Free shipping', description: 'Complimentary delivery on every order.' },
+            { title: 'Cash on delivery', description: 'Pay when the drop arrives at your door.' },
+            { title: 'Heavyweight quality', description: 'GSM-first fabrics and durable prints.' },
+            { title: 'Easy returns', description: 'Contact the store if a piece does not fit as expected.' },
+          ],
+        },
+        {
+          type: 'cta',
+          enabled: true,
+          heading: 'Find your drop',
+          subheading: 'Oversized tees, match kits, and custom pieces in one catalog.',
+          ctaLabel: 'Browse the catalog',
+          ctaHref: '/products',
+          image: DEMO_CTA_IMAGE,
+        },
+      ],
+    },
+  },
+  navigation: [
+    { id: 'nav-streetwear', name: 'Streetwear', slug: 'streetwear', parentId: null, status: 'ACTIVE', sortOrder: 1 },
+    { id: 'nav-football', name: 'Football', slug: 'football', parentId: null, status: 'ACTIVE', sortOrder: 2 },
+    { id: 'nav-custom', name: 'Custom Jerseys', slug: 'custom-jerseys', parentId: null, status: 'ACTIVE', sortOrder: 3 },
+  ],
+};

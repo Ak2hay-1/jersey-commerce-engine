@@ -1,0 +1,1971 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  CANCELLED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum RoleCode {
+  OWNER
+  MANAGER
+  CASHIER
+  INVENTORY_MANAGER
+  WEBSITE_MANAGER
+}
+
+enum CatalogStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum VariantStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum InventoryMovementType {
+  OPENING_STOCK
+  PURCHASE
+  SALE
+  ONLINE_ORDER
+  RETURN
+  EXCHANGE
+  DAMAGE
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+  CANCELLED_ORDER
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum PurchaseStatus {
+  DRAFT
+  ORDERED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+enum SaleStatus {
+  COMPLETED
+  VOIDED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PosSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum PosCartStatus {
+  ACTIVE
+  HELD
+  COMPLETED
+  CANCELLED
+}
+
+enum DiscountType {
+  NONE
+  FIXED
+  PERCENTAGE
+}
+
+enum OrderSource {
+  WEBSITE
+  POS
+  WHATSAPP
+  MANUAL
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  READY
+  SHIPPED
+  COMPLETED
+  CANCELLED
+  RETURNED
+  REFUNDED
+}
+
+enum CartStatus {
+  ACTIVE
+  CONVERTED
+  ABANDONED
+  EXPIRED
+}
+
+enum FulfillmentMethod {
+  DELIVERY
+  STORE_PICKUP
+}
+
+/// Configurable shipping calculator. ZONE, WEIGHT, and courier modes belong to a later phase.
+enum ShippingCalculationMode {
+  FREE
+  FIXED
+}
+
+/// Inventory reservation lifecycle for an order. Independent of payment and fulfillment status.
+enum OrderInventoryState {
+  NONE
+  RESERVED
+  RELEASED
+  CONSUMED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  ONLINE
+  BANK_TRANSFER
+  OTHER
+}
+
+/// Methods allowed when recording money paid to a supplier. No card/bank secrets are stored.
+enum SupplierPaymentMethod {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+/// What happens to physically returned goods. NONE means no inventory change (customer keeps the item).
+enum RestockDisposition {
+  RESTOCK
+  DAMAGE
+  NONE
+}
+
+enum BackupIntervalUnit {
+  HOURS
+  DAYS
+  WEEKS
+  MONTHS
+}
+
+enum BackupRunTrigger {
+  SCHEDULED
+  MANUAL
+}
+
+enum BackupRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum ExpenseStatus {
+  ACTIVE
+  VOIDED
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum CustomOrderType {
+  CUSTOM_JERSEY
+  TEAM_ORDER
+  CORPORATE_ORDER
+  COLLEGE_ORDER
+  TOURNAMENT_ORDER
+  BULK_ORDER
+}
+
+enum CustomOrderStatus {
+  INQUIRY
+  QUOTATION
+  QUOTE_SENT
+  CUSTOMER_APPROVAL
+  DEPOSIT_PENDING
+  CONFIRMED
+  DESIGN_PENDING
+  DESIGN_APPROVAL
+  PRODUCTION
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum CustomOrderItemMode {
+  PLAYER_LIST
+  SIZE_QUANTITY
+}
+
+enum CustomizationPricingType {
+  FIXED
+  PER_ITEM
+  PERCENTAGE
+}
+
+enum CustomizationOptionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CustomOrderFileKind {
+  REFERENCE
+  DESIGN
+}
+
+enum DesignApprovalDecision {
+  APPROVE
+  REQUEST_CHANGES
+}
+
+enum DesignApprovalStatus {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum QuoteAcceptanceState {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  SUPERSEDED
+  CANCELLED
+}
+
+enum CustomOrderPaymentState {
+  UNPAID
+  DEPOSIT_RECEIVED
+  PARTIALLY_PAID
+  PAID
+}
+
+enum CustomOrderProductionStatus {
+  DESIGN_PENDING
+  DESIGN_APPROVAL
+  MATERIAL_PENDING
+  PRODUCTION
+  QUALITY_CHECK
+  READY
+}
+
+enum CustomOrderCommunicationType {
+  QUOTE_CREATED
+  QUOTE_SENT
+  DESIGN_READY
+  DESIGN_APPROVAL_REQUIRED
+  ORDER_CONFIRMED
+  PRODUCTION_STARTED
+  READY_FOR_PICKUP
+  ORDER_COMPLETED
+}
+
+enum CustomOrderCommunicationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+/// Independent business isolation boundary.
+model Tenant {
+  id             String       @id @default(cuid())
+  name           String
+  legalName      String?      @map("legal_name")
+  slug           String       @unique
+  logo           String?
+  favicon        String?
+  primaryColor   String?      @map("primary_color")
+  secondaryColor String?      @map("secondary_color")
+  accentColor    String?      @map("accent_color")
+  contactPhone   String?      @map("contact_phone")
+  contactEmail   String?      @map("contact_email")
+  address        String?
+  city           String?
+  state          String?
+  country        String       @default("IN")
+  postalCode     String?      @map("postal_code")
+  timezone              String       @default("Asia/Kolkata")
+  currency              String       @default("INR") @db.VarChar(3)
+  /// Default rate applied when a variant has no taxRate. Not a legal GST profile.
+  defaultTaxRate        Decimal      @default(0) @map("default_tax_rate") @db.Decimal(7, 4)
+  taxInclusivePricing   Boolean      @default(true) @map("tax_inclusive_pricing")
+  /// When false (default), received quantity cannot exceed remaining ordered quantity.
+  allowPurchaseOverReceive Boolean   @default(false) @map("allow_purchase_over_receive")
+  /// When false (default), a supplier payment cannot exceed the outstanding payable.
+  allowSupplierOverpay     Boolean   @default(false) @map("allow_supplier_overpay")
+  /// When false (default), receiving does not overwrite ProductVariant.costPrice.
+  updateVariantCostOnReceive Boolean @default(false) @map("update_variant_cost_on_receive")
+  /// Storefront shipping calculator. Not a courier integration.
+  shippingCalculationMode ShippingCalculationMode @default(FREE) @map("shipping_calculation_mode")
+  shippingFixedAmount     Decimal                 @default(0) @map("shipping_fixed_amount") @db.Decimal(14, 2)
+  /// When set, FIXED shipping becomes free once the discounted merchandise subtotal reaches this amount.
+  freeShippingMinSubtotal Decimal?                @map("free_shipping_min_subtotal") @db.Decimal(14, 2)
+  status                TenantStatus @default(TRIAL)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  users              User[]
+  roles              Role[]
+  userRoles          UserRole[]
+  rolePermissions    RolePermission[]
+  categories         Category[]
+  products           Product[]
+  productVariants    ProductVariant[]
+  productImages      ProductImage[]
+  inventories        Inventory[]
+  inventoryMovements InventoryMovement[]
+  customers          Customer[]
+  tags               Tag[]
+  customerTags       CustomerTag[]
+  customerNotes      CustomerNote[]
+  customerPreferences CustomerPreference[]
+  suppliers          Supplier[]
+  purchases          Purchase[]
+  purchaseItems      PurchaseItem[]
+  purchaseReceipts   PurchaseReceipt[]
+  purchaseReceiptItems PurchaseReceiptItem[]
+  supplierPayments   SupplierPayment[]
+  sales              Sale[]
+  saleItems          SaleItem[]
+  posSessions        PosSession[]
+  posCarts           PosCart[]
+  posCartItems       PosCartItem[]
+  documentSequences  DocumentSequence[]
+  carts              Cart[]
+  cartItems          CartItem[]
+  orders             Order[]
+  orderItems         OrderItem[]
+  orderShippingAddresses OrderShippingAddress[]
+  checkoutIdempotencyKeys CheckoutIdempotency[]
+  payments           Payment[]
+  refunds            Refund[]
+  refundItems        RefundItem[]
+  refundPayments     RefundPayment[]
+  expenseCategories  ExpenseCategory[]
+  expenses           Expense[]
+  auditLogs          AuditLog[]
+  websiteSettings    WebsiteSettings?
+  hosts              TenantHost[]
+  backupSettings     BackupSettings?
+  backupRuns         BackupRun[]
+  refreshTokens      RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  customOrders              CustomOrder[]
+  customOrderItems          CustomOrderItem[]
+  customOrderQuotes         CustomOrderQuote[]
+  customOrderDesigns        CustomOrderDesign[]
+  customOrderDesignApprovals CustomOrderDesignApproval[]
+  customOrderFiles          CustomOrderFile[]
+  customOrderNotes          CustomOrderNote[]
+  customOrderTimelineEvents CustomOrderTimelineEvent[]
+  customOrderProductionEvents CustomOrderProductionEvent[]
+  customOrderCommunications CustomOrderCommunicationEvent[]
+  customOrderCustomizations CustomOrderCustomization[]
+  customizationOptions      CustomizationOption[]
+
+  @@index([status])
+  @@index([contactEmail])
+  @@index([contactPhone])
+  @@map("tenants")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  tenantId     String     @map("tenant_id")
+  name         String
+  email        String
+  phone        String?
+  passwordHash String     @map("password_hash")
+  status       UserStatus @default(ACTIVE)
+  tokenVersion Int        @default(0) @map("token_version")
+  lastLoginAt  DateTime?  @map("last_login_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userRoles           UserRole[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  inventoryMovements  InventoryMovement[]
+  expenses            Expense[]             @relation("ExpenseCreatedBy")
+  expensesVoided      Expense[]             @relation("ExpenseVoidedBy")
+  posSessions         PosSession[]
+  posCarts            PosCart[]
+  salesAsCashier      Sale[]               @relation("SaleCashier")
+  salesCancelled      Sale[]               @relation("SaleCancelledBy")
+  paymentsCreated     Payment[]            @relation("PaymentCreatedBy")
+  refundsCreated      Refund[]             @relation("RefundCreatedBy")
+  ordersAsCreator     Order[]              @relation("OrderCreator")
+  ordersCancelled     Order[]              @relation("OrderCancelledBy")
+  customerNotes       CustomerNote[]       @relation("CustomerNoteAuthor")
+  customerTags        CustomerTag[]        @relation("CustomerTagAuthor")
+  purchasesCreated    Purchase[]           @relation("PurchaseCreatedBy")
+  purchasesCancelled  Purchase[]           @relation("PurchaseCancelledBy")
+  purchaseReceipts    PurchaseReceipt[]    @relation("PurchaseReceiptCreatedBy")
+  supplierPaymentsCreated SupplierPayment[] @relation("SupplierPaymentCreatedBy")
+  auditLogs           AuditLog[]
+  customOrdersCreated     CustomOrder[]               @relation("CustomOrderCreator")
+  customOrdersCancelled   CustomOrder[]               @relation("CustomOrderCancelledBy")
+  customOrderQuotes       CustomOrderQuote[]          @relation("CustomOrderQuoteCreator")
+  customOrderDesigns      CustomOrderDesign[]         @relation("CustomOrderDesignCreator")
+  customOrderFiles        CustomOrderFile[]           @relation("CustomOrderFileUploader")
+  customOrderNotes        CustomOrderNote[]           @relation("CustomOrderNoteAuthor")
+  customOrderTimelineEvents CustomOrderTimelineEvent[] @relation("CustomOrderTimelineActor")
+  customOrderProductionEvents CustomOrderProductionEvent[] @relation("CustomOrderProductionActor")
+  customOrderDesignApprovals CustomOrderDesignApproval[] @relation("CustomOrderDesignApprover")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, phone])
+  @@index([email])
+  @@map("users")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  group       String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([group])
+  @@map("permissions")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  code        RoleCode
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([tenantId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@unique([roleId, permissionId])
+  @@index([tenantId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model Category {
+  id          String        @id @default(cuid())
+  tenantId    String        @map("tenant_id")
+  parentId    String?       @map("parent_id")
+  name        String
+  slug        String
+  description String?
+  image       String?
+  sortOrder   Int           @default(0) @map("sort_order")
+  status      CatalogStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, parentId])
+  @@index([tenantId, status])
+  @@map("categories")
+}
+
+model Product {
+  id               String        @id @default(cuid())
+  tenantId         String        @map("tenant_id")
+  name             String
+  slug             String
+  description      String?
+  shortDescription String?       @map("short_description")
+  brand            String?
+  categoryId       String?       @map("category_id")
+  status           CatalogStatus @default(DRAFT)
+  featured         Boolean       @default(false)
+  seoTitle         String?       @map("seo_title")
+  seoDescription   String?       @map("seo_description")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  category Category?        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, featured])
+  @@index([tenantId, brand])
+  @@index([tenantId, name])
+  @@map("products")
+}
+
+model ProductVariant {
+  id             String        @id @default(cuid())
+  tenantId       String        @map("tenant_id")
+  productId      String        @map("product_id")
+  sku            String
+  barcode        String?
+  size           String?
+  color          String?
+  costPrice      Decimal       @map("cost_price") @db.Decimal(14, 2)
+  sellingPrice   Decimal       @map("selling_price") @db.Decimal(14, 2)
+  compareAtPrice Decimal?      @map("compare_at_price") @db.Decimal(14, 2)
+  /// Percent, e.g. 18.0000. Null inherits the tenant default.
+  taxRate        Decimal?      @map("tax_rate") @db.Decimal(7, 4)
+  /// Null inherits tenant taxInclusivePricing.
+  taxInclusive   Boolean?      @map("tax_inclusive")
+  weight         Decimal?      @db.Decimal(10, 3)
+  status         VariantStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  inventory          Inventory?
+  inventoryMovements InventoryMovement[]
+  purchaseItems      PurchaseItem[]
+  purchaseReceiptItems PurchaseReceiptItem[]
+  saleItems          SaleItem[]
+  refundItems        RefundItem[]
+  posCartItems       PosCartItem[]
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  customOrderItems   CustomOrderItem[]
+
+  @@unique([tenantId, sku])
+  @@unique([tenantId, barcode])
+  @@index([tenantId])
+  @@index([productId])
+  @@index([tenantId, status])
+  @@index([tenantId, size])
+  @@index([tenantId, color])
+  @@index([sku])
+  @@index([barcode])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id         String  @id @default(cuid())
+  tenantId   String  @map("tenant_id")
+  productId  String  @map("product_id")
+  url        String
+  storageKey String? @map("storage_key")
+  altText    String? @map("alt_text")
+  sortOrder  Int     @default(0) @map("sort_order")
+  isPrimary  Boolean @default(false) @map("is_primary")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+model Inventory {
+  id                String   @id @default(cuid())
+  tenantId          String   @map("tenant_id")
+  productVariantId  String   @unique @map("product_variant_id")
+  quantity          Int      @default(0)
+  reservedQuantity  Int      @default(0) @map("reserved_quantity")
+  /// Derived as quantity - reservedQuantity. Always written with those two fields.
+  availableQuantity Int      @default(0) @map("available_quantity")
+  reorderLevel      Int      @default(0) @map("reorder_level")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, productVariantId])
+  @@index([tenantId, quantity])
+  @@map("inventories")
+}
+
+/// Append-only stock ledger. Quantity sign: positive adds stock, negative removes stock.
+model InventoryMovement {
+  id               String                @id @default(cuid())
+  tenantId         String                @map("tenant_id")
+  productVariantId String                @map("product_variant_id")
+  quantity         Int
+  type             InventoryMovementType
+  referenceType    String?               @map("reference_type")
+  referenceId      String?               @map("reference_id")
+  reason           String?
+  /// Variant cost at movement time. Current catalog cost changes do not rewrite this.
+  unitCost         Decimal?              @map("unit_cost") @db.Decimal(14, 2)
+  createdBy        String?               @map("created_by")
+  createdAt        DateTime              @default(now()) @map("created_at")
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+  createdByUser  User?          @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, productVariantId])
+  @@index([tenantId, productVariantId, createdAt])
+  @@index([tenantId, type])
+  @@index([tenantId, createdAt])
+  @@index([referenceType, referenceId])
+  @@index([referenceId])
+  @@map("inventory_movements")
+}
+
+model Customer {
+  id         String         @id @default(cuid())
+  tenantId   String         @map("tenant_id")
+  name       String
+  phone      String?
+  email      String?
+  address    String?
+  city       String?
+  state      String?
+  postalCode String?        @map("postal_code")
+  notes        String?
+  passwordHash String?        @map("password_hash")
+  status       CustomerStatus @default(ACTIVE)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  sales      Sale[]
+  posCarts   PosCart[]
+  carts      Cart[]
+  orders     Order[]
+  customOrders CustomOrder[]
+  customOrderDesignApprovals CustomOrderDesignApproval[]
+  customOrderQuotesAccepted CustomOrderQuote[] @relation("CustomOrderQuoteAcceptedBy")
+  tags       CustomerTag[]
+  staffNotes CustomerNote[]
+  preference CustomerPreference?
+
+  @@index([tenantId])
+  @@index([tenantId, phone])
+  @@index([tenantId, email])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+  @@map("customers")
+}
+
+/// Reusable tenant-scoped tag. Names are data, not application constants.
+model Tag {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  slug      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customers CustomerTag[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("tags")
+}
+
+model CustomerTag {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  customerId String   @map("customer_id")
+  tagId      String   @map("tag_id")
+  createdBy  String?  @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer  Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Restrict)
+  author    User?     @relation("CustomerTagAuthor", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([customerId, tagId])
+  @@index([tenantId])
+  @@index([tenantId, tagId])
+  @@index([tenantId, createdAt])
+  @@map("customer_tags")
+}
+
+/// Internal staff notes. Never returned from public storefront endpoints.
+model CustomerNote {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  customerId String   @map("customer_id")
+  body       String
+  createdBy  String   @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  author   User     @relation("CustomerNoteAuthor", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, customerId, createdAt])
+  @@map("customer_notes")
+}
+
+/// Marketing/notification opt-in storage only. This phase does not send messages.
+model CustomerPreference {
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  customerId    String   @unique @map("customer_id")
+  emailOptIn    Boolean  @default(false) @map("email_opt_in")
+  smsOptIn      Boolean  @default(false) @map("sms_opt_in")
+  whatsappOptIn Boolean  @default(false) @map("whatsapp_opt_in")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("customer_preferences")
+}
+
+model Supplier {
+  id             String         @id @default(cuid())
+  tenantId       String         @map("tenant_id")
+  name           String
+  contactPerson  String?        @map("contact_person")
+  phone          String?
+  email          String?
+  address        String?
+  city           String?
+  state          String?
+  postalCode     String?        @map("postal_code")
+  taxInformation String?        @map("tax_information")
+  notes          String?
+  status         SupplierStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  purchases Purchase[]
+  payments  SupplierPayment[]
+  receipts  PurchaseReceipt[]
+
+  @@index([tenantId])
+  @@index([tenantId, name])
+  @@index([tenantId, status])
+  @@index([tenantId, phone])
+  @@index([tenantId, email])
+  @@map("suppliers")
+}
+
+model Purchase {
+  id                   String         @id @default(cuid())
+  tenantId             String         @map("tenant_id")
+  supplierId           String         @map("supplier_id")
+  purchaseNumber       String         @map("purchase_number")
+  status               PurchaseStatus @default(DRAFT)
+  subtotal             Decimal        @db.Decimal(14, 2)
+  discount             Decimal        @default(0) @db.Decimal(14, 2)
+  tax                  Decimal        @default(0) @db.Decimal(14, 2)
+  total                Decimal        @db.Decimal(14, 2)
+  notes                String?
+  expectedDeliveryDate DateTime?      @map("expected_delivery_date")
+  createdById          String?        @map("created_by")
+  orderedAt            DateTime?      @map("ordered_at")
+  receivedAt           DateTime?      @map("received_at")
+  cancelledAt          DateTime?      @map("cancelled_at")
+  cancelledById        String?        @map("cancelled_by")
+  cancelReason         String?        @map("cancel_reason")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  supplier    Supplier           @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy   User?              @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  cancelledBy User?              @relation("PurchaseCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  items       PurchaseItem[]
+  receipts    PurchaseReceipt[]
+  payments    SupplierPayment[]
+
+  @@unique([tenantId, purchaseNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, createdAt])
+  @@index([purchaseNumber])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id                String  @id @default(cuid())
+  tenantId          String  @map("tenant_id")
+  purchaseId        String  @map("purchase_id")
+  productVariantId  String  @map("product_variant_id")
+  orderedQuantity   Int     @map("ordered_quantity")
+  receivedQuantity  Int     @default(0) @map("received_quantity")
+  unitCost          Decimal @map("unit_cost") @db.Decimal(14, 2)
+  discount          Decimal @default(0) @db.Decimal(14, 2)
+  tax               Decimal @default(0) @db.Decimal(14, 2)
+  total             Decimal @db.Decimal(14, 2)
+
+  tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  purchase       Purchase              @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant        @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+  receiptItems   PurchaseReceiptItem[]
+
+  @@unique([purchaseId, productVariantId])
+  @@index([tenantId])
+  @@index([purchaseId])
+  @@index([productVariantId])
+  @@map("purchase_items")
+}
+
+/// One physical receiving event against a purchase. Preserves unit cost, quantity, date, and supplier for future costing and purchase returns.
+model PurchaseReceipt {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  purchaseId String   @map("purchase_id")
+  supplierId String   @map("supplier_id")
+  notes      String?
+  createdById String? @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  purchase  Purchase              @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+  supplier  Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy User?                 @relation("PurchaseReceiptCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items     PurchaseReceiptItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, purchaseId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, createdAt])
+  @@map("purchase_receipts")
+}
+
+model PurchaseReceiptItem {
+  id               String  @id @default(cuid())
+  tenantId         String  @map("tenant_id")
+  receiptId        String  @map("receipt_id")
+  purchaseItemId   String  @map("purchase_item_id")
+  productVariantId String  @map("product_variant_id")
+  quantity         Int
+  /// Negotiated purchase unit cost at receive time. Catalog cost changes do not rewrite this.
+  unitCost         Decimal @map("unit_cost") @db.Decimal(14, 2)
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  receipt        PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+  purchaseItem   PurchaseItem    @relation(fields: [purchaseItemId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant  @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([receiptId])
+  @@index([purchaseItemId])
+  @@index([productVariantId])
+  @@map("purchase_receipt_items")
+}
+
+model SupplierPayment {
+  id          String                @id @default(cuid())
+  tenantId    String                @map("tenant_id")
+  supplierId  String                @map("supplier_id")
+  purchaseId  String?               @map("purchase_id")
+  amount      Decimal               @db.Decimal(14, 2)
+  method      SupplierPaymentMethod
+  status      PaymentStatus         @default(COMPLETED)
+  reference   String?
+  notes       String?
+  createdById String?               @map("created_by")
+  paidAt      DateTime              @default(now()) @map("paid_at")
+  createdAt   DateTime              @default(now()) @map("created_at")
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  supplier  Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  purchase  Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+  createdBy User?     @relation("SupplierPaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, createdAt])
+  @@index([purchaseId])
+  @@map("supplier_payments")
+}
+
+model Sale {
+  id                     String       @id @default(cuid())
+  tenantId               String       @map("tenant_id")
+  invoiceNumber          String       @map("invoice_number")
+  customerId             String?      @map("customer_id")
+  cashierId              String?      @map("cashier_id")
+  posSessionId           String?      @map("pos_session_id")
+  posCartId              String?      @unique @map("pos_cart_id")
+  subtotal               Decimal      @db.Decimal(14, 2)
+  discount               Decimal      @default(0) @db.Decimal(14, 2)
+  /// Cart-level discount input captured at sale time (10 for 10%, or a rupee amount).
+  discountType           DiscountType @default(NONE) @map("discount_type")
+  discountValue          Decimal      @default(0) @map("discount_value") @db.Decimal(14, 2)
+  tax                    Decimal      @default(0) @db.Decimal(14, 2)
+  taxInclusive           Boolean      @default(true) @map("tax_inclusive")
+  total                  Decimal      @db.Decimal(14, 2)
+  status                 SaleStatus   @default(COMPLETED)
+  notes                  String?
+  /// Frozen receipt representation. Catalog/tenant edits after this sale do not change it.
+  receiptPayload         Json?        @map("receipt_payload")
+  receiptIssuedAt        DateTime?    @map("receipt_issued_at")
+  cancelledAt            DateTime?    @map("cancelled_at")
+  cancelledById          String?      @map("cancelled_by")
+  cancelReason           String?      @map("cancel_reason")
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer    Customer?   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  cashier     User?       @relation("SaleCashier", fields: [cashierId], references: [id], onDelete: Restrict)
+  cancelledBy User?       @relation("SaleCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  posSession  PosSession? @relation(fields: [posSessionId], references: [id], onDelete: Restrict)
+  posCart     PosCart?    @relation(fields: [posCartId], references: [id], onDelete: Restrict)
+  items           SaleItem[]
+  payments        Payment[]
+  refunds         Refund[]
+  ecommerceOrder  Order?
+
+  @@unique([tenantId, invoiceNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@index([tenantId, cashierId])
+  @@index([tenantId, posSessionId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, total])
+  @@index([invoiceNumber])
+  @@map("sales")
+}
+
+model SaleItem {
+  id               String       @id @default(cuid())
+  tenantId         String       @map("tenant_id")
+  saleId           String       @map("sale_id")
+  productVariantId String       @map("product_variant_id")
+  productName      String       @map("product_name")
+  sku              String
+  size             String?
+  color            String?
+  quantity         Int
+  unitPrice        Decimal      @map("unit_price") @db.Decimal(14, 2)
+  costPrice        Decimal      @map("cost_price") @db.Decimal(14, 2)
+  discountType     DiscountType @default(NONE) @map("discount_type")
+  discountValue    Decimal      @default(0) @map("discount_value") @db.Decimal(14, 2)
+  discount         Decimal      @default(0) @db.Decimal(14, 2)
+  taxRate          Decimal      @default(0) @map("tax_rate") @db.Decimal(7, 4)
+  taxInclusive     Boolean      @default(true) @map("tax_inclusive")
+  tax              Decimal      @default(0) @db.Decimal(14, 2)
+  total            Decimal      @db.Decimal(14, 2)
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  sale           Sale           @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+  refundItems    RefundItem[]
+
+  @@index([tenantId])
+  @@index([saleId])
+  @@index([productVariantId])
+  @@index([sku])
+  @@map("sale_items")
+}
+
+/// One open register session per cashier. Opening cash is float, not sales revenue.
+model PosSession {
+  id           String           @id @default(cuid())
+  tenantId     String           @map("tenant_id")
+  userId       String           @map("user_id")
+  status       PosSessionStatus @default(OPEN)
+  openingCash  Decimal          @map("opening_cash") @db.Decimal(14, 2)
+  closingCash  Decimal?         @map("closing_cash") @db.Decimal(14, 2)
+  expectedCash Decimal          @map("expected_cash") @db.Decimal(14, 2)
+  cashSales    Decimal          @default(0) @map("cash_sales") @db.Decimal(14, 2)
+  cashRefunds  Decimal          @default(0) @map("cash_refunds") @db.Decimal(14, 2)
+  cardSales    Decimal          @default(0) @map("card_sales") @db.Decimal(14, 2)
+  upiSales     Decimal          @default(0) @map("upi_sales") @db.Decimal(14, 2)
+  otherSales   Decimal          @default(0) @map("other_sales") @db.Decimal(14, 2)
+  openedAt     DateTime         @default(now()) @map("opened_at")
+  closedAt     DateTime?        @map("closed_at")
+  notes        String?
+
+  tenant Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user   User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  carts    PosCart[]
+  sales    Sale[]
+  payments Payment[]
+
+  @@index([tenantId])
+  @@index([tenantId, userId, status])
+  @@index([tenantId, status])
+  @@index([tenantId, openedAt])
+  @@map("pos_sessions")
+}
+
+/// Working cart for a POS session. Inventory is not reserved or reduced until sale completion.
+model PosCart {
+  id            String         @id @default(cuid())
+  tenantId      String         @map("tenant_id")
+  posSessionId  String         @map("pos_session_id")
+  userId        String         @map("user_id")
+  customerId    String?        @map("customer_id")
+  status        PosCartStatus  @default(ACTIVE)
+  discountType  DiscountType   @default(NONE) @map("discount_type")
+  discountValue Decimal        @default(0) @map("discount_value") @db.Decimal(14, 2)
+  notes         String?
+  heldAt        DateTime?      @map("held_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  posSession PosSession    @relation(fields: [posSessionId], references: [id], onDelete: Restrict)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items      PosCartItem[]
+  sale       Sale?
+
+  @@index([tenantId])
+  @@index([tenantId, posSessionId, status])
+  @@index([tenantId, userId, status])
+  @@map("pos_carts")
+}
+
+model PosCartItem {
+  id               String       @id @default(cuid())
+  tenantId         String       @map("tenant_id")
+  cartId           String       @map("cart_id")
+  productVariantId String       @map("product_variant_id")
+  quantity         Int
+  unitPrice        Decimal      @map("unit_price") @db.Decimal(14, 2)
+  discountType     DiscountType @default(NONE) @map("discount_type")
+  discountValue    Decimal      @default(0) @map("discount_value") @db.Decimal(14, 2)
+  lineTotal        Decimal      @map("line_total") @db.Decimal(14, 2)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  cart           PosCart        @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, productVariantId])
+  @@index([tenantId])
+  @@index([cartId])
+  @@index([productVariantId])
+  @@map("pos_cart_items")
+}
+
+/// Tenant-safe document numbering. nextNumber is advanced under row lock during sale completion.
+model DocumentSequence {
+  id           String @id @default(cuid())
+  tenantId     String @map("tenant_id")
+  documentType String @map("document_type")
+  prefix       String @default("INV")
+  nextNumber   Int    @default(1) @map("next_number")
+  padLength    Int    @default(6) @map("pad_length")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, documentType])
+  @@index([tenantId])
+  @@map("document_sequences")
+}
+
+/// Working storefront / guest cart. Inventory is not reserved until checkout creates an order.
+model Cart {
+  id           String     @id @default(cuid())
+  tenantId     String     @map("tenant_id")
+  /// Public cart identifier returned to clients. Not the same as the secret token.
+  publicId     String     @unique @map("public_id")
+  /// SHA-256 of the opaque cart token. Raw tokens are never stored.
+  tokenHash    String     @unique @map("token_hash")
+  customerId   String?    @map("customer_id")
+  status       CartStatus @default(ACTIVE)
+  expiresAt    DateTime   @map("expires_at")
+  convertedOrderId String? @unique @map("converted_order_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  tenant         Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer       Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  convertedOrder Order?  @relation("CartConvertedOrder", fields: [convertedOrderId], references: [id], onDelete: Restrict)
+  items          CartItem[]
+  checkoutKeys   CheckoutIdempotency[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@index([tenantId, expiresAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id               String   @id @default(cuid())
+  tenantId         String   @map("tenant_id")
+  publicId         String   @unique @map("public_id")
+  cartId           String   @map("cart_id")
+  productVariantId String   @map("product_variant_id")
+  quantity         Int
+  /// Display snapshot only. Checkout always reloads the current selling price.
+  unitPrice        Decimal  @map("unit_price") @db.Decimal(14, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  cart           Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  @@unique([cartId, productVariantId])
+  @@index([tenantId])
+  @@index([cartId])
+  @@index([productVariantId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                String              @id @default(cuid())
+  tenantId          String              @map("tenant_id")
+  orderNumber       String              @map("order_number")
+  customerId        String?             @map("customer_id")
+  createdById       String?             @map("created_by")
+  source            OrderSource
+  status            OrderStatus         @default(PENDING)
+  paymentStatus     PaymentStatus       @default(PENDING) @map("payment_status")
+  fulfillmentMethod FulfillmentMethod   @default(DELIVERY) @map("fulfillment_method")
+  inventoryState    OrderInventoryState @default(NONE) @map("inventory_state")
+  subtotal          Decimal             @db.Decimal(14, 2)
+  discountType      DiscountType        @default(NONE) @map("discount_type")
+  discountValue     Decimal             @default(0) @map("discount_value") @db.Decimal(14, 2)
+  discount          Decimal             @default(0) @db.Decimal(14, 2)
+  tax               Decimal             @default(0) @db.Decimal(14, 2)
+  shippingAmount    Decimal             @default(0) @map("shipping_amount") @db.Decimal(14, 2)
+  total             Decimal             @db.Decimal(14, 2)
+  currency          String              @db.VarChar(3)
+  notes             String?
+  cancelReason      String?             @map("cancel_reason")
+  cancelledAt       DateTime?           @map("cancelled_at")
+  cancelledById     String?             @map("cancelled_by")
+  confirmedAt       DateTime?           @map("confirmed_at")
+  shippedAt         DateTime?           @map("shipped_at")
+  completedAt       DateTime?           @map("completed_at")
+  saleId            String?             @unique @map("sale_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  tenant          Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer        Customer?              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy       User?                  @relation("OrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  cancelledBy     User?                  @relation("OrderCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  sale            Sale?                  @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  items           OrderItem[]
+  payments        Payment[]
+  shippingAddress OrderShippingAddress?
+  convertedCart   Cart?                  @relation("CartConvertedOrder")
+  checkoutKeys    CheckoutIdempotency[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, paymentStatus])
+  @@index([tenantId, source])
+  @@index([tenantId, customerId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, total])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                   String       @id @default(cuid())
+  tenantId             String       @map("tenant_id")
+  orderId              String       @map("order_id")
+  productVariantId     String       @map("product_variant_id")
+  productNameSnapshot  String       @map("product_name_snapshot")
+  skuSnapshot          String       @map("sku_snapshot")
+  sizeSnapshot         String?      @map("size_snapshot")
+  colorSnapshot        String?      @map("color_snapshot")
+  variantSnapshot      Json?        @map("variant_snapshot")
+  quantity             Int
+  unitPrice            Decimal      @map("unit_price") @db.Decimal(14, 2)
+  costPrice            Decimal      @map("cost_price") @db.Decimal(14, 2)
+  discountType         DiscountType @default(NONE) @map("discount_type")
+  discountValue        Decimal      @default(0) @map("discount_value") @db.Decimal(14, 2)
+  discount             Decimal      @default(0) @db.Decimal(14, 2)
+  taxRate              Decimal      @default(0) @map("tax_rate") @db.Decimal(7, 4)
+  taxInclusive         Boolean      @default(true) @map("tax_inclusive")
+  tax                  Decimal      @default(0) @db.Decimal(14, 2)
+  total                Decimal      @db.Decimal(14, 2)
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([orderId])
+  @@index([productVariantId])
+  @@index([skuSnapshot])
+  @@map("order_items")
+}
+
+/// Address frozen at checkout. Later customer profile edits do not rewrite this row.
+model OrderShippingAddress {
+  id           String  @id @default(cuid())
+  tenantId     String  @map("tenant_id")
+  orderId      String  @unique @map("order_id")
+  fullName     String  @map("full_name")
+  phone        String
+  addressLine1 String  @map("address_line1")
+  addressLine2 String? @map("address_line2")
+  city         String
+  state        String
+  postalCode   String  @map("postal_code")
+  country      String  @default("IN")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("order_shipping_addresses")
+}
+
+/// Checkout retry safety. The same tenant + key always maps to one order.
+model CheckoutIdempotency {
+  id                  String   @id @default(cuid())
+  tenantId            String   @map("tenant_id")
+  keyHash             String   @map("key_hash")
+  requestFingerprint  String   @map("request_fingerprint")
+  cartId              String?  @map("cart_id")
+  orderId             String?  @map("order_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  cart   Cart?  @relation(fields: [cartId], references: [id], onDelete: Restrict)
+  order  Order? @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, keyHash])
+  @@index([tenantId])
+  @@index([orderId])
+  @@map("checkout_idempotency")
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  tenantId       String        @map("tenant_id")
+  saleId         String?       @map("sale_id")
+  orderId        String?       @map("order_id")
+  customOrderId  String?       @map("custom_order_id")
+  posSessionId   String?       @map("pos_session_id")
+  createdById    String?       @map("created_by")
+  amount         Decimal       @db.Decimal(14, 2)
+  method         PaymentMethod
+  status         PaymentStatus @default(PENDING)
+  amountReceived Decimal?      @map("amount_received") @db.Decimal(14, 2)
+  changeDue      Decimal?      @map("change_due") @db.Decimal(14, 2)
+  reference      String?
+  provider       String?
+  /// Safe provider metadata only. Never store PAN, CVV, PIN, or magnetic stripe data.
+  metadata       Json?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  sale        Sale?        @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  order       Order?       @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder? @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  posSession  PosSession?  @relation(fields: [posSessionId], references: [id], onDelete: Restrict)
+  createdBy User?       @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  refunds   Refund[]
+  refundPayments RefundPayment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, method])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, createdById])
+  @@index([saleId])
+  @@index([orderId])
+  @@index([customOrderId])
+  @@index([posSessionId])
+  @@index([reference])
+  @@map("payments")
+}
+
+/// Monetary reversal against a completed sale. Original sale rows are never deleted.
+model Refund {
+  id          String       @id @default(cuid())
+  tenantId    String       @map("tenant_id")
+  saleId      String       @map("sale_id")
+  paymentId   String?      @map("payment_id")
+  amount      Decimal      @db.Decimal(14, 2)
+  reason      String
+  status      RefundStatus @default(COMPLETED)
+  createdById String       @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  sale      Sale             @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  payment   Payment?         @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  createdBy User             @relation("RefundCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  items     RefundItem[]
+  payments  RefundPayment[]
+
+  @@index([tenantId])
+  @@index([tenantId, saleId])
+  @@index([tenantId, createdAt])
+  @@index([paymentId])
+  @@index([createdById])
+  @@map("refunds")
+}
+
+model RefundItem {
+  id               String             @id @default(cuid())
+  tenantId         String             @map("tenant_id")
+  refundId         String             @map("refund_id")
+  saleItemId       String             @map("sale_item_id")
+  productVariantId String             @map("product_variant_id")
+  quantity         Int
+  amount           Decimal            @db.Decimal(14, 2)
+  restock          RestockDisposition @default(RESTOCK)
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  refund         Refund         @relation(fields: [refundId], references: [id], onDelete: Restrict)
+  saleItem       SaleItem       @relation(fields: [saleItemId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([refundId])
+  @@index([saleItemId])
+  @@index([productVariantId])
+  @@map("refund_items")
+}
+
+model RefundPayment {
+  id        String        @id @default(cuid())
+  tenantId  String        @map("tenant_id")
+  refundId  String        @map("refund_id")
+  paymentId String?       @map("payment_id")
+  amount    Decimal       @db.Decimal(14, 2)
+  method    PaymentMethod
+  status    PaymentStatus @default(COMPLETED)
+  reference String?
+  provider  String?
+  metadata  Json?
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  refund  Refund   @relation(fields: [refundId], references: [id], onDelete: Restrict)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([refundId])
+  @@index([paymentId])
+  @@map("refund_payments")
+}
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  slug      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  expenses Expense[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id            String        @id @default(cuid())
+  tenantId      String        @map("tenant_id")
+  categoryId    String        @map("category_id")
+  amount        Decimal       @db.Decimal(14, 2)
+  description   String?
+  paymentMethod PaymentMethod @map("payment_method")
+  reference     String?
+  expenseDate   DateTime      @db.Date @map("expense_date")
+  status        ExpenseStatus @default(ACTIVE)
+  createdBy     String        @map("created_by")
+  voidedAt      DateTime?     @map("voided_at")
+  voidedById    String?       @map("voided_by")
+  voidReason    String?       @map("void_reason")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  creator  User            @relation("ExpenseCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  voidedBy User?           @relation("ExpenseVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, expenseDate])
+  @@index([tenantId, status])
+  @@index([createdBy])
+  @@map("expenses")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String?  @map("tenant_id")
+  userId    String?  @map("user_id")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  oldValue  Json?    @map("old_value")
+  newValue  Json?    @map("new_value")
+  metadata  Json?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, entity, entityId])
+  @@index([tenantId, userId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+enum TenantHostKind {
+  DOMAIN
+  SUBDOMAIN
+}
+
+/// Public hostname used to resolve a tenant for the storefront. Looked up before tenant scope exists.
+model TenantHost {
+  id        String         @id @default(cuid())
+  tenantId  String         @map("tenant_id")
+  host      String         @unique
+  kind      TenantHostKind
+  isPrimary Boolean        @default(false) @map("is_primary")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@map("tenant_hosts")
+}
+
+model WebsiteSettings {
+  id               String   @id @default(cuid())
+  tenantId         String   @unique @map("tenant_id")
+  logo             String?
+  favicon          String?
+  primaryColor     String?  @map("primary_color")
+  secondaryColor   String?  @map("secondary_color")
+  accentColor      String?  @map("accent_color")
+  backgroundColor  String?  @map("background_color")
+  foregroundColor  String?  @map("foreground_color")
+  headingFont      String?  @map("heading_font")
+  bodyFont         String?  @map("body_font")
+  homepageConfig   Json?    @map("homepage_config")
+  contactPhone     String?  @map("contact_phone")
+  contactEmail     String?  @map("contact_email")
+  contactAddress   String?  @map("contact_address")
+  socialLinks      Json?    @map("social_links")
+  businessHours    Json?    @map("business_hours")
+  seoTitle         String?  @map("seo_title")
+  seoDescription   String?  @map("seo_description")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@map("website_settings")
+}
+
+/// Per-tenant automatic backup destination, schedule, and history. Not used by API modules in Phase 1.
+model BackupSettings {
+  id              String             @id @default(cuid())
+  tenantId        String             @unique @map("tenant_id")
+  enabled         Boolean            @default(false)
+  destinationPath String             @default("") @map("destination_path")
+  scheduleTime    String             @default("02:00") @map("schedule_time")
+  intervalValue   Int                @default(1) @map("interval_value")
+  intervalUnit    BackupIntervalUnit @default(DAYS) @map("interval_unit")
+  retainCopies    Int                @default(14) @map("retain_copies")
+  lastRunAt       DateTime?          @map("last_run_at")
+  nextRunAt       DateTime?          @map("next_run_at")
+  lastError       String?            @map("last_error")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  runs   BackupRun[]
+
+  @@index([enabled, nextRunAt])
+  @@map("backup_settings")
+}
+
+model BackupRun {
+  id            String           @id @default(cuid())
+  tenantId      String           @map("tenant_id")
+  settingsId    String           @map("settings_id")
+  trigger       BackupRunTrigger
+  status        BackupRunStatus
+  fileName      String?          @map("file_name")
+  filePath      String?          @map("file_path")
+  fileSizeBytes Int?             @map("file_size_bytes")
+  errorMessage  String?          @map("error_message")
+  startedAt     DateTime         @default(now()) @map("started_at")
+  finishedAt    DateTime?        @map("finished_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  settings BackupSettings @relation(fields: [settingsId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+  @@map("backup_runs")
+}
+
+/// Refresh credentials are stored hashed. Raw tokens are never persisted.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  familyId     String    @map("family_id")
+  userId       String    @map("user_id")
+  tenantId     String    @map("tenant_id")
+  tokenHash    String    @unique @map("token_hash")
+  expiresAt    DateTime  @map("expires_at")
+  revokedAt    DateTime? @map("revoked_at")
+  replacedById String?   @map("replaced_by_id")
+  ipAddress    String?   @map("ip_address")
+  userAgent    String?   @map("user_agent")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tenantId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// Prepared for a later email-based reset flow. Tokens are stored hashed.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tenantId  String    @map("tenant_id")
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tenantId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+/// Configurable per-tenant customization catalog. Prices are data, not application constants.
+model CustomizationOption {
+  id          String                    @id @default(cuid())
+  tenantId    String                    @map("tenant_id")
+  name        String
+  description String?
+  pricingType CustomizationPricingType  @map("pricing_type")
+  price       Decimal                   @db.Decimal(14, 2)
+  status      CustomizationOptionStatus @default(ACTIVE)
+  sortOrder   Int                       @default(0) @map("sort_order")
+  createdAt   DateTime                  @default(now()) @map("created_at")
+  updatedAt   DateTime                  @updatedAt @map("updated_at")
+
+  tenant Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  orders CustomOrderCustomization[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("customization_options")
+}
+
+/// Custom/team/bulk jersey order. Separate lifecycle from ecommerce Order; reuses Customer, Payment, and optional ProductVariant.
+model CustomOrder {
+  id                      String                       @id @default(cuid())
+  tenantId                String                       @map("tenant_id")
+  customerId              String                       @map("customer_id")
+  publicId                String                       @unique @map("public_id")
+  orderNumber             String                       @map("order_number")
+  status                  CustomOrderStatus            @default(INQUIRY)
+  type                    CustomOrderType              @default(CUSTOM_JERSEY)
+  orderingMode            CustomOrderItemMode?         @map("ordering_mode")
+  paymentStatus           CustomOrderPaymentState      @default(UNPAID) @map("payment_status")
+  productionStatus        CustomOrderProductionStatus? @map("production_status")
+  inventoryState          OrderInventoryState          @default(NONE) @map("inventory_state")
+  description             String?
+  teamName                String?                      @map("team_name")
+  preferredJerseyType     String?                      @map("preferred_jersey_type")
+  preferredColours        String?                      @map("preferred_colours")
+  customizationRequirements String?                    @map("customization_requirements")
+  estimatedQuantity       Int                          @default(0) @map("estimated_quantity")
+  requestedDeliveryDate   DateTime?                    @map("requested_delivery_date")
+  subtotal                Decimal                      @default(0) @db.Decimal(14, 2)
+  discount                Decimal                      @default(0) @db.Decimal(14, 2)
+  tax                     Decimal                      @default(0) @db.Decimal(14, 2)
+  shippingAmount          Decimal                      @default(0) @map("shipping_amount") @db.Decimal(14, 2)
+  total                   Decimal                      @default(0) @db.Decimal(14, 2)
+  depositRequired         Decimal                      @default(0) @map("deposit_required") @db.Decimal(14, 2)
+  depositPaid             Decimal                      @default(0) @map("deposit_paid") @db.Decimal(14, 2)
+  balanceDue              Decimal                      @default(0) @map("balance_due") @db.Decimal(14, 2)
+  notes                   String?
+  cancelReason            String?                      @map("cancel_reason")
+  cancelledAt             DateTime?                    @map("cancelled_at")
+  cancelledById           String?                      @map("cancelled_by")
+  createdById             String?                      @map("created_by")
+  acceptedQuoteId         String?                      @unique @map("accepted_quote_id")
+  createdAt               DateTime                     @default(now()) @map("created_at")
+  updatedAt               DateTime                     @updatedAt @map("updated_at")
+
+  tenant         Tenant                         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer       Customer                       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy      User?                          @relation("CustomOrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  cancelledBy    User?                          @relation("CustomOrderCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  acceptedQuote  CustomOrderQuote?              @relation("CustomOrderAcceptedQuote", fields: [acceptedQuoteId], references: [id], onDelete: SetNull)
+  items          CustomOrderItem[]
+  quotes         CustomOrderQuote[]             @relation("CustomOrderQuotes")
+  designs        CustomOrderDesign[]
+  designApprovals CustomOrderDesignApproval[]
+  files          CustomOrderFile[]
+  notesInternal  CustomOrderNote[]
+  timeline       CustomOrderTimelineEvent[]
+  productionEvents CustomOrderProductionEvent[]
+  communications CustomOrderCommunicationEvent[]
+  customizations CustomOrderCustomization[]
+  payments       Payment[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+  @@index([tenantId, customerId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, paymentStatus])
+  @@index([orderNumber])
+  @@map("custom_orders")
+}
+
+model CustomOrderItem {
+  id                 String             @id @default(cuid())
+  tenantId           String             @map("tenant_id")
+  customOrderId      String             @map("custom_order_id")
+  productVariantId   String?            @map("product_variant_id")
+  lineType           CustomOrderItemMode @map("line_type")
+  playerName         String?            @map("player_name")
+  jerseyNumber       String?            @map("jersey_number")
+  size               String?
+  colour             String?
+  quantity           Int
+  unitPrice          Decimal            @default(0) @map("unit_price") @db.Decimal(14, 2)
+  customizationFee   Decimal            @default(0) @map("customization_fee") @db.Decimal(14, 2)
+  total              Decimal            @db.Decimal(14, 2)
+  notes              String?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder    CustomOrder     @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([customOrderId])
+  @@index([productVariantId])
+  @@map("custom_order_items")
+}
+
+model CustomOrderCustomization {
+  id                     String              @id @default(cuid())
+  tenantId               String              @map("tenant_id")
+  customOrderId          String              @map("custom_order_id")
+  customizationOptionId  String              @map("customization_option_id")
+  nameSnapshot           String              @map("name_snapshot")
+  pricingTypeSnapshot    CustomizationPricingType @map("pricing_type_snapshot")
+  priceSnapshot          Decimal             @map("price_snapshot") @db.Decimal(14, 2)
+  createdAt              DateTime            @default(now()) @map("created_at")
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  order    CustomOrder         @relation(fields: [customOrderId], references: [id], onDelete: Cascade)
+  option   CustomizationOption @relation(fields: [customizationOptionId], references: [id], onDelete: Restrict)
+
+  @@unique([customOrderId, customizationOptionId])
+  @@index([tenantId])
+  @@index([customizationOptionId])
+  @@map("custom_order_customizations")
+}
+
+/// Versioned quotation. Historical versions are never overwritten.
+model CustomOrderQuote {
+  id                      String               @id @default(cuid())
+  tenantId                String               @map("tenant_id")
+  customOrderId           String               @map("custom_order_id")
+  quoteNumber             String               @map("quote_number")
+  version                 Int
+  isCurrent               Boolean              @default(true) @map("is_current")
+  unitPrice               Decimal              @map("unit_price") @db.Decimal(14, 2)
+  quantity                Int
+  customizationCharges    Decimal              @default(0) @map("customization_charges") @db.Decimal(14, 2)
+  subtotal                Decimal              @db.Decimal(14, 2)
+  discount                Decimal              @default(0) @db.Decimal(14, 2)
+  tax                     Decimal              @default(0) @db.Decimal(14, 2)
+  shippingAmount          Decimal              @default(0) @map("shipping_amount") @db.Decimal(14, 2)
+  total                   Decimal              @db.Decimal(14, 2)
+  depositRequired         Decimal              @default(0) @map("deposit_required") @db.Decimal(14, 2)
+  estimatedCompletionDate DateTime?            @map("estimated_completion_date")
+  expiresAt               DateTime?            @map("expires_at")
+  acceptanceState         QuoteAcceptanceState @default(PENDING) @map("acceptance_state")
+  acceptedAt              DateTime?            @map("accepted_at")
+  acceptedByCustomerId    String?              @map("accepted_by_customer_id")
+  notes                   String?
+  createdById             String?              @map("created_by")
+  createdAt               DateTime             @default(now()) @map("created_at")
+
+  tenant             Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder        CustomOrder @relation("CustomOrderQuotes", fields: [customOrderId], references: [id], onDelete: Restrict)
+  acceptedByCustomer Customer?   @relation("CustomOrderQuoteAcceptedBy", fields: [acceptedByCustomerId], references: [id], onDelete: SetNull)
+  createdBy          User?       @relation("CustomOrderQuoteCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  acceptedOnOrder    CustomOrder? @relation("CustomOrderAcceptedQuote")
+
+  @@unique([customOrderId, version])
+  @@unique([tenantId, quoteNumber, version])
+  @@index([tenantId])
+  @@index([tenantId, quoteNumber])
+  @@index([customOrderId, isCurrent])
+  @@map("custom_order_quotes")
+}
+
+model CustomOrderFile {
+  id               String             @id @default(cuid())
+  tenantId         String             @map("tenant_id")
+  customOrderId    String             @map("custom_order_id")
+  storageKey       String             @map("storage_key")
+  originalFilename String             @map("original_filename")
+  mimeType         String             @map("mime_type")
+  fileSize         Int                @map("file_size")
+  kind             CustomOrderFileKind
+  uploadedById     String?            @map("uploaded_by")
+  uploadedAt       DateTime           @default(now()) @map("uploaded_at")
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder         @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  uploadedBy  User?               @relation("CustomOrderFileUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  designs     CustomOrderDesign[]
+
+  @@index([tenantId])
+  @@index([customOrderId])
+  @@map("custom_order_files")
+}
+
+/// Versioned design. Uploading a new file creates a new version; previous rows are retained.
+model CustomOrderDesign {
+  id            String               @id @default(cuid())
+  tenantId      String               @map("tenant_id")
+  customOrderId String               @map("custom_order_id")
+  fileId        String               @map("file_id")
+  version       Int
+  notes         String?
+  approvalStatus DesignApprovalStatus @default(PENDING) @map("approval_status")
+  createdById   String?              @map("created_by")
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder                @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  file        CustomOrderFile            @relation(fields: [fileId], references: [id], onDelete: Restrict)
+  createdBy   User?                      @relation("CustomOrderDesignCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  approvals   CustomOrderDesignApproval[]
+
+  @@unique([customOrderId, version])
+  @@index([tenantId])
+  @@index([fileId])
+  @@map("custom_order_designs")
+}
+
+model CustomOrderDesignApproval {
+  id           String                  @id @default(cuid())
+  tenantId     String                  @map("tenant_id")
+  customOrderId String                 @map("custom_order_id")
+  designId     String                  @map("design_id")
+  decision     DesignApprovalDecision
+  comment      String?
+  decidedByUserId     String?          @map("decided_by_user_id")
+  decidedByCustomerId String?          @map("decided_by_customer_id")
+  isCustomerDecision  Boolean          @default(false) @map("is_customer_decision")
+  createdAt    DateTime                @default(now()) @map("created_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  design      CustomOrderDesign @relation(fields: [designId], references: [id], onDelete: Restrict)
+  decidedByUser     User?     @relation("CustomOrderDesignApprover", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  decidedByCustomer Customer? @relation(fields: [decidedByCustomerId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([customOrderId])
+  @@index([designId])
+  @@map("custom_order_design_approvals")
+}
+
+model CustomOrderNote {
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  customOrderId String   @map("custom_order_id")
+  body          String
+  createdById   String   @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  createdBy   User        @relation("CustomOrderNoteAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, customOrderId, createdAt])
+  @@map("custom_order_notes")
+}
+
+model CustomOrderTimelineEvent {
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  customOrderId String   @map("custom_order_id")
+  type          String
+  title         String
+  detail        String?
+  createdById   String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  createdBy   User?       @relation("CustomOrderTimelineActor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, customOrderId, createdAt])
+  @@map("custom_order_timeline_events")
+}
+
+model CustomOrderProductionEvent {
+  id            String                      @id @default(cuid())
+  tenantId      String                      @map("tenant_id")
+  customOrderId String                      @map("custom_order_id")
+  status        CustomOrderProductionStatus
+  note          String?
+  createdById   String?                     @map("created_by")
+  createdAt     DateTime                    @default(now()) @map("created_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+  createdBy   User?       @relation("CustomOrderProductionActor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, customOrderId, createdAt])
+  @@map("custom_order_production_events")
+}
+
+/// Prepared for Phase 14 messaging. This phase records events; it does not send WhatsApp or email.
+model CustomOrderCommunicationEvent {
+  id            String                         @id @default(cuid())
+  tenantId      String                         @map("tenant_id")
+  customOrderId String                         @map("custom_order_id")
+  type          CustomOrderCommunicationType
+  status        CustomOrderCommunicationStatus @default(PENDING)
+  payload       Json?
+  createdAt     DateTime                       @default(now()) @map("created_at")
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customOrder CustomOrder @relation(fields: [customOrderId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, customOrderId, createdAt])
+  @@index([tenantId, type, status])
+  @@map("custom_order_communication_events")
+}
