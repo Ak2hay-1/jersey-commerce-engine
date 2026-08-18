@@ -71,6 +71,8 @@ The API will start even if PostgreSQL or Redis are down. `GET /health` remains `
 
 The storefront uses `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=demo-jersey-store`. Switch tenants locally with `http://localhost:3000/?tenant=demo-jersey-store`. See [storefront.md](storefront.md) and [custom-orders.md](custom-orders.md).
 
+The POS app is at http://localhost:3002. Sign in with `cashier@demo.local` / `DevPassword123!` / tenant `demo-jersey-store`. See [pos.md](pos.md).
+
 ## Quality checks
 
 ```powershell
@@ -100,7 +102,7 @@ npm run build
 | GET | `/api/v1/permissions` | Platform permission catalog (authenticated) |
 | GET | `/api/v1/{resource}` | Tenant-scoped lists (Bearer token) |
 
-Inventory APIs (`/api/v1/inventory`) are documented in [inventory.md](inventory.md). Auth is documented in [auth.md](auth.md). The ecommerce order engine is documented in [orders.md](orders.md). The storefront is documented in [storefront.md](storefront.md). Custom and bulk jersey orders are documented in [custom-orders.md](custom-orders.md). Suppliers and purchasing are documented in [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md).
+Inventory APIs (`/api/v1/inventory`) are documented in [inventory.md](inventory.md). Auth is documented in [auth.md](auth.md). The ecommerce order engine is documented in [orders.md](orders.md). The storefront is documented in [storefront.md](storefront.md). Custom and bulk jersey orders are documented in [custom-orders.md](custom-orders.md). Suppliers and purchasing are documented in [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md). POS sessions, carts, and sales are documented in [pos.md](pos.md).
 
 Health and readiness stay unversioned so orchestrators can probe without API-prefix knowledge.
 

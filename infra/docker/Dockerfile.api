@@ -1,31 +1,41 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+RUN apk add --no-cache openssl libc6-compat
 
 FROM base AS deps
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
+COPY apps/storefront/package.json apps/storefront/package.json
+COPY apps/admin/package.json apps/admin/package.json
+COPY apps/pos/package.json apps/pos/package.json
 COPY packages/types/package.json packages/types/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/utils/package.json packages/utils/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN npm ci
 
 FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
-RUN npm run build -w packages/types -w packages/validation -w packages/config -w packages/utils
-RUN npm run prisma:generate -w apps/api
-RUN npm run build -w apps/api
+RUN npm run build -w @jersey-commerce/types -w @jersey-commerce/validation -w @jersey-commerce/config -w @jersey-commerce/utils
+RUN npm run prisma:generate -w @jersey-commerce/api
+RUN npm run build -w @jersey-commerce/api
 
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
+COPY --from=build /app/apps/api/generated ./apps/api/generated
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/packages ./packages
+COPY infra/docker/api-entrypoint.sh /api-entrypoint.sh
+RUN chmod +x /api-entrypoint.sh \
+  && mkdir -p /app/apps/api/uploads
 WORKDIR /app/apps/api
 EXPOSE 4000
-CMD ["node", "dist/main.js"]
+ENTRYPOINT ["/api-entrypoint.sh"]

@@ -3,32 +3,43 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
 COPY apps/storefront/package.json apps/storefront/package.json
 COPY apps/admin/package.json apps/admin/package.json
 COPY apps/pos/package.json apps/pos/package.json
-COPY packages/ui/package.json packages/ui/package.json
 COPY packages/types/package.json packages/types/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/utils/package.json packages/utils/package.json
+COPY packages/ui/package.json packages/ui/package.json
 RUN npm ci
 
 FROM deps AS build
 ARG APP_NAME
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_DEFAULT_TENANT_SLUG
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS=--max-old-space-size=1536
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_DEFAULT_TENANT_SLUG=${NEXT_PUBLIC_DEFAULT_TENANT_SLUG}
 COPY tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/${APP_NAME} ./apps/${APP_NAME}
-RUN npm run build -w packages/types -w packages/validation -w packages/config -w packages/utils
+RUN mkdir -p apps/${APP_NAME}/public
+RUN npm run build -w @jersey-commerce/types -w @jersey-commerce/validation -w @jersey-commerce/config -w @jersey-commerce/utils
 RUN npm run build -w apps/${APP_NAME}
 
 FROM base AS runner
 ARG APP_NAME
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+ENV APP_NAME=${APP_NAME}
 WORKDIR /app
 COPY --from=build /app/apps/${APP_NAME}/.next/standalone ./
 COPY --from=build /app/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
+RUN mkdir -p ./apps/${APP_NAME}/public
 COPY --from=build /app/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
 EXPOSE 3000
-CMD ["node", "apps/${APP_NAME}/server.js"]
+CMD ["sh", "-c", "node apps/${APP_NAME}/server.js"]

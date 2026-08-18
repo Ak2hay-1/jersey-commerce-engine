@@ -12,4 +12,16 @@ export { Input, type InputProps } from './components/input';
 export { Label } from './components/label';
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/table';
 export { Skeleton } from './components/skeleton';
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from './components/dialog';
 export { cn } from './lib/utils';

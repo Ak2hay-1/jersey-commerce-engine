@@ -4,7 +4,7 @@
 
 Jersey Commerce Engine is a multi-application commerce platform. It includes a customer storefront, POS, ERP/admin, inventory, purchasing, CRM, payments, expenses, reporting, CMS, roles, audit logs, and multi-tenant isolation.
 
-Phase 1 delivered the **database and backend foundation**. Authentication, catalog, inventory, POS backend, CRM, purchasing, ecommerce orders, the premium storefront, and custom jersey orders are implemented. POS checkout UI, website CMS, and live payment gateways belong to later phases.
+Phase 1 delivered the **database and backend foundation**. Authentication, catalog, inventory, POS backend and cashier UI, CRM, purchasing, ecommerce orders, the premium storefront, and custom jersey orders are implemented. Website CMS and live payment gateways belong to later phases.
 
 ## System shape
 
@@ -38,7 +38,7 @@ All HTTP clients talk to one API. The API owns persistence, caching, validation,
 | --- | --- | --- |
 | Storefront | Tenant-aware catalog, cart, checkout, accounts, custom-order enquiry | CMS-driven pages and policy content |
 | Admin | Tenant-aware ERP: dashboard, sales, inventory, purchasing, CRM, expenses, reports, users | Website CMS and marketing automation |
-| POS | Tenant-agnostic Next.js shell | Register sales, in-store payments, receipts |
+| POS | Register sales, in-store payments, receipts, refunds | Hardware printers and payment gateways |
 | API | Versioned commerce APIs, Prisma, Redis, tenant isolation, RBAC | Live payment gateways and messaging |
 
 ## Shared packages
@@ -66,7 +66,7 @@ Every independent business is a tenant. `Tenant` owns shop names, branding, cata
 
 Theme tokens in `@jersey-commerce/ui` are generic defaults. The storefront overrides them at runtime from `WebsiteSettings` and tenant branding. See [storefront.md](storefront.md).
 
-Authentication, RBAC, tenant isolation, and the product catalog are implemented. See [auth.md](auth.md). The inventory ledger is implemented in Phase 4; see [inventory.md](inventory.md). The POS backend (sessions, carts, transactional sales) is implemented in Phase 5; see [pos.md](pos.md). Customers and CRM are implemented in Phase 7; see [customers.md](customers.md). Suppliers, purchase orders, receiving, and supplier payables are implemented in Phase 8; see [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md). The ecommerce order engine is implemented in Phase 9; see [orders.md](orders.md). The storefront catalog and checkout UI are implemented in Phase 10. Custom and bulk jersey orders are implemented in Phase 11; see [custom-orders.md](custom-orders.md). The ERP dashboard, reporting engine, and expenses module are implemented in Phase 12; see [dashboard.md](dashboard.md), [reports.md](reports.md), and [expenses.md](expenses.md). Payment gateways and messaging campaigns belong to later phases.
+Authentication, RBAC, tenant isolation, and the product catalog are implemented. See [auth.md](auth.md). The inventory ledger is implemented in Phase 4; see [inventory.md](inventory.md). The POS backend and cashier UI (sessions, carts, transactional sales, receipts, refunds) are implemented; see [pos.md](pos.md). Customers and CRM are implemented in Phase 7; see [customers.md](customers.md). Suppliers, purchase orders, receiving, and supplier payables are implemented in Phase 8; see [suppliers.md](suppliers.md) and [purchasing.md](purchasing.md). The ecommerce order engine is implemented in Phase 9; see [orders.md](orders.md). The storefront catalog and checkout UI are implemented in Phase 10. Custom and bulk jersey orders are implemented in Phase 11; see [custom-orders.md](custom-orders.md). The ERP dashboard, reporting engine, and expenses module are implemented in Phase 12; see [dashboard.md](dashboard.md), [reports.md](reports.md), and [expenses.md](expenses.md). Payment gateways and messaging campaigns belong to later phases.
 
 ## API conventions
 

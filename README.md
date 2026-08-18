@@ -4,7 +4,7 @@ Production-ready, multi-tenant commerce platform for storefront, in-store POS, a
 
 The first deployment target is a jersey and sportswear business. The architecture does not hard-code shop names, logos, products, domains, colors, or other business identity. Those values belong to tenants and will be loaded at runtime in later phases.
 
-This repository currently contains **Phases 1–11**: monorepo layout, authentication, catalog, inventory, POS sales, payments, CRM, purchasing, the ecommerce order engine, a tenant-aware premium storefront, custom/bulk jersey orders, PostgreSQL/Redis, Prisma domain models, NestJS modules, API versioning, seed data, and documentation. POS checkout UI, website CMS, and live payment gateways belong to later phases.
+This repository currently contains **Phases 1–12** plus the POS cashier app: monorepo layout, authentication, catalog, inventory, POS sales and register UI, payments, CRM, purchasing, the ecommerce order engine, a tenant-aware premium storefront, custom/bulk jersey orders, PostgreSQL/Redis, Prisma domain models, NestJS modules, API versioning, seed data, and documentation. Website CMS and live payment gateways belong to later phases.
 
 ## Architecture
 
@@ -94,6 +94,10 @@ Versioned API: http://localhost:4000/api/v1/...
 
 Details: [docs/local-development.md](docs/local-development.md), [docs/storefront.md](docs/storefront.md), [docs/custom-orders.md](docs/custom-orders.md), and [docs/database.md](docs/database.md).
 
+## Production (Vultr IP, no domain)
+
+The shop is served at `http://YOUR_IP/`, admin at `:3001`, POS at `:3002`, and the API at `:4000`. See [docs/deployment.md](docs/deployment.md).
+
 ## Available commands
 
 | Command | Description |
@@ -111,6 +115,9 @@ Details: [docs/local-development.md](docs/local-development.md), [docs/storefron
 | `npm run test` | API unit tests and storefront Vitest |
 | `npm run docker:up` | Start PostgreSQL and Redis |
 | `npm run docker:down` | Stop Docker services |
+| `npm run prod:up` | Build and start the IP-based production stack |
+| `npm run prod:down` | Stop the production stack |
+| `npm run prod:logs` | Tail production container logs |
 | `npm run prisma:validate` | Validate the Prisma schema |
 | `npm run prisma:generate` | Generate the Prisma client |
 | `npm run prisma:migrate` | Create/apply Prisma migrations locally |

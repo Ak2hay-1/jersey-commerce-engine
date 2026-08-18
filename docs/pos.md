@@ -1,8 +1,22 @@
 # POS engine
 
-Phase 5 adds a backend Point of Sale workflow on the existing NestJS API. Cashiers open a register session, build a cart from the catalog, take in-person payment, and complete a sale. Inventory is changed only when the sale commits, and only by calling `InventoryService` from Phase 4.
+Cashiers open a register in the Next.js POS app (`apps/pos`, http://localhost:3002), build a cart from the catalog, take in-person payment, and complete a sale. Inventory is changed only when the sale commits, and only by calling `InventoryService`.
 
-This phase does **not** include a POS screen, thermal printing, a payment gateway, ecommerce checkout, or refunds beyond cancelling a completed sale.
+The POS screen, session float, cart, cashier-confirmed payments, refunds, and thermal receipt print are implemented. This phase does **not** include a payment gateway, ESC-POS hardware drivers, or PDF/email receipt delivery.
+
+## POS application
+
+Staff sign in at `/login` (demo: `cashier@demo.local` / `DevPassword123!` / `demo-jersey-store`). Users need `pos.access`. After login the app opens or resumes a register session, then the register at `/register`.
+
+| Screen | Route | API |
+| --- | --- | --- |
+| Open register | `/session/open` | `POST /pos/sessions/open` |
+| Register | `/register` | cart, lookup, barcode, customers, `POST /pos/sales/complete` |
+| Held carts | `/held` | `GET /pos/carts/held`, resume |
+| Sales | `/sales`, `/sales/:id` | list, receipt, refund, cancel |
+| Close register | `/session/close` | `POST /pos/sessions/:id/close` |
+
+USB barcode scanners type into the focused search box and submit with Enter. Print uses the thermal HTML receipt in the browser print dialog. Cashiers do not receive `sales.discount` or `sales.cancel` by default.
 
 ## Architecture
 

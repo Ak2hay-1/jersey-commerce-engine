@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@jersey-commerce/config": "*",
+    "@jersey-commerce/types": "*",
     "@jersey-commerce/ui": "*",
     "@jersey-commerce/utils": "*",
     "next": "^15.4.6",
