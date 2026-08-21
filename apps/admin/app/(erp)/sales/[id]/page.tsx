@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@jersey-commerce/ui';
 import { apiRequest } from '@/lib/api';
 import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { DataTable } from '@/components/data-table';
+import { useRealtimeReload } from '@/lib/realtime';
 
 interface SaleDetail {
   id: string;
@@ -29,11 +30,22 @@ export default function SaleDetailPage(): React.JSX.Element {
   const [sale, setSale] = useState<SaleDetail | null>(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    apiRequest<SaleDetail>(`/sales/${params.id}`)
+  const load = useCallback(() => {
+    return apiRequest<SaleDetail>(`/sales/${params.id}`)
       .then(setSale)
       .catch((err: Error) => setError(err.message));
   }, [params.id]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useRealtimeReload(
+    (event) =>
+      (event.entity === 'Sale' || event.entity === 'Payment') &&
+      (event.entityId === params.id || event.entity === 'Payment'),
+    () => load(),
+  );
 
   if (error) {
     return <p className="text-sm text-destructive">{error}</p>;

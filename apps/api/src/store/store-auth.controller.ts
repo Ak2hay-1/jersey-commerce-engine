@@ -10,7 +10,9 @@ import { CustomerAccessGuard } from './customer-access.guard';
 import { CurrentStoreCustomer } from './current-store-customer.decorator';
 import type { StoreCustomer } from './customer-access.guard';
 import { StoreAuthService } from './store-auth.service';
-import { StoreLoginDto, StoreProfileUpdateDto, StoreRegisterDto } from './dto/store-auth.dto';
+import { StoreLoginDto, StoreOtpRequestDto, StoreOtpVerifyDto, StoreGoogleExchangeDto, StoreProfileUpdateDto, StoreRegisterDto } from './dto/store-auth.dto';
+import { StoreOtpService } from './store-otp.service';
+import { StoreGoogleAuthService } from './store-google-auth.service';
 
 @Controller('store')
 @ApiTags('store')
@@ -18,7 +20,11 @@ import { StoreLoginDto, StoreProfileUpdateDto, StoreRegisterDto } from './dto/st
 @UseGuards(StoreTenantGuard)
 @ApiHeader({ name: 'X-Tenant-Slug', required: false })
 export class StoreAuthController {
-  constructor(private readonly auth: StoreAuthService) {}
+  constructor(
+    private readonly auth: StoreAuthService,
+    private readonly otp: StoreOtpService,
+    private readonly google: StoreGoogleAuthService,
+  ) {}
 
   @Post('auth/register')
   @Throttle({ default: { limit: 8, ttl: 60_000 } })
@@ -32,6 +38,34 @@ export class StoreAuthController {
   @ApiOperation({ summary: 'Sign in a customer with email/phone and password' })
   login(@TenantId() tenantId: string, @Body() dto: StoreLoginDto, @Req() request: Request) {
     return this.auth.login(tenantId, dto, requestMeta(request));
+  }
+
+  @Post('auth/otp/request')
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Send an email or SMS one-time sign-in code' })
+  requestOtp(@TenantId() tenantId: string, @Body() dto: StoreOtpRequestDto, @Req() request: Request) {
+    return this.otp.request(tenantId, dto, requestMeta(request));
+  }
+
+  @Post('auth/otp/verify')
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Verify an email or SMS one-time sign-in code' })
+  verifyOtp(@TenantId() tenantId: string, @Body() dto: StoreOtpVerifyDto, @Req() request: Request) {
+    return this.otp.verify(tenantId, dto, requestMeta(request));
+  }
+
+  @Get('auth/google/start')
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Start Google Sign-In and return the authorization URL' })
+  startGoogle(@TenantId() tenantId: string, @Req() request: Request) {
+    return this.google.start(tenantId, request);
+  }
+
+  @Post('auth/google/exchange')
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Exchange a one-time Google ticket for a customer session' })
+  exchangeGoogle(@TenantId() tenantId: string, @Body() dto: StoreGoogleExchangeDto, @Req() request: Request) {
+    return this.google.exchange(tenantId, dto.ticket, requestMeta(request));
   }
 
   @Post('auth/logout')

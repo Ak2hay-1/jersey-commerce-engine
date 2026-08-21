@@ -1,1 +1,109 @@
 @import '@jersey-commerce/ui/styles';
+
+:root {
+  --background: 36 24% 97%;
+  --foreground: 0 0% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 8%;
+  --primary: 0 59% 30%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 36 18% 93%;
+  --secondary-foreground: 0 0% 12%;
+  --muted: 36 16% 94%;
+  --muted-foreground: 25 6% 40%;
+  --accent: 36 20% 92%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 72% 46%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 30 12% 88%;
+  --input: 30 12% 88%;
+  --ring: 0 59% 30%;
+  --radius: 0.75rem;
+  --pos-ink: 0 0% 8%;
+  --pos-pitch: 152 28% 16%;
+  --pos-stripe: 0 59% 30%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 480px at 12% -10%, hsl(0 59% 30% / 0.08), transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, hsl(152 28% 16% / 0.06), transparent 50%),
+    hsl(var(--background));
+  min-height: 100vh;
+}
+
+.pos-shell-header {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.96), hsl(36 24% 97% / 0.92)),
+    hsl(var(--card));
+  box-shadow: 0 1px 0 hsl(var(--border)), 0 8px 24px hsl(0 0% 0% / 0.04);
+}
+
+.pos-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.pos-nav-pill[data-active='true'] {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 6px 16px hsl(0 59% 30% / 0.28);
+}
+
+.pos-nav-pill[data-active='false'] {
+  color: hsl(var(--foreground));
+}
+
+.pos-nav-pill[data-active='false']:hover {
+  background: hsl(var(--muted));
+}
+
+.pos-search-shell {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  box-shadow: 0 10px 30px hsl(0 0% 0% / 0.04);
+}
+
+.pos-product-tile {
+  border: 1px solid hsl(var(--border));
+  background: linear-gradient(180deg, hsl(0 0% 100%), hsl(36 24% 98%));
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+.pos-product-tile:hover {
+  border-color: hsl(var(--primary) / 0.35);
+  box-shadow: 0 12px 28px hsl(0 0% 0% / 0.06);
+  transform: translateY(-1px);
+}
+
+.pos-cart-shell {
+  border: 1px solid hsl(var(--border));
+  background:
+    linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(36 30% 99%) 48%, hsl(0 40% 98%) 100%);
+  box-shadow: 0 16px 40px hsl(0 0% 0% / 0.06);
+}
+
+.pos-pay-button {
+  background: linear-gradient(180deg, hsl(0 62% 36%), hsl(0 59% 28%));
+  box-shadow: 0 10px 22px hsl(0 59% 30% / 0.3);
+}
+
+.pos-pay-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, hsl(0 62% 40%), hsl(0 59% 30%));
+}
+
+.pos-login-stage {
+  background:
+    radial-gradient(900px 420px at 15% 10%, hsl(0 59% 30% / 0.18), transparent 55%),
+    radial-gradient(700px 360px at 90% 80%, hsl(152 28% 16% / 0.16), transparent 50%),
+    linear-gradient(160deg, #1a1514 0%, #2a1b1b 42%, #14201b 100%);
+}

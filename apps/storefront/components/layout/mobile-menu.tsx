@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { SearchBar } from './search-bar';
 import type { CategorySummary } from '@jersey-commerce/types';
@@ -9,7 +10,7 @@ import { MOTION_DURATION, MOTION_EASE, MOTION_TRANSITION } from '../motion/prese
 const PRIMARY = [
   { href: '/products', label: 'Shop', id: 'shop' },
   { href: '/products?sort=newest', label: 'Latest', id: 'latest' },
-  { href: '/category/football', label: 'Jerseys', id: 'jerseys' },
+  { href: '/category/football-jerseys', label: 'Jerseys', id: 'jerseys' },
   { href: '/about', label: 'About', id: 'about' },
   { href: '/custom-orders', label: 'Custom jerseys', id: 'custom' },
   { href: '/account', label: 'Account', id: 'account' },
@@ -31,18 +32,29 @@ export function MobileMenu({
   const seen = new Set(PRIMARY.map((item) => item.href));
   const links = [...PRIMARY, ...extras.filter((item) => !seen.has(item.href))];
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   return (
     <AnimatePresence>
       {open ? (
         <motion.div
           key="mobile-menu"
-          className="overflow-hidden border-t border-border bg-background md:hidden"
+          className="overflow-hidden border-t border-border bg-background lg:hidden"
           initial={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
           animate={reduced ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
           exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
           transition={MOTION_TRANSITION}
         >
-          <div className="px-4 py-4">
+          <div className="max-h-[min(80dvh,calc(100dvh-4.5rem))] overflow-y-auto overscroll-contain store-gutter py-4">
             <SearchBar onNavigate={onClose} />
             <motion.nav
               className="mt-4 grid gap-1"
@@ -71,7 +83,7 @@ export function MobileMenu({
                     },
                   }}
                 >
-                  <Link href={item.href} className="block py-2 font-heading text-2xl uppercase" onClick={onClose}>
+                  <Link href={item.href} className="block py-2.5 font-heading text-2xl uppercase leading-tight sm:text-3xl" onClick={onClose}>
                     {item.label}
                   </Link>
                 </motion.div>

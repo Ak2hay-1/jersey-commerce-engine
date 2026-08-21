@@ -4,6 +4,8 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { TenantId } from '../common/decorators/tenant-id.decorator';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { TenantScoped } from '../common/guards/tenant.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { AuthPrincipal } from '../common/context/request-context';
 import { RolesService } from './roles.service';
 
 @Controller('roles')
@@ -15,8 +17,12 @@ export class RolesController {
 
   @Get()
   @ApiOperation({ summary: 'List roles for the current tenant' })
-  findAll(@TenantId() tenantId: string, @Query() query: PaginationQueryDto) {
-    return this.rolesService.findAll(tenantId, query);
+  findAll(
+    @TenantId() tenantId: string,
+    @Query() query: PaginationQueryDto,
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    return this.rolesService.findAll(tenantId, query, actor);
   }
 
   @Get(':id')

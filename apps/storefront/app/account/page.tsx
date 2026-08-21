@@ -8,7 +8,7 @@ export default function AccountPage(): React.JSX.Element {
   const { customer, logout } = useAuth();
   return (
     <div className="space-y-4">
-      <h1 className="font-heading text-4xl uppercase tracking-wide">Account</h1>
+      <h1 className="font-heading text-3xl uppercase tracking-wide md:text-4xl">Account</h1>
       <p className="text-muted-foreground">Signed in as {customer?.name}.</p>
       <div className="flex flex-wrap gap-3">
         <Button asChild>

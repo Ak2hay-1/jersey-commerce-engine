@@ -1,6 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import type { Request } from 'express';
-import type { AuthMeResponse, AuthTokenResponse } from '@jersey-commerce/types';
+import type { AuthMeResponse, AuthTokenResponse, LoginTenantOption } from '@jersey-commerce/types';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
@@ -180,6 +180,18 @@ export class AuthSessionService {
     return { ok: true as const };
   }
 
+  async listLoginTenants(meta: RequestMeta): Promise<{ items: LoginTenantOption[] }> {
+    await this.rateLimiter.consume(`login-tenants:ip:${meta.ipAddress ?? 'unknown'}`);
+    const tenants = await this.prisma.withoutTenantScope(async () =>
+      this.prisma.tenant.findMany({
+        where: { status: 'ACTIVE' },
+        select: { name: true, slug: true },
+        orderBy: { name: 'asc' },
+      }),
+    );
+    return { items: tenants };
+  }
+
   async meFromDatabase(principal: AuthPrincipal): Promise<AuthMeResponse> {
     const user = await this.prisma.user.findFirst({
       where: { id: principal.userId },
@@ -206,9 +218,16 @@ export class AuthSessionService {
     if (!(await this.passwords.verify(user.passwordHash, dto.currentPassword))) {
       throw new UnauthorizedException('Current password is incorrect.');
     }
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('Choose a different password from your current password.');
+    }
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: await this.passwords.hash(dto.newPassword), tokenVersion: { increment: 1 } },
+      data: {
+        passwordHash: await this.passwords.hash(dto.newPassword),
+        tokenVersion: { increment: 1 },
+        mustChangePassword: false,
+      },
     });
     await this.prisma.refreshToken.updateMany({
       where: { userId: user.id, tenantId: user.tenantId, revokedAt: null },

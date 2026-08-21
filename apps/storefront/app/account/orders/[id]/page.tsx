@@ -25,16 +25,16 @@ export default async function AccountOrderPage({ params }: { params: Promise<Par
   const store = await storeApi.bootstrap(options);
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-4xl uppercase tracking-wide">Order {order.orderNumber}</h1>
+      <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">Order {order.orderNumber}</h1>
       <p className="text-sm text-muted-foreground">{nextStepCopy(order)}</p>
       <OrderStatus order={order} />
       <ul className="divide-y border-y">
         {order.items.map((item) => (
-          <li key={item.id} className="flex justify-between py-3 text-sm">
-            <span>
+          <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
+            <span className="min-w-0 break-words">
               {item.productName} × {item.quantity}
             </span>
-            <span>{formatMoney(item.total, store.tenant.currency)}</span>
+            <span className="shrink-0">{formatMoney(item.total, store.tenant.currency)}</span>
           </li>
         ))}
       </ul>

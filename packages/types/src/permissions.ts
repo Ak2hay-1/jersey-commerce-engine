@@ -52,6 +52,8 @@ export const PERMISSION_CODES = [
   'settings.manage',
   'website.read',
   'website.update',
+  'promoCodes.read',
+  'promoCodes.manage',
   'pos.access',
   'pos.session.open',
   'pos.session.close',
@@ -241,6 +243,16 @@ const PERMISSION_META: Partial<
     group: 'expenses',
     name: 'Void expenses',
     description: 'Void an expense. Financial history is preserved; records are not deleted.',
+  },
+  'promoCodes.read': {
+    group: 'promoCodes',
+    name: 'Read promo codes',
+    description: 'View storefront promo codes, usage, and discount rules.',
+  },
+  'promoCodes.manage': {
+    group: 'promoCodes',
+    name: 'Manage promo codes',
+    description: 'Create, generate, update, and disable storefront promo codes.',
   },
 };
 

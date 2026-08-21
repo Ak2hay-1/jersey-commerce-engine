@@ -199,4 +199,4 @@ Logged (no passwords, tokens, or raw payment credentials):
 
 Lookup uses `ProductsService.lookupVariantsForPos` (name / SKU / barcode). Exact barcodes use the unique `(tenant_id, barcode)` index. Customer lookup is `GET /api/v1/pos/customers?search=` (name, phone, or email). Walk-in sales omit `customerId`. See [customers.md](customers.md).
 
-POS sessions are stored in PostgreSQL. Redis is used for auth rate limits and token denylist, not for POS carts.
+POS sessions are stored in PostgreSQL. Redis is used for auth rate limits, token denylist, and live invalidation events. POS carts stay in PostgreSQL.

@@ -1,10 +1,15 @@
 name: jersey-commerce-prod
 
+# LEGACY all-in-one VM stack (storefront + admin/POS nginx on the same host).
+# Preferred hybrid production uses docker-compose.api.yml (API + Caddy) with
+# Storefront/Admin on Vercel and POS/ERP on the Jersey Staff EXE.
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: jce-postgres
     restart: unless-stopped
+    command: postgres -c shared_buffers=128MB -c effective_cache_size=512MB -c work_mem=4MB -c max_connections=40
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -16,7 +21,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-    mem_limit: 512m
+    mem_limit: 384m
     networks:
       - jce
 
@@ -45,9 +50,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public&connection_limit=10
       REDIS_URL: redis://redis:6379
-      CORS_ORIGINS: http://${PUBLIC_IP},http://${PUBLIC_IP}:3000,http://${PUBLIC_IP}:3001,http://${PUBLIC_IP}:3002,http://${PUBLIC_IP}:4000
+      CORS_ORIGINS: http://${PUBLIC_IP},http://${PUBLIC_IP}:3000,http://${PUBLIC_IP}:3001,http://${PUBLIC_IP}:3002,http://${PUBLIC_IP}:3003,http://${PUBLIC_IP}:4000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://127.0.0.1:39217
       LOG_LEVEL: ${LOG_LEVEL:-info}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
@@ -58,6 +63,7 @@ services:
       COOKIE_SECURE: "false"
       COOKIE_SAMESITE: lax
       BOOTSTRAP_SECRET: ${BOOTSTRAP_SECRET}
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-}
       TRUST_PROXY: "true"
       MEDIA_LOCAL_ROOT: /app/apps/api/uploads
     volumes:
@@ -79,7 +85,7 @@ services:
       timeout: 5s
       retries: 20
       start_period: 40s
-    mem_limit: 512m
+    mem_limit: 384m
     networks:
       - jce
 
@@ -98,49 +104,9 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_API_URL: http://${PUBLIC_IP}:4000
+      # SSR / RSC fetches stay on the Docker network (avoids public-IP hairpin).
+      API_INTERNAL_URL: http://api:4000
       NEXT_PUBLIC_DEFAULT_TENANT_SLUG: ${NEXT_PUBLIC_DEFAULT_TENANT_SLUG}
-    depends_on:
-      api:
-        condition: service_healthy
-    mem_limit: 512m
-    networks:
-      - jce
-
-  admin:
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile.next
-      args:
-        APP_NAME: admin
-        NEXT_PUBLIC_API_URL: http://${PUBLIC_IP}:4000
-    container_name: jce-admin
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_URL: http://${PUBLIC_IP}:4000
-    depends_on:
-      api:
-        condition: service_healthy
-    mem_limit: 384m
-    networks:
-      - jce
-
-  pos:
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile.next
-      args:
-        APP_NAME: pos
-        NEXT_PUBLIC_API_URL: http://${PUBLIC_IP}:4000
-    container_name: jce-pos
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_URL: http://${PUBLIC_IP}:4000
     depends_on:
       api:
         condition: service_healthy
@@ -149,20 +115,25 @@ services:
       - jce
 
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.nginx
+      args:
+        NEXT_PUBLIC_API_URL: http://${PUBLIC_IP}:4000
+        NEXT_PUBLIC_PORTAL: admin
+        NEXT_PUBLIC_DEFAULT_TENANT_SLUG: ${NEXT_PUBLIC_DEFAULT_TENANT_SLUG:-demo-jersey-store}
     container_name: jce-nginx
     restart: unless-stopped
+    environment:
+      PUBLIC_IP: ${PUBLIC_IP}
+      API_URL: http://${PUBLIC_IP}:4000
     ports:
       - "80:80"
       - "3001:3001"
       - "3002:3002"
       - "4000:4000"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - storefront
-      - admin
-      - pos
       - api
     mem_limit: 64m
     networks:

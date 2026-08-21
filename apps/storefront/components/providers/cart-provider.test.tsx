@@ -36,6 +36,7 @@ function emptyCart(): CartDto {
     expiresAt: '2026-08-16T00:00:00.000Z',
     createdAt: '2026-08-15T00:00:00.000Z',
     updatedAt: '2026-08-15T00:00:00.000Z',
+    promoCode: null,
     cartToken: 'token',
   };
 }

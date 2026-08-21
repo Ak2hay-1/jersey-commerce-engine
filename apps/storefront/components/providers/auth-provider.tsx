@@ -5,11 +5,17 @@ import type { StorefrontCustomer } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
 import { STORE_COOKIES, clearBrowserCookie, writeBrowserCookie } from '../../lib/cookies';
 
+type OtpInput = { channel: 'email' | 'sms'; email?: string; phone?: string; name?: string };
+
 type AuthContextValue = {
   customer: StorefrontCustomer | null;
   loading: boolean;
   login: (input: { email?: string; phone?: string; password: string }) => Promise<void>;
   register: (input: { name: string; email: string; password: string; phone?: string }) => Promise<void>;
+  requestOtp: (input: OtpInput) => Promise<void>;
+  verifyOtp: (input: OtpInput & { code: string }) => Promise<void>;
+  startGoogle: () => Promise<void>;
+  completeGoogle: (ticket: string) => Promise<void>;
   logout: () => void;
   setCustomer: (customer: StorefrontCustomer | null) => void;
 };
@@ -53,6 +59,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     [persist],
   );
 
+  const requestOtp = useCallback(async (input: OtpInput) => {
+    await storeApi.requestOtp(input);
+  }, []);
+
+  const verifyOtp = useCallback(
+    async (input: OtpInput & { code: string }) => {
+      const result = await storeApi.verifyOtp(input);
+      persist(result.accessToken, result.customer);
+    },
+    [persist],
+  );
+
+  const startGoogle = useCallback(async () => {
+    const result = await storeApi.startGoogle({ origin: window.location.origin });
+    window.location.assign(result.authorizationUrl);
+  }, []);
+
+  const completeGoogle = useCallback(
+    async (ticket: string) => {
+      const result = await storeApi.exchangeGoogle(ticket);
+      persist(result.accessToken, result.customer);
+    },
+    [persist],
+  );
+
   const logout = useCallback(() => {
     clearBrowserCookie(STORE_COOKIES.customer);
     setCustomer(null);
@@ -60,8 +91,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   }, []);
 
   const value = useMemo(
-    () => ({ customer, loading, login, register, logout, setCustomer }),
-    [customer, loading, login, register, logout],
+    () => ({
+      customer,
+      loading,
+      login,
+      register,
+      requestOtp,
+      verifyOtp,
+      startGoogle,
+      completeGoogle,
+      logout,
+      setCustomer,
+    }),
+    [customer, loading, login, register, requestOtp, verifyOtp, startGoogle, completeGoogle, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

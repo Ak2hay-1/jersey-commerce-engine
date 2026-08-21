@@ -1,4 +1,5 @@
 export const ROLE_CODES = [
+  'SUPER_ADMIN',
   'OWNER',
   'MANAGER',
   'CASHIER',
@@ -47,6 +48,8 @@ export const PERMISSIONS = [
   'settings.manage',
   'website.read',
   'website.update',
+  'promoCodes.read',
+  'promoCodes.manage',
   'pos.access',
   'pos.session.open',
   'pos.session.close',

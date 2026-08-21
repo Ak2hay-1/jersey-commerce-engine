@@ -9,6 +9,7 @@ import { PasswordService } from '../src/auth/password.service';
 import { RbacService } from '../src/rbac/rbac.service';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
 import { ApiSuccessInterceptor } from '../src/common/interceptors/api-success.interceptor';
+import { attachRealtimeAdapter } from './attach-realtime-adapter';
 import { runWithContext } from '../src/common/context/request-context';
 import { InventoryMovementType } from '../src/prisma/client';
 
@@ -49,6 +50,7 @@ describe('Phase 4 inventory engine', () => {
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
+    attachRealtimeAdapter(app);
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
     app.useGlobalInterceptors(new ApiSuccessInterceptor());
     app.useGlobalFilters(new AllExceptionsFilter());
@@ -109,7 +111,7 @@ describe('Phase 4 inventory engine', () => {
         email: `cashier-a-${suffix}@example.com`,
         password: CASHIER_PASSWORD,
         name: 'Cashier A',
-        roleCodes: ['CASHIER'],
+        roleCodes: ['CASHIER'], mustChangePassword: false,
       })
       .expect(201);
     cashierToken = unwrap(
@@ -132,7 +134,7 @@ describe('Phase 4 inventory engine', () => {
         email: `website-a-${suffix}@example.com`,
         password: WEBSITE_PASSWORD,
         name: 'Website A',
-        roleCodes: ['WEBSITE_MANAGER'],
+        roleCodes: ['WEBSITE_MANAGER'], mustChangePassword: false,
       })
       .expect(201);
     websiteToken = unwrap(

@@ -109,7 +109,7 @@ export function ProductDetailActions({
         </Button>
       </div>
       {sticky ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/10 bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/10 bg-background/95 px-[max(1rem,env(safe-area-inset-left))] py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
           <Button
             type="button"
             className={cn('store-cta w-full rounded-none')}

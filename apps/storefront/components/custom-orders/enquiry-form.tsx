@@ -60,11 +60,11 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
   }
 
   return (
-    <div className="border border-border bg-card p-6 shadow-sm">
+    <div className="border border-border bg-card p-4 shadow-sm sm:p-6">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
         Step {step + 1} of {ENQUIRY_STEPS.length}
       </p>
-      <h2 className="mt-2 font-heading text-3xl uppercase tracking-wide">{stepLabel}</h2>
+      <h2 className="mt-2 break-words font-heading text-2xl uppercase tracking-wide sm:text-3xl">{stepLabel}</h2>
       <div className="mt-4 h-1 bg-muted">
         <div className="h-1 bg-accent transition-all" style={{ width: `${progress}%` }} />
       </div>
@@ -99,7 +99,7 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
             </Field>
             <Field label="Jersey type">
               <select
-                className="flex h-11 w-full border border-input bg-background px-3 text-sm"
+                className="flex h-11 w-full border border-input bg-background px-3 text-base md:text-sm"
                 value={draft.type}
                 onChange={(event) => setField('type', event.target.value)}
               >
@@ -112,7 +112,7 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
             </Field>
             <Field label="Description">
               <textarea
-                className="min-h-24 w-full border border-input bg-background px-3 py-2 text-sm"
+                className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.description}
                 onChange={(event) => setField('description', event.target.value)}
               />
@@ -130,7 +130,7 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
             </Field>
             <Field label="Customization requirements">
               <textarea
-                className="min-h-24 w-full border border-input bg-background px-3 py-2 text-sm"
+                className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.customizationRequirements}
                 onChange={(event) => setField('customizationRequirements', event.target.value)}
                 placeholder="Name printing, numbers, logos, sleeve patches…"
@@ -168,7 +168,7 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
             </Field>
             <Field label="Notes for the store">
               <textarea
-                className="min-h-24 w-full border border-input bg-background px-3 py-2 text-sm"
+                className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.notes}
                 onChange={(event) => setField('notes', event.target.value)}
               />
@@ -225,7 +225,7 @@ function Row({ label, value }: { label: string; value?: string }) {
   return (
     <div className="flex justify-between gap-4 border-b border-border/70 py-2">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right">{value || '—'}</dd>
+      <dd className="min-w-0 break-words text-right">{value || '—'}</dd>
     </div>
   );
 }

@@ -22,6 +22,13 @@ describe('filterErpNav', () => {
     expect(ids).not.toContain('users');
   });
 
+  it('keeps website CMS on the admin portal and ERP modules on the erp portal', () => {
+    const admin = filterErpNav(['website.read', 'promoCodes.read', 'dashboard.read'], 'admin');
+    expect(admin.map((section) => section.id)).toEqual(['website']);
+    const erp = filterErpNav(['website.read', 'promoCodes.read', 'dashboard.read'], 'erp');
+    expect(erp.map((section) => section.id)).toEqual(['dashboard']);
+  });
+
   it('shows inventory and purchasing for inventory managers without expenses', () => {
     const sections = filterErpNav([
       'dashboard.read',

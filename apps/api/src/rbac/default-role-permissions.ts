@@ -2,6 +2,7 @@ import type { PermissionCode, RoleCode } from '@jersey-commerce/types';
 import { PERMISSION_CODES } from '@jersey-commerce/types';
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[] | 'ALL'> = {
+  SUPER_ADMIN: 'ALL',
   OWNER: 'ALL',
   MANAGER: PERMISSION_CODES.filter((code) => code !== 'settings.manage'),
   CASHIER: [
@@ -64,6 +65,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<RoleCode, readonly PermissionCode[
     'categories.update',
     'website.read',
     'website.update',
+    'promoCodes.read',
+    'promoCodes.manage',
     'customers.read',
     'orders.read',
     'orders.create',

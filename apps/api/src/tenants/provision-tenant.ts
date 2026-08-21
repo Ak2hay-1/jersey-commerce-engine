@@ -9,6 +9,7 @@ export interface ProvisionTenantInput {
   ownerEmail: string;
   ownerPasswordHash: string;
   ownerName: string;
+  mustChangePassword?: boolean;
 }
 
 export async function provisionTenant(
@@ -34,6 +35,7 @@ export async function provisionTenant(
       passwordHash: input.ownerPasswordHash,
       name: input.ownerName.trim(),
       status: 'ACTIVE',
+      mustChangePassword: input.mustChangePassword ?? false,
     },
   } as never);
   const ownerRole = await asTx(db).role.findUnique({
@@ -45,6 +47,14 @@ export async function provisionTenant(
   await db.userRole.create({
     data: { userId: owner.id, roleId: ownerRole.id, tenantId: tenant.id },
   } as never);
+  const superAdminRole = await asTx(db).role.findUnique({
+    where: { tenantId_code: { tenantId: tenant.id, code: 'SUPER_ADMIN' satisfies RoleCode } },
+  });
+  if (superAdminRole) {
+    await db.userRole.create({
+      data: { userId: owner.id, roleId: superAdminRole.id, tenantId: tenant.id },
+    } as never);
+  }
   await asTx(db).documentSequence.create({
     data: {
       tenantId: tenant.id,

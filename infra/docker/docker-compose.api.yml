@@ -1,0 +1,124 @@
+name: jersey-commerce-api
+
+# Hybrid production: API + Postgres + Redis + Caddy (TLS).
+# Storefront and Admin run on Vercel. POS/ERP run on the Jersey Staff EXE.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jce-postgres
+    restart: unless-stopped
+    command: postgres -c shared_buffers=128MB -c effective_cache_size=512MB -c work_mem=4MB -c max_connections=40
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    mem_limit: 384m
+    networks:
+      - jce
+
+  redis:
+    image: redis:7-alpine
+    container_name: jce-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 96mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    mem_limit: 128m
+    networks:
+      - jce
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    container_name: jce-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public&connection_limit=10
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-15m}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-10}
+      AUTH_RATE_WINDOW_SECONDS: ${AUTH_RATE_WINDOW_SECONDS:-60}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-none}
+      BOOTSTRAP_SECRET: ${BOOTSTRAP_SECRET}
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-}
+      TRUST_PROXY: "true"
+      PLATFORM_DOMAIN: ${PLATFORM_DOMAIN:-}
+      MEDIA_LOCAL_ROOT: /app/apps/api/uploads
+    volumes:
+      - api_uploads:/app/apps/api/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    mem_limit: 384m
+    networks:
+      - jce
+    expose:
+      - "4000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: jce-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_HOST: ${API_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 64m
+    networks:
+      - jce
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_uploads:
+  caddy_data:
+  caddy_config:
+
+networks:
+  jce:
+    driver: bridge

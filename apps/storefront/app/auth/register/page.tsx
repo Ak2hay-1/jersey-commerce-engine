@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Create account' };
 
 export default function RegisterPage(): React.JSX.Element {
   return (
-    <div className="px-4 py-16">
+    <div className="px-4 py-12 sm:py-16">
       <RegisterForm />
     </div>
   );

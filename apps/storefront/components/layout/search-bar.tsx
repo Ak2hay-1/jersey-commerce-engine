@@ -70,7 +70,7 @@ export function SearchBar({ onNavigate }: { onNavigate?: () => void }): React.JS
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => (suggestions.length > 0 || searched) && setOpen(true)}
           placeholder="Search tees, kits, brands"
-          className="h-10 pl-9"
+          className="h-10 pl-9 text-base md:text-sm"
           autoComplete="off"
         />
       </form>

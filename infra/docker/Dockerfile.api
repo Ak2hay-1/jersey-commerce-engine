@@ -2,26 +2,21 @@ FROM node:20-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat
 
+FROM base AS pruner
+COPY . .
+RUN npm i -g turbo@2.5.5 && turbo prune @jersey-commerce/api --docker
+
 FROM base AS deps
-COPY package.json package-lock.json ./
-COPY apps/api/package.json apps/api/package.json
-COPY apps/storefront/package.json apps/storefront/package.json
-COPY apps/admin/package.json apps/admin/package.json
-COPY apps/pos/package.json apps/pos/package.json
-COPY packages/types/package.json packages/types/package.json
-COPY packages/validation/package.json packages/validation/package.json
-COPY packages/config/package.json packages/config/package.json
-COPY packages/utils/package.json packages/utils/package.json
-COPY packages/ui/package.json packages/ui/package.json
+COPY --from=pruner /app/out/json/ .
 RUN npm ci
 
 FROM deps AS build
+COPY --from=pruner /app/out/full/ .
 COPY tsconfig.base.json ./
-COPY packages ./packages
-COPY apps/api ./apps/api
 RUN npm run build -w @jersey-commerce/types -w @jersey-commerce/validation -w @jersey-commerce/config -w @jersey-commerce/utils
 RUN npm run prisma:generate -w @jersey-commerce/api
 RUN npm run build -w @jersey-commerce/api
+RUN npm prune --omit=dev
 
 FROM base AS runner
 ENV NODE_ENV=production

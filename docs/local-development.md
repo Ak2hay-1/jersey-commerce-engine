@@ -44,8 +44,9 @@ Default local ports:
 | Service | Port |
 | --- | --- |
 | Storefront | 3000 |
-| Admin | 3001 |
+| Admin panel | 3001 |
 | POS | 3002 |
+| ERP (same admin app) | 3003 |
 | API | 4000 |
 | PostgreSQL | 5432 |
 | Redis | 6379 |
@@ -64,14 +65,17 @@ Or individually:
 npm run dev:api
 npm run dev:storefront
 npm run dev:admin
+npm run dev:erp
 npm run dev:pos
 ```
 
-The API will start even if PostgreSQL or Redis are down. `GET /health` remains `200`. `GET /ready` returns `503` until both dependencies respond.
+`NEXT_PUBLIC_PORTAL` defaults to `all` so local admin on :3001 shows website CMS and ERP together. Set `NEXT_PUBLIC_PORTAL=admin` or `erp` to preview the split used in production.
 
 The storefront uses `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=demo-jersey-store`. Switch tenants locally with `http://localhost:3000/?tenant=demo-jersey-store`. See [storefront.md](storefront.md) and [custom-orders.md](custom-orders.md).
 
 The POS app is at http://localhost:3002. Sign in with `cashier@demo.local` / `DevPassword123!` / tenant `demo-jersey-store`. See [pos.md](pos.md).
+
+Demo superior admin: `superadmin@demo.local` / `DevPassword123!`. That role is hidden from other staff.
 
 ## Quality checks
 
@@ -110,7 +114,7 @@ Health and readiness stay unversioned so orchestrators can probe without API-pre
 
 - **`DATABASE_URL` validation failed**: copy `apps/api/.env.example` to `apps/api/.env`.
 - **Docker commands not found**: install Docker Desktop, restart the terminal, and ensure `docker` is on `PATH`. Until PostgreSQL and Redis are running, `GET /health` stays `200` and `GET /ready` returns `503`.
-- **Port already in use**: stop the process bound to 3000–3002, 4000, 5432, or 6379.
+- **Port already in use**: stop the process bound to 3000–3003, 4000, 5432, or 6379.
 - **Prisma client missing**: run `npm run prisma:generate`.
 - **Shared package import errors in the API**: run `npm run build:packages` once so `packages/*/dist` exists, or use `npm run dev:api` (it builds packages first).
 - **Tenant-scoped 401**: log in via `POST /api/v1/auth/login` and send `Authorization: Bearer <accessToken>`. Client `x-tenant-id` is ignored.

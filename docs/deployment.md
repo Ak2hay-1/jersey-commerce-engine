@@ -1,94 +1,145 @@
-# Production on a Vultr Ubuntu VM (IP access, no domain)
+# Production deploy (hybrid)
 
-Drive the Ubuntu VM from **Windows PowerShell**. The VM only needs git + Docker.
+**Preferred shape:** Storefront + Admin on **Vercel**, API + Postgres + Redis on a **Vultr** VM behind **Caddy HTTPS**, POS + ERP on the **Jersey Staff** Windows EXE.
 
 Public repo: https://github.com/Ak2hay-1/jersey-commerce-engine.git
 
-| App | URL |
-| --- | --- |
-| Storefront | `http://YOUR_IP/` |
-| Admin | `http://YOUR_IP:3001/` |
-| POS | `http://YOUR_IP:3002/` |
-| API | `http://YOUR_IP:4000/` |
-| Health | `http://YOUR_IP:4000/health` |
-| API docs | `http://YOUR_IP:4000/docs` |
+| App | URL | Notes |
+| --- | --- | --- |
+| Storefront | Vercel project URL / custom domain | Next.js SSR; bake `NEXT_PUBLIC_API_URL=https://API_HOST` |
+| Admin panel | Vercel project URL / custom domain | Static export; `portal=admin` |
+| POS + ERP | Jersey Staff EXE | Pack with `-ApiUrl https://API_HOST` |
+| API | `https://API_HOST/` | Caddy → Nest on the VM |
+| Realtime | `wss://API_HOST/realtime` | WebSocket (JWT query `token`) |
+| Health | `https://API_HOST/health` | Liveness |
 
-Postgres and Redis stay private on the Docker network.
+Postgres and Redis stay private on the Docker network. OpenAPI `/docs` is off in production.
 
-`NEXT_PUBLIC_*` values are baked into Next.js images at **build** time. If `PUBLIC_IP` changes, rebuild.
+Detailed Vercel steps: [../infra/vercel/README.md](../infra/vercel/README.md).
 
-## From Windows PowerShell
+Cutover checklist for an existing Vultr box: [../infra/docker/PRODUCTION-CUTOVER.md](../infra/docker/PRODUCTION-CUTOVER.md).
 
-Replace `YOUR_IP` and the SSH user (`root` on many Vultr images, sometimes `ubuntu` or `linuxuser`).
+Without a custom domain yet, you can use [sslip.io](https://sslip.io) so Let’s Encrypt works, e.g. `API_HOST=45-76-61-16.sslip.io` for IP `45.76.61.16`.
+
+---
+
+## 1. DNS
+
+Point an A (and optional AAAA) record for `API_HOST` (e.g. `api.yourshop.com`) at the Vultr IPv4 **before** starting Caddy so Let’s Encrypt can issue a certificate.
+
+---
+
+## 2. Deploy the API VM (from Windows PowerShell)
 
 ```powershell
 cd a:\jerzyfy
-.\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root
+.\infra\docker\deploy.ps1 `
+  -PublicIp YOUR_IP `
+  -ApiHost api.yourshop.com `
+  -AcmeEmail you@example.com `
+  -StorefrontOrigin https://your-shop.vercel.app `
+  -AdminOrigin https://your-admin.vercel.app `
+  -SshUser root
 ```
 
-If you log in with a key:
+With a key:
 
 ```powershell
-.\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root -SshKey $env:USERPROFILE\.ssh\id_ed25519
+.\infra\docker\deploy.ps1 `
+  -PublicIp YOUR_IP `
+  -ApiHost api.yourshop.com `
+  -AcmeEmail you@example.com `
+  -StorefrontOrigin https://your-shop.vercel.app `
+  -AdminOrigin https://your-admin.vercel.app `
+  -SshUser root `
+  -SshKey $env:USERPROFILE\.ssh\id_ed25519
 ```
 
-The script will:
+The script clones the repo to `/opt/jersey`, installs Docker if needed, writes `.env.production` (secrets printed once), and runs `prod-up.sh` (builds **api**, starts postgres/redis/api/caddy).
 
-1. SSH to the VM
-2. `git clone` (or `git pull`) the public GitHub repo into `/opt/jersey`
-3. Install Docker, add 4 GB swap, open ports 22 / 80 / 3001 / 3002 / 4000
-4. Create `.env.production` with random secrets the first time (printed once)
-5. Build and start the stack (15–30 minutes on 4 GB)
+Firewall opens **22, 80, 443** (plus legacy ports if left from older setups).
 
-Also allow those ports in the **Vultr** firewall if you use one.
-
-## Create the first shop
-
-Do **not** run `prisma:seed` in production. After `http://YOUR_IP:4000/health` returns 200, in PowerShell:
+Later API-only updates:
 
 ```powershell
-$ip = "YOUR_IP"
+.\infra\docker\deploy.ps1 `
+  -PublicIp YOUR_IP `
+  -ApiHost api.yourshop.com `
+  -AcmeEmail you@example.com `
+  -StorefrontOrigin https://your-shop.vercel.app `
+  -AdminOrigin https://your-admin.vercel.app `
+  -SshUser root `
+  -SkipSetup
+```
+
+After Vercel URLs change, refresh CORS without a full rebuild:
+
+```powershell
+.\infra\docker\deploy.ps1 ... -UpdateCorsOnly
+```
+
+---
+
+## 3. Prove the API is up
+
+```powershell
+Invoke-RestMethod "https://API_HOST/health"
+Invoke-RestMethod "https://API_HOST/ready"
+```
+
+---
+
+## 4. Deploy Storefront and Admin on Vercel
+
+1. Create two Vercel projects from this monorepo.
+2. Storefront: root `apps/storefront`, env `NEXT_PUBLIC_API_URL=https://API_HOST`.
+3. Admin: root `apps/admin`, env `NEXT_PUBLIC_API_URL=https://API_HOST` (build writes `runtime-config.js` with `portal:"admin"`).
+4. Deploy both; put their production origins into `CORS_ORIGINS` (`-UpdateCorsOnly` if needed).
+
+See [infra/vercel/README.md](../infra/vercel/README.md).
+
+---
+
+## 5. Staff EXE
+
+```powershell
+.\infra\desktop\pack-client.ps1 -ApiUrl "https://API_HOST" -ClientName "ClientShop"
+```
+
+Share `apps/desktop/dist/Jersey-Staff-Setup-*.exe`. Staff log in with users created in Admin.
+
+---
+
+## 6. Bootstrap the shop
+
+```powershell
+$api = "https://API_HOST"
 $bootstrap = "BOOTSTRAP_SECRET_PRINTED_BY_DEPLOY"
 $body = @{
-  name          = "My Jersey Store"
-  slug          = "demo-jersey-store"
-  ownerEmail    = "owner@example.com"
+  name          = "Client Shop Name"
+  slug          = "client-shop-slug"
+  ownerEmail    = "owner@client.example"
   ownerPassword = "ChangeMe1!"
   ownerName     = "Store Owner"
 } | ConvertTo-Json
 
 Invoke-RestMethod -Method Post `
-  -Uri "http://${ip}:4000/api/v1/admin/tenants" `
+  -Uri "$api/api/v1/admin/tenants" `
   -Headers @{ "X-Bootstrap-Secret" = $bootstrap } `
   -ContentType "application/json" `
   -Body $body
 ```
 
-Password must include uppercase, lowercase, a number, and a special character.
+Never run `npm run prisma:seed` on the VM.
 
-Log in at `http://YOUR_IP:3001/` with that owner email and password.
+---
 
-## Manual SSH (same steps)
+## Legacy all-in-one VM
 
-```powershell
-ssh root@YOUR_IP
-```
+[`docker-compose.prod.yml`](../infra/docker/docker-compose.prod.yml) still builds storefront + nginx admin/POS on the same host (HTTP IP). Prefer the hybrid path above for new shops. Local npm scripts: `npm run prod:full:up` / `prod:full:down`.
 
-On the VM:
+---
 
-```bash
-apt-get update && apt-get install -y git
-git clone https://github.com/Ak2hay-1/jersey-commerce-engine.git /opt/jersey
-bash /opt/jersey/infra/docker/vm-setup.sh
-cp /opt/jersey/infra/docker/.env.production.example /opt/jersey/infra/docker/.env.production
-nano /opt/jersey/infra/docker/.env.production
-bash /opt/jersey/infra/docker/prod-up.sh
-```
+## Cookies and CORS
 
-## Later updates from PowerShell
-
-```powershell
-.\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root -SkipSetup
-```
-
-When you later attach a domain, switch to HTTPS, set `COOKIE_SECURE=true`, and rebuild with `https://` API URLs.
+Hybrid API defaults: `COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` (cross-site staff refresh cookie if used). Staff UIs also send refresh tokens in the JSON body / `localStorage`. `CORS_ORIGINS` must list every browser origin (Vercel shop, Vercel admin, `http://127.0.0.1:39217` for the EXE).

@@ -50,7 +50,13 @@ type ListQuery = {
 };
 
 function apiBase(): string {
-  return `${publicEnv.NEXT_PUBLIC_API_URL.replace(/\/$/, '')}/api/v1`;
+  // Server-side: prefer Docker-internal URL so SSR does not hairpin via PUBLIC_IP.
+  // Browser: always the public NEXT_PUBLIC_API_URL.
+  const raw =
+    typeof window === 'undefined'
+      ? process.env.API_INTERNAL_URL || publicEnv.NEXT_PUBLIC_API_URL
+      : publicEnv.NEXT_PUBLIC_API_URL;
+  return `${raw.replace(/\/$/, '')}/api/v1`;
 }
 
 function unwrap<T>(payload: ApiSuccessResponse<T> | ApiErrorResponse, status: number): T {
@@ -88,18 +94,31 @@ async function storeFetch<T>(
     headers.set('authorization', `Bearer ${accessToken}`);
   }
   const url = `${apiBase()}${path}`;
+  const { tenantSlug: _tenantSlug, cartToken: _cartToken, accessToken: _accessToken, parse: _parse, ...requestInit } =
+    init;
   const response = await fetch(url, {
-    ...init,
+    ...requestInit,
     headers,
     cache: init.cache,
     next: init.next,
     signal: init.signal,
   });
-  const payload = (await response.json()) as ApiSuccessResponse<T> | ApiErrorResponse;
+  const raw = await response.text();
+  let payload: ApiSuccessResponse<T> | ApiErrorResponse | undefined;
+  if (raw) {
+    try {
+      payload = JSON.parse(raw) as ApiSuccessResponse<T> | ApiErrorResponse;
+    } catch {
+      throw new StoreApiError('The store is temporarily unavailable.', response.status || 502);
+    }
+  }
   if (!response.ok) {
     const message =
       payload && typeof payload === 'object' && 'error' in payload ? payload.error.message : 'Request failed.';
-    throw new StoreApiError(message, response.status, 'error' in payload ? payload.error.code : undefined);
+    throw new StoreApiError(message, response.status, payload && 'error' in payload ? payload.error.code : undefined);
+  }
+  if (!payload) {
+    throw new StoreApiError('The store is temporarily unavailable.', response.status || 502);
   }
   return unwrap(payload, response.status);
 }
@@ -141,7 +160,7 @@ export const storeApi = {
   product(slug: string, options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductDetail>(`/store/products/${encodeURIComponent(slug)}`, {
       ...options,
-      cache: 'no-store',
+      next: options?.next ?? { revalidate: 30, tags: ['store-products'] },
     });
   },
 
@@ -162,7 +181,7 @@ export const storeApi = {
   search(query: ListQuery, options?: StoreRequestOptions) {
     return storeFetch<StorefrontSearchResult>(`/store/search${queryString(query)}`, {
       ...options,
-      cache: 'no-store',
+      next: options?.next ?? { revalidate: 30, tags: ['store-products'] },
     });
   },
 
@@ -183,7 +202,7 @@ export const storeApi = {
   bestSellers(options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductListItem[]>('/store/collections/best-sellers', {
       ...options,
-      cache: 'no-store',
+      next: options?.next ?? { revalidate: 60, tags: ['store-products'] },
     });
   },
 
@@ -215,6 +234,23 @@ export const storeApi = {
 
   removeCartItem(id: string, options?: StoreRequestOptions) {
     return storeFetch<CartDto>(`/store/cart/items/${encodeURIComponent(id)}`, {
+      ...options,
+      method: 'DELETE',
+      cache: 'no-store',
+    });
+  },
+
+  applyPromo(code: string, options?: StoreRequestOptions) {
+    return storeFetch<CartDto>('/store/cart/promo', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify({ code }),
+      cache: 'no-store',
+    });
+  },
+
+  removePromo(options?: StoreRequestOptions) {
+    return storeFetch<CartDto>('/store/cart/promo', {
       ...options,
       method: 'DELETE',
       cache: 'no-store',
@@ -275,6 +311,47 @@ export const storeApi = {
       ...options,
       method: 'POST',
       body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+  },
+
+  requestOtp(
+    input: { channel: 'email' | 'sms'; email?: string; phone?: string },
+    options?: StoreRequestOptions,
+  ) {
+    return storeFetch<{ sent: true; expiresIn: number; debugCode?: string }>('/store/auth/otp/request', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+  },
+
+  verifyOtp(
+    input: { channel: 'email' | 'sms'; email?: string; phone?: string; code: string; name?: string },
+    options?: StoreRequestOptions,
+  ) {
+    return storeFetch<StorefrontAuthResponse>('/store/auth/otp/verify', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+  },
+
+  startGoogle(input?: { origin?: string }, options?: StoreRequestOptions) {
+    const suffix = input?.origin ? `?origin=${encodeURIComponent(input.origin)}` : '';
+    return storeFetch<{ authorizationUrl: string }>(`/store/auth/google/start${suffix}`, {
+      ...options,
+      cache: 'no-store',
+    });
+  },
+
+  exchangeGoogle(ticket: string, options?: StoreRequestOptions) {
+    return storeFetch<StorefrontAuthResponse>('/store/auth/google/exchange', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify({ ticket }),
       cache: 'no-store',
     });
   },

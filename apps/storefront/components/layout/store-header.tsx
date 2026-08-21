@@ -15,7 +15,7 @@ import { MOTION_TRANSITION } from '../motion/presence';
 const NAV = [
   { href: '/products', label: 'Shop' },
   { href: '/products?sort=newest', label: 'Latest' },
-  { href: '/category/football', label: 'Jerseys' },
+  { href: '/category/football-jerseys', label: 'Jerseys' },
   { href: '/about', label: 'About' },
 ];
 
@@ -38,6 +38,18 @@ export function StoreHeader(): React.JSX.Element {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    function closeDesktop() {
+      if (media.matches) {
+        setMenuOpen(false);
+      }
+    }
+    closeDesktop();
+    media.addEventListener('change', closeDesktop);
+    return () => media.removeEventListener('change', closeDesktop);
+  }, []);
+
   return (
     <header
       className={cn(
@@ -45,20 +57,20 @@ export function StoreHeader(): React.JSX.Element {
         scrolled ? 'shadow-header' : 'shadow-none',
       )}
     >
-      <div className="mx-auto grid h-16 max-w-store grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:grid-cols-3">
+      <div className="mx-auto grid h-14 max-w-store grid-cols-[1fr_auto_1fr] items-center gap-2 store-gutter sm:h-16 sm:gap-3">
         <div className="flex items-center gap-1">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="rounded-none md:hidden"
+            className="h-11 w-11 rounded-none lg:hidden"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((value) => !value)}
           >
             {menuOpen ? <X /> : <Menu />}
           </Button>
-          <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
+          <nav className="hidden min-w-0 items-center gap-5 lg:flex" aria-label="Primary">
             {NAV.map((item) => (
               <Link
                 key={item.href}
@@ -71,8 +83,8 @@ export function StoreHeader(): React.JSX.Element {
           </nav>
         </div>
 
-        <Link href="/" className="justify-self-center">
-          <span className="font-heading text-xl uppercase tracking-[0.2em] md:text-2xl">{store.tenant.name}</span>
+        <Link href="/" className="min-w-0 justify-self-center px-1">
+          <span className="block max-w-[42vw] truncate text-center font-heading text-lg uppercase tracking-[0.14em] sm:max-w-[46vw] sm:text-xl sm:tracking-[0.18em] md:text-2xl lg:max-w-none lg:tracking-[0.2em]">{store.tenant.name}</span>
         </Link>
 
         <div className="flex items-center justify-end gap-1">
@@ -80,21 +92,21 @@ export function StoreHeader(): React.JSX.Element {
             type="button"
             variant="ghost"
             size="icon"
-            className="rounded-none"
+            className="h-11 w-11 rounded-none md:h-9 md:w-9"
             aria-label={searchOpen ? 'Close search' : 'Search'}
             aria-expanded={searchOpen}
             onClick={() => setSearchOpen((value) => !value)}
           >
             <Search className="h-4 w-4" />
           </Button>
-          <Button asChild variant="ghost" size="icon" className="rounded-none" aria-label={customer ? 'Account' : 'Sign in'}>
+          <Button asChild variant="ghost" size="icon" className="h-11 w-11 rounded-none md:h-9 md:w-9" aria-label={customer ? 'Account' : 'Sign in'}>
             <Link href={customer ? '/account' : '/auth/login'}>
               <User className="h-4 w-4" />
             </Link>
           </Button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em]"
+            className="inline-flex min-h-11 items-center gap-2 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] md:min-h-0"
             aria-label="Open cart"
             onClick={() => setOpen(true)}
           >
@@ -124,7 +136,7 @@ export function StoreHeader(): React.JSX.Element {
         {searchOpen ? (
           <motion.div
             key="header-search"
-            className="mx-auto max-w-store border-t border-foreground/10 px-4 py-3"
+            className="mx-auto max-w-store border-t border-foreground/10 store-gutter py-3"
             initial={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
             animate={reduced ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}

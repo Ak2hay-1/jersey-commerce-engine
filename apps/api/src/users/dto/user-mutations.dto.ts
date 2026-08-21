@@ -1,8 +1,9 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsEmail,
   IsIn,
   IsOptional,
@@ -45,6 +46,23 @@ export class CreateUserDto {
   @ArrayMinSize(1)
   @IsIn(ROLE_CODES, { each: true })
   roleCodes!: RoleCode[];
+
+  @ApiHideProperty()
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    if (value === true || value === 'true') {
+      return true;
+    }
+    if (value === false || value === 'false') {
+      return false;
+    }
+    return value;
+  })
+  @IsBoolean()
+  mustChangePassword?: boolean;
 }
 
 export class UpdateUserDto {

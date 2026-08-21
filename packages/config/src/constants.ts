@@ -4,5 +4,6 @@ export const APP_PORTS = {
   storefront: 3000,
   admin: 3001,
   pos: 3002,
+  erp: 3003,
   api: 4000,
 } as const;

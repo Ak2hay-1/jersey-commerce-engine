@@ -46,23 +46,30 @@ export function CartPanel({
   }, [cart]);
   const empty = !cart || cart.items.length === 0;
   const blocked = cart?.items.some((item) => item.stockStatus === 'OUT_OF_STOCK') ?? false;
+  const itemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   return (
-    <aside className="flex h-full flex-col rounded-xl border bg-background">
-      <div className="flex items-center justify-between gap-2 border-b p-3">
+    <aside className="pos-cart-shell flex h-full flex-col overflow-hidden rounded-2xl">
+      <div className="flex items-center justify-between gap-2 border-b px-4 py-4">
         <div>
-          <p className="text-sm font-semibold">Cart</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Sale</p>
+          <p className="text-lg font-semibold tracking-tight">Cart</p>
           <p className="text-xs text-muted-foreground">
             {cart?.customer ? cart.customer.name : 'Walk-in'}
-            {cart?.items.length ? ` · ${cart.items.length} line(s)` : ''}
+            {itemCount ? ` · ${itemCount} item${itemCount === 1 ? '' : 's'}` : ''}
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-10" onClick={onCustomer}>
+        <Button type="button" variant="outline" size="sm" className="h-10 rounded-full" onClick={onCustomer}>
           Customer
         </Button>
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-        {empty ? <p className="py-8 text-center text-sm text-muted-foreground">Scan or search to add items.</p> : null}
+        {empty ? (
+          <div className="flex h-full min-h-[12rem] flex-col items-center justify-center rounded-xl border border-dashed bg-background/60 px-4 text-center">
+            <p className="text-sm font-medium">Cart is empty</p>
+            <p className="mt-1 text-xs text-muted-foreground">Scan or search to add football jerseys.</p>
+          </div>
+        ) : null}
         {cart?.items.map((item) => (
           <CartLine
             key={item.id}
@@ -76,9 +83,9 @@ export function CartPanel({
         ))}
       </div>
       {canDiscount ? (
-        <div className="grid grid-cols-[8rem_1fr_auto] gap-2 border-t p-3">
+        <div className="grid grid-cols-[8rem_1fr_auto] gap-2 border-t bg-background/50 p-3">
           <select
-            className="h-10 rounded-md border bg-transparent px-2 text-sm"
+            className="h-10 rounded-lg border bg-transparent px-2 text-sm"
             value={cartDiscountType}
             onChange={(event) => setCartDiscountType(event.target.value as DiscountType)}
           >
@@ -104,7 +111,7 @@ export function CartPanel({
           </Button>
         </div>
       ) : null}
-      <div className="space-y-1 border-t p-3 text-sm">
+      <div className="space-y-2 border-t bg-background/70 p-4 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Subtotal</span>
           <span>{formatMoney(cart?.subtotal ?? '0.00')}</span>
@@ -113,20 +120,25 @@ export function CartPanel({
           <span className="text-muted-foreground">Discount</span>
           <span>{formatMoney(cart?.totalDiscount ?? '0.00')}</span>
         </div>
-        <div className="flex justify-between text-base font-semibold">
-          <span>Total</span>
-          <span>{formatMoney(cart?.total ?? '0.00')}</span>
+        <div className="flex items-end justify-between border-t pt-3">
+          <span className="text-sm font-medium text-muted-foreground">Total due</span>
+          <span className="text-2xl font-semibold tracking-tight">{formatMoney(cart?.total ?? '0.00')}</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2 border-t p-3">
-        <Button type="button" variant="outline" className="h-11" disabled={busy || empty} onClick={() => void onHold()}>
+        <Button type="button" variant="outline" className="h-11 rounded-xl" disabled={busy || empty} onClick={() => void onHold()}>
           Hold
         </Button>
-        <Button type="button" variant="outline" className="h-11" disabled={busy || empty} onClick={() => void onClear()}>
+        <Button type="button" variant="outline" className="h-11 rounded-xl" disabled={busy || empty} onClick={() => void onClear()}>
           Clear
         </Button>
-        <Button type="button" className="col-span-2 h-12 text-base" disabled={busy || empty || blocked} onClick={onPay}>
-          {blocked ? 'Out of stock in cart' : 'Pay'}
+        <Button
+          type="button"
+          className="pos-pay-button col-span-2 h-14 rounded-xl text-base font-semibold"
+          disabled={busy || empty || blocked}
+          onClick={onPay}
+        >
+          {blocked ? 'Out of stock in cart' : 'Pay now'}
         </Button>
       </div>
     </aside>
@@ -152,7 +164,7 @@ function CartLine({
   const [discountValue, setDiscountValue] = useState(item.discountValue);
 
   return (
-    <div className="rounded-lg border p-3">
+    <div className="rounded-xl border bg-card/90 p-3 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate font-medium">{item.productName}</p>
@@ -162,24 +174,24 @@ function CartLine({
           {statusLabel(item.stockStatus)}
         </Badge>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 rounded-full border bg-background p-0.5">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-10 w-10"
+            className="h-9 w-9 rounded-full"
             disabled={busy || item.quantity <= 1}
             onClick={() => void onQuantity(item.id, item.quantity - 1)}
           >
             −
           </Button>
-          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+          <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-10 w-10"
+            className="h-9 w-9 rounded-full"
             disabled={busy}
             onClick={() => void onQuantity(item.id, item.quantity + 1)}
           >

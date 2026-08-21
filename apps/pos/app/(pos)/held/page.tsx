@@ -7,6 +7,7 @@ import type { PosCartDto } from '@jersey-commerce/types';
 import { PageHeader } from '@/components/page-header';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { listHeldCarts, resumeCart } from '@/lib/pos-api';
+import { useRealtimeReload } from '@/lib/realtime';
 
 export default function HeldCartsPage(): React.JSX.Element {
   const router = useRouter();
@@ -22,6 +23,11 @@ export default function HeldCartsPage(): React.JSX.Element {
   useEffect(() => {
     void reload().catch((err: Error) => setError(err.message));
   }, []);
+
+  useRealtimeReload(
+    (event) => event.entity === 'PosCart' || event.entity === 'PosCartItem',
+    () => reload().catch((err: Error) => setError(err.message)),
+  );
 
   async function resume(id: string): Promise<void> {
     setBusyId(id);

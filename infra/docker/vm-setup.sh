@@ -37,17 +37,20 @@ if [[ ! -f /swapfile ]]; then
   echo '/swapfile none swap sw 0 0' >> /etc/fstab
 fi
 
-echo "==> Firewall: SSH + app ports (not Postgres/Redis)"
+echo "==> Firewall: SSH + HTTP/HTTPS for Caddy (API TLS). Postgres/Redis stay private."
 ufw allow OpenSSH
 ufw allow 80/tcp
+ufw allow 443/tcp
+# Legacy full-stack ports (harmless if unused)
 ufw allow 3001/tcp
 ufw allow 3002/tcp
 ufw allow 4000/tcp
 ufw --force enable
 
 echo
-echo "VM ready. Next (from /opt/jersey):"
+echo "VM ready for hybrid API stack. Next (from /opt/jersey):"
 echo "  1. cp infra/docker/.env.production.example infra/docker/.env.production"
-echo "  2. Set PUBLIC_IP and secrets in that file"
-echo "  3. bash infra/docker/prod-up.sh"
-echo "Build one image at a time on 4GB. First start can take 15–30 minutes."
+echo "  2. Set PUBLIC_IP, API_HOST, ACME_EMAIL, CORS_ORIGINS, secrets"
+echo "  3. Point DNS A record for API_HOST at this VM"
+echo "  4. bash infra/docker/prod-up.sh"
+echo "First API image build can take 10–20 minutes on 4GB."

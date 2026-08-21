@@ -23,6 +23,7 @@ enum UserStatus {
 }
 
 enum RoleCode {
+  SUPER_ADMIN
   OWNER
   MANAGER
   CASHIER
@@ -93,6 +94,11 @@ enum DiscountType {
   NONE
   FIXED
   PERCENTAGE
+}
+
+enum PromoCodeStatus {
+  ACTIVE
+  DISABLED
 }
 
 enum OrderSource {
@@ -307,6 +313,22 @@ enum CustomOrderCommunicationStatus {
   FAILED
 }
 
+enum EmailOtpProvider {
+  CONSOLE
+  RESEND
+  SMTP
+}
+
+enum SmsOtpProvider {
+  CONSOLE
+  MSG91
+  TWILIO
+}
+
+enum CustomerIdentityProvider {
+  GOOGLE
+}
+
 /// Independent business isolation boundary.
 model Tenant {
   id             String       @id @default(cuid())
@@ -356,6 +378,8 @@ model Tenant {
   inventories        Inventory[]
   inventoryMovements InventoryMovement[]
   customers          Customer[]
+  customerIdentities CustomerIdentity[]
+  authSettings       AuthSettings?
   tags               Tag[]
   customerTags       CustomerTag[]
   customerNotes      CustomerNote[]
@@ -386,6 +410,7 @@ model Tenant {
   expenses           Expense[]
   auditLogs          AuditLog[]
   websiteSettings    WebsiteSettings?
+  promoCodes         PromoCode[]
   hosts              TenantHost[]
   backupSettings     BackupSettings?
   backupRuns         BackupRun[]
@@ -417,9 +442,10 @@ model User {
   email        String
   phone        String?
   passwordHash String     @map("password_hash")
-  status       UserStatus @default(ACTIVE)
-  tokenVersion Int        @default(0) @map("token_version")
-  lastLoginAt  DateTime?  @map("last_login_at")
+  status              UserStatus @default(ACTIVE)
+  tokenVersion        Int        @default(0) @map("token_version")
+  mustChangePassword  Boolean    @default(false) @map("must_change_password")
+  lastLoginAt         DateTime?  @map("last_login_at")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
@@ -454,6 +480,7 @@ model User {
   customOrderTimelineEvents CustomOrderTimelineEvent[] @relation("CustomOrderTimelineActor")
   customOrderProductionEvents CustomOrderProductionEvent[] @relation("CustomOrderProductionActor")
   customOrderDesignApprovals CustomOrderDesignApproval[] @relation("CustomOrderDesignApprover")
+  promoCodesCreated       PromoCode[]            @relation("PromoCodeCreator")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -726,6 +753,7 @@ model Customer {
   tags       CustomerTag[]
   staffNotes CustomerNote[]
   preference CustomerPreference?
+  identities CustomerIdentity[]
 
   @@index([tenantId])
   @@index([tenantId, phone])
@@ -733,6 +761,59 @@ model Customer {
   @@index([tenantId, createdAt])
   @@index([tenantId, status])
   @@map("customers")
+}
+
+/// Per-tenant storefront login methods and encrypted provider credentials.
+model AuthSettings {
+  id                         String           @id @default(cuid())
+  tenantId                   String           @unique @map("tenant_id")
+  passwordLoginEnabled       Boolean          @default(true) @map("password_login_enabled")
+  emailOtpEnabled            Boolean          @default(false) @map("email_otp_enabled")
+  smsOtpEnabled              Boolean          @default(false) @map("sms_otp_enabled")
+  googleSignInEnabled        Boolean          @default(false) @map("google_sign_in_enabled")
+  emailProvider              EmailOtpProvider @default(CONSOLE) @map("email_provider")
+  emailFromAddress           String?          @map("email_from_address")
+  emailFromName              String?          @map("email_from_name")
+  resendApiKeyEncrypted      String?          @map("resend_api_key_encrypted") @db.Text
+  smtpHost                   String?          @map("smtp_host")
+  smtpPort                   Int?             @map("smtp_port")
+  smtpUser                   String?          @map("smtp_user")
+  smtpPasswordEncrypted      String?          @map("smtp_password_encrypted") @db.Text
+  smtpSecure                 Boolean          @default(true) @map("smtp_secure")
+  smsProvider                SmsOtpProvider   @default(CONSOLE) @map("sms_provider")
+  smsApiKeyEncrypted         String?          @map("sms_api_key_encrypted") @db.Text
+  smsSenderId                String?          @map("sms_sender_id")
+  twilioAccountSid           String?          @map("twilio_account_sid")
+  twilioAuthTokenEncrypted   String?          @map("twilio_auth_token_encrypted") @db.Text
+  smsFromNumber              String?          @map("sms_from_number")
+  googleClientId             String?          @map("google_client_id")
+  googleClientSecretEncrypted String?         @map("google_client_secret_encrypted") @db.Text
+  otpTtlSeconds              Int              @default(300) @map("otp_ttl_seconds")
+  createdAt                  DateTime         @default(now()) @map("created_at")
+  updatedAt                  DateTime         @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@map("auth_settings")
+}
+
+/// Linked OAuth identities for a storefront customer. Tenant-scoped.
+model CustomerIdentity {
+  id              String                   @id @default(cuid())
+  tenantId        String                   @map("tenant_id")
+  customerId      String                   @map("customer_id")
+  provider        CustomerIdentityProvider
+  providerSubject String                   @map("provider_subject")
+  email           String?
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider, providerSubject])
+  @@index([tenantId, customerId])
+  @@map("customer_identities")
 }
 
 /// Reusable tenant-scoped tag. Names are data, not application constants.
@@ -1167,12 +1248,14 @@ model Cart {
   status       CartStatus @default(ACTIVE)
   expiresAt    DateTime   @map("expires_at")
   convertedOrderId String? @unique @map("converted_order_id")
+  promoCodeId  String?    @map("promo_code_id")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
   tenant         Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   customer       Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
   convertedOrder Order?  @relation("CartConvertedOrder", fields: [convertedOrderId], references: [id], onDelete: Restrict)
+  promoCode      PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   items          CartItem[]
   checkoutKeys   CheckoutIdempotency[]
 
@@ -1180,6 +1263,7 @@ model Cart {
   @@index([tenantId, status])
   @@index([tenantId, customerId])
   @@index([tenantId, expiresAt])
+  @@index([promoCodeId])
   @@map("carts")
 }
 
@@ -1233,6 +1317,7 @@ model Order {
   shippedAt         DateTime?           @map("shipped_at")
   completedAt       DateTime?           @map("completed_at")
   saleId            String?             @unique @map("sale_id")
+  promoCodeId       String?             @map("promo_code_id")
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @updatedAt @map("updated_at")
 
@@ -1245,6 +1330,7 @@ model Order {
   payments        Payment[]
   shippingAddress OrderShippingAddress?
   convertedCart   Cart?                  @relation("CartConvertedOrder")
+  promoCode       PromoCode?             @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   checkoutKeys    CheckoutIdempotency[]
 
   @@unique([tenantId, orderNumber])
@@ -1255,6 +1341,7 @@ model Order {
   @@index([tenantId, customerId])
   @@index([tenantId, createdAt])
   @@index([tenantId, total])
+  @@index([promoCodeId])
   @@index([orderNumber])
   @@map("orders")
 }
@@ -1559,12 +1646,43 @@ model WebsiteSettings {
   businessHours    Json?    @map("business_hours")
   seoTitle         String?  @map("seo_title")
   seoDescription   String?  @map("seo_description")
+  footerConfig     Json?    @map("footer_config")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@map("website_settings")
+}
+
+model PromoCode {
+  id             String          @id @default(cuid())
+  tenantId       String          @map("tenant_id")
+  code           String
+  name           String
+  description    String?
+  discountType   DiscountType    @map("discount_type")
+  discountValue  Decimal         @map("discount_value") @db.Decimal(14, 2)
+  minSubtotal    Decimal?        @map("min_subtotal") @db.Decimal(14, 2)
+  maxDiscount    Decimal?        @map("max_discount") @db.Decimal(14, 2)
+  usageLimit     Int?            @map("usage_limit")
+  usageCount     Int             @default(0) @map("usage_count")
+  startsAt       DateTime?       @map("starts_at")
+  endsAt         DateTime?       @map("ends_at")
+  status         PromoCodeStatus @default(ACTIVE)
+  createdById    String?         @map("created_by")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  createdBy User?  @relation("PromoCodeCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  carts     Cart[]
+  orders    Order[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("promo_codes")
 }
 
 /// Per-tenant automatic backup destination, schedule, and history. Not used by API modules in Phase 1.

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -11,6 +12,7 @@ import { TokenService } from '../auth/token.service';
 import { AuthRateLimiterService } from '../auth/rate-limit/auth-rate-limiter.service';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
+import { AuthSettingsService } from '../auth-settings/auth-settings.service';
 import { normalizeEmail, normalizePhone } from '../customers/customer-phone';
 import { normalizeOptionalText } from '../catalog/unique';
 import { toStorefrontCustomer } from './store-catalog.mapper';
@@ -27,9 +29,11 @@ export class StoreAuthService {
     private readonly tokens: TokenService,
     private readonly rateLimit: AuthRateLimiterService,
     private readonly audit: AuditService,
+    private readonly authSettings: AuthSettingsService,
   ) {}
 
   async register(tenantId: string, dto: StoreRegisterDto, meta?: RequestMeta) {
+    await this.assertPasswordLogin(tenantId);
     await this.rateLimit.consume(`store-register:${tenantId}:${meta?.ipAddress ?? 'unknown'}`);
     const parsed = passwordSchema.safeParse(dto.password);
     if (!parsed.success) {
@@ -84,10 +88,11 @@ export class StoreAuthService {
       ipAddress: meta?.ipAddress,
       userAgent: meta?.userAgent,
     });
-    return this.issue(tenantId, customer);
+    return this.issueSession(tenantId, customer);
   }
 
   async login(tenantId: string, dto: StoreLoginDto, meta?: RequestMeta) {
+    await this.assertPasswordLogin(tenantId);
     const identifier = normalizeEmail(dto.email) ?? normalizePhone(dto.phone);
     await this.rateLimit.consume(`store-login:${tenantId}:${identifier ?? meta?.ipAddress ?? 'unknown'}`);
     if (!identifier) {
@@ -108,7 +113,7 @@ export class StoreAuthService {
     if (!ok) {
       throw new UnauthorizedException(INVALID);
     }
-    return this.issue(tenantId, customer);
+    return this.issueSession(tenantId, customer);
   }
 
   async me(tenantId: string, customerId: string) {
@@ -161,7 +166,59 @@ export class StoreAuthService {
     return toStorefrontCustomer(updated);
   }
 
-  private issue(
+  async findOrCreateOtpCustomer(input: {
+    tenantId: string;
+    email?: string | null;
+    phone?: string | null;
+    name?: string;
+    source: string;
+    meta?: RequestMeta;
+  }) {
+    const email = input.email ?? null;
+    const phone = input.phone ?? null;
+    const existing = await this.prisma.customer.findFirst({
+      where: {
+        tenantId: input.tenantId,
+        OR: [...(email ? [{ email }] : []), ...(phone ? [{ phone }] : [])],
+      },
+    });
+    if (existing?.status === 'BLOCKED') {
+      throw new UnauthorizedException('This account is not available.');
+    }
+    if (existing) {
+      return this.prisma.customer.update({
+        where: { id: existing.id },
+        data: {
+          email: email ?? existing.email,
+          phone: phone ?? existing.phone,
+          name: input.name?.trim() || existing.name,
+          status: 'ACTIVE',
+        },
+      });
+    }
+    const created = await this.prisma.customer.create({
+      data: {
+        tenantId: input.tenantId,
+        name: input.name?.trim() || (email ? email.split('@')[0]! : 'Customer'),
+        email,
+        phone,
+        status: 'ACTIVE',
+        preference: { create: { tenantId: input.tenantId } },
+      },
+    });
+    await this.audit.log({
+      action: AUDIT_ACTIONS.CUSTOMER_CREATED,
+      tenantId: input.tenantId,
+      entity: 'Customer',
+      entityId: created.id,
+      metadata: { source: input.source },
+      ipAddress: input.meta?.ipAddress,
+      userAgent: input.meta?.userAgent,
+    });
+    return created;
+  }
+
+  issueSession(
     tenantId: string,
     customer: {
       id: string;
@@ -181,5 +238,12 @@ export class StoreAuthService {
       expiresIn: access.expiresIn,
       customer: toStorefrontCustomer(customer),
     };
+  }
+
+  private async assertPasswordLogin(tenantId: string) {
+    const flags = await this.authSettings.getPublicFlags(tenantId);
+    if (!flags.passwordLogin) {
+      throw new ForbiddenException('Password sign-in is disabled for this store.');
+    }
   }
 }

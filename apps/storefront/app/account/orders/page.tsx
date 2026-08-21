@@ -19,7 +19,7 @@ export default async function OrdersPage(): Promise<React.JSX.Element> {
   }
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-4xl uppercase tracking-wide">Orders</h1>
+      <h1 className="font-heading text-3xl uppercase tracking-wide md:text-4xl">Orders</h1>
       <ul className="divide-y border-y">
         {result.items.map((order) => (
           <li key={order.id} className="flex flex-wrap items-center justify-between gap-3 py-4">

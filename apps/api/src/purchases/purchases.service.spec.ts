@@ -30,6 +30,7 @@ describe('PurchasesService receiving and cancellation', () => {
     email: 'owner@example.com',
     name: 'Owner',
     status: 'ACTIVE' as const,
+    mustChangePassword: false,
     roles: ['OWNER' as const],
     permissions: ['purchases.receive' as const],
     tokenVersion: 1,

@@ -1,10 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
 import { headers } from 'next/headers';
 import './globals.css';
 import { instrument, inter } from '../lib/fonts';
-import { storeApi } from '../lib/api';
-import { serverStoreOptions } from '../lib/server-options';
+import { serverTenantOptions } from '../lib/server-options';
+import { cachedBootstrap, tenantKey } from '../lib/cached-store';
 import { fallbackStore } from '../lib/fallback-store';
 import { themeStyleVars } from '../lib/theme';
 import { loadStoreChrome } from '../lib/store-chrome';
@@ -23,11 +23,16 @@ import { SmoothScroll } from '../components/motion/smooth-scroll';
 import { CustomCursor } from '../components/motion/custom-cursor';
 import { FilmGrain } from '../components/motion/film-grain';
 
-export const dynamic = 'force-dynamic';
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const store = await storeApi.bootstrap(await serverStoreOptions());
+    const options = await serverTenantOptions();
+    const store = await cachedBootstrap(tenantKey(options));
     return {
       title: {
         default: store.website.seoTitle || store.tenant.name,
@@ -39,7 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {
     return {
       title: 'Store',
-      description: 'Premium streetwear and match kits.',
+      description: 'Football jerseys for club, national, kids, and custom kits.',
     };
   }
 }
@@ -56,9 +61,12 @@ export default async function RootLayout({
   let chrome = DEFAULT_STORE_CHROME;
   let unavailable = false;
   try {
-    const options = await serverStoreOptions();
-    store = await storeApi.bootstrap(options);
-    chrome = await loadStoreChrome(options);
+    const options = await serverTenantOptions();
+    const slug = tenantKey(options);
+    // Parallel: bootstrap is shared with generateMetadata / page via React.cache.
+    const [boot, nextChrome] = await Promise.all([cachedBootstrap(slug), loadStoreChrome(options)]);
+    store = boot;
+    chrome = nextChrome;
   } catch {
     unavailable = true;
   }
@@ -67,7 +75,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${instrument.variable} min-h-screen bg-background antialiased`}
+        className={`${inter.variable} ${instrument.variable} min-h-dvh overflow-x-clip bg-background antialiased`}
         style={theme as CSSProperties}
       >
         <a className="skip-link" href="#main">

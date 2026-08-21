@@ -24,6 +24,10 @@ export {
   POS_SESSION_STATUSES,
   PURCHASE_STATUSES,
   ROLE_CODES,
+  PROTECTED_ROLE_CODES,
+  STAFF_PORTALS,
+  PROMO_CODE_STATUSES,
+  PROMO_DISCOUNT_TYPES,
   SALE_STATUSES,
   DISCOUNT_TYPES,
   CART_STATUSES,
@@ -62,6 +66,10 @@ export {
   TOP_PRODUCT_SORTS,
   REPORT_EXPORT_FORMATS,
   DASHBOARD_PAYMENT_GROUPS,
+  EMAIL_OTP_PROVIDERS,
+  SMS_OTP_PROVIDERS,
+  CUSTOMER_IDENTITY_PROVIDERS,
+  OTP_CHANNELS,
   type BackupIntervalUnit,
   type BackupRunStatus,
   type BackupRunTrigger,
@@ -84,6 +92,10 @@ export {
   type RestockDisposition,
   type PurchaseStatus,
   type RoleCode,
+  type ProtectedRoleCode,
+  type StaffPortal,
+  type PromoCodeStatus,
+  type PromoDiscountType,
   type SaleStatus,
   type StockStatus,
   type SupplierPaymentMethod,
@@ -115,7 +127,16 @@ export {
   type TopProductSort,
   type ReportExportFormat,
   type DashboardPaymentGroup,
+  type EmailOtpProvider,
+  type SmsOtpProvider,
+  type CustomerIdentityProvider,
+  type OtpChannel,
 } from './enums';
+export {
+  type AuthSettings,
+  type StorefrontAuthMethods,
+  type UpdateAuthSettingsInput,
+} from './auth-settings';
 export {
   type BackupRun,
   type BackupSettings,
@@ -131,12 +152,16 @@ export {
 export { type TenantSummary } from './tenant';
 export {
   CHECKOUT_ISSUE_CODES,
+  COLLECTION_TILE_SPEC,
+  DEFAULT_STOREFRONT_FOOTER,
+  HERO_BANNER_SPEC,
   HOMEPAGE_SECTION_TYPES,
   STOREFRONT_AVAILABILITY,
   TENANT_HOST_KINDS,
   type CheckoutIssue,
   type CheckoutIssueCode,
   type CheckoutQuote,
+  type HomepageBannerSlide,
   type HomepageConfig,
   type HomepageSection,
   type HomepageSectionType,
@@ -157,6 +182,7 @@ export {
   type StorefrontTrustItem,
   type StorefrontVariant,
   type StorefrontWebsiteSettings,
+  type StorefrontFooter,
   type TenantHostKind,
 } from './storefront';
 export {
@@ -175,6 +201,7 @@ export {
   type AuthMeResponse,
   type AuthTokenResponse,
   type AuthUser,
+  type LoginTenantOption,
 } from './auth';
 export {
   type CustomerActivityItem,
@@ -279,7 +306,13 @@ export {
   type CustomOrderTimelineItem,
   type PublicCustomOrder,
 } from './custom-orders';
-export { ERP_NAV, filterErpNav, type ErpNavItem, type ErpNavSection } from './erp-nav';
+export { ERP_NAV, filterErpNav, staffHomePath, type ErpNavItem, type ErpNavSection } from './erp-nav';
+export {
+  type AppliedPromoCode,
+  type PromoCodeDto,
+  type PromoCodeListResult,
+} from './promo-codes';
+export { type RealtimeEvent } from './realtime';
 export {
   type CreateExpenseInput,
   type ExpenseCategoryDto,

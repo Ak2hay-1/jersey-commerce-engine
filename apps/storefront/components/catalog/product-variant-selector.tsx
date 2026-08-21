@@ -47,7 +47,7 @@ export function ProductVariantSelector({
                 type="button"
                 onClick={() => selectColour(colour)}
                 className={cn(
-                  'border px-3 py-2 text-sm',
+                  'min-h-11 border px-3 py-2 text-sm',
                   selected?.colour === colour ? 'border-foreground bg-foreground text-background' : 'border-input hover:border-foreground',
                 )}
               >
@@ -71,7 +71,7 @@ export function ProductVariantSelector({
                   disabled={unavailable}
                   onClick={() => selectSize(size)}
                   className={cn(
-                    'min-w-12 border px-3 py-2 text-sm',
+                    'min-h-11 min-w-12 border px-3 py-2 text-sm',
                     selected?.size === size ? 'border-foreground bg-foreground text-background' : 'border-input hover:border-foreground',
                     unavailable && 'cursor-not-allowed opacity-40',
                   )}

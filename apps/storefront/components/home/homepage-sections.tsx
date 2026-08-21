@@ -15,10 +15,10 @@ import { ProductImage } from '../catalog/product-image';
 
 export function StatementSection({ section }: { section: HomepageSection }): React.JSX.Element {
   return (
-    <section className="mx-auto max-w-store px-4 py-20 text-center md:py-28">
-      <SplitHeading as="h2" text={section.heading || 'NOT FOR EVERYONE'} />
+    <section className="mx-auto max-w-store store-gutter py-14 text-center md:py-28">
+      <SplitHeading as="h2" text={section.heading || 'THE TREND IS IN U'} />
       {section.subheading ? (
-        <p className="mx-auto mt-6 max-w-xl text-sm uppercase tracking-[0.14em] text-muted-foreground">{section.subheading}</p>
+        <p className="mx-auto mt-6 max-w-xl break-words text-sm uppercase tracking-[0.14em] text-muted-foreground">{section.subheading}</p>
       ) : null}
     </section>
   );
@@ -35,9 +35,9 @@ export function FeaturedCategories({
     return null;
   }
   return (
-    <section className="mx-auto max-w-store px-4 py-16 md:py-24">
+    <section className="mx-auto max-w-store store-gutter py-12 md:py-24">
       {section.heading ? <ScrollHeading kicker="Collections">{section.heading}</ScrollHeading> : null}
-      <Stagger className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <Stagger className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mt-10 lg:grid-cols-3">
         {categories.map((category) => (
           <StaggerItem key={category.id}>
             <CategoryCard category={category} />
@@ -61,8 +61,8 @@ export function FeaturedProducts({
     return null;
   }
   return (
-    <section className="py-16 md:py-24">
-      <div className="mx-auto max-w-store px-4">
+    <section className="py-12 md:py-24">
+      <div className="mx-auto max-w-store store-gutter">
         {section.heading ? <ScrollHeading kicker="Shop">{section.heading}</ScrollHeading> : null}
         <div className="mt-10 hidden gap-8 lg:grid lg:grid-cols-3">
           {products.slice(0, 6).map((product) => (
@@ -75,7 +75,7 @@ export function FeaturedProducts({
                     className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 </div>
-                <h3 className="mt-4 font-heading text-2xl uppercase leading-tight">{product.name}</h3>
+                <h3 className="mt-4 break-words font-heading text-2xl uppercase leading-tight">{product.name}</h3>
                 <PriceDisplay price={product.lowestPrice} compareAt={product.compareAtPrice} currency={currency} size="sm" />
                 {product.brand ? <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{product.brand} · limited drop</p> : null}
               </Link>
@@ -92,10 +92,10 @@ export function FeaturedProducts({
 
 export function PromoBanner({ section }: { section: HomepageSection }): React.JSX.Element {
   return (
-    <section className="mx-auto max-w-store px-4 py-16 md:py-24">
+    <section className="mx-auto max-w-store store-gutter py-12 md:py-24">
       <Reveal>
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Premium</p>
-        <h2 className="mt-4 max-w-4xl font-heading text-5xl uppercase leading-[0.92] md:text-7xl">{section.heading}</h2>
+        <h2 className="mt-4 max-w-4xl break-words font-heading text-[clamp(2rem,8vw,4.5rem)] uppercase leading-[0.92] md:text-7xl">{section.heading}</h2>
         {section.subheading ? (
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">{section.subheading}</p>
         ) : null}
@@ -117,7 +117,7 @@ export function TrustSection({ section }: { section: HomepageSection }): React.J
   }
   return (
     <section className="border-y border-foreground/10">
-      <Stagger className="mx-auto grid max-w-store gap-10 px-4 py-16 md:grid-cols-4 md:py-20">
+      <Stagger className="mx-auto grid max-w-store gap-8 store-gutter py-12 sm:grid-cols-2 md:gap-10 lg:grid-cols-4 md:py-20">
         {section.items.map((item) => (
           <StaggerItem key={item.title}>
             <h3 className="font-heading text-2xl uppercase tracking-wide">{item.title}</h3>
@@ -131,10 +131,10 @@ export function TrustSection({ section }: { section: HomepageSection }): React.J
 
 export function CtaSection({ section }: { section: HomepageSection }): React.JSX.Element {
   return (
-    <section className="mx-auto max-w-store px-4 py-10">
+    <section className="mx-auto max-w-store store-gutter py-8 md:py-10">
       <Reveal>
-        <div className="bg-foreground px-6 py-16 text-center text-background md:px-10 md:py-24">
-          <h2 className="font-heading text-4xl uppercase tracking-tight md:text-6xl">{section.heading}</h2>
+        <div className="bg-foreground px-5 py-12 text-center text-background md:px-10 md:py-24">
+          <h2 className="break-words font-heading text-[clamp(1.75rem,7vw,3.75rem)] uppercase tracking-tight md:text-6xl">{section.heading}</h2>
           {section.subheading ? (
             <p className="mx-auto mt-4 max-w-lg text-sm uppercase tracking-[0.1em] text-background/70 md:text-base">{section.subheading}</p>
           ) : null}

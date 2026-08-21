@@ -1,12 +1,17 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Script from 'next/script';
 import { AuthProvider } from '@/lib/auth';
+import { RealtimeProvider } from '@/lib/realtime';
+import { getStaffPortal } from '@/lib/env';
 import { inter } from '@/lib/fonts';
 import './globals.css';
 
+const portal = getStaffPortal();
+
 export const metadata: Metadata = {
-  title: 'ERP',
-  description: 'Tenant-aware ERP and administration console for the Jersey Commerce Engine.',
+  title: portal === 'admin' ? 'Admin Panel' : portal === 'erp' ? 'ERP' : 'Admin & ERP',
+  description: 'Jerzyfy staff console.',
 };
 
 export default function RootLayout({
@@ -17,7 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <Script src="/runtime-config.js" strategy="beforeInteractive" />
+        <AuthProvider>
+          <RealtimeProvider>{children}</RealtimeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

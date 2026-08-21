@@ -18,6 +18,9 @@ out/
 .next/
 .turbo/
 *.tsbuildinfo
+apps/desktop/renderer/
+!apps/desktop/renderer/.gitkeep
+apps/desktop/dist/
 
 # Logs
 logs/

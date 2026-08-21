@@ -1,0 +1,12 @@
+# TLS terminator for the Nest API (hybrid production).
+# Set API_HOST and ACME_EMAIL in .env.production (compose passes them into the container).
+# DNS A/AAAA for API_HOST must point at this VM before first start.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_HOST} {
+	encode gzip
+	reverse_proxy api:4000
+}

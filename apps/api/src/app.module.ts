@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { RealtimeModule } from './realtime/realtime.module';
 import { AuthModule } from './auth/auth.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
@@ -32,6 +33,8 @@ import { PosModule } from './pos/pos.module';
 import { ReportsModule } from './reports/reports.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CustomOrdersModule } from './custom-orders/custom-orders.module';
+import { PromoCodesModule } from './promo-codes/promo-codes.module';
+import { AuthSettingsModule } from './auth-settings/auth-settings.module';
 
 @Module({
   imports: [
@@ -56,6 +59,7 @@ import { CustomOrdersModule } from './custom-orders/custom-orders.module';
     }),
     PrismaModule,
     RedisModule,
+    RealtimeModule,
     CoreModule,
     Phase2Module,
     StorageModule,
@@ -83,6 +87,8 @@ import { CustomOrdersModule } from './custom-orders/custom-orders.module';
     ReportsModule,
     DashboardModule,
     CustomOrdersModule,
+    PromoCodesModule,
+    AuthSettingsModule,
   ],
   controllers: [AppController],
 })

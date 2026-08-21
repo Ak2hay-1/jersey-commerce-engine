@@ -26,10 +26,10 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
   return (
     <div>
       <section className="bg-foreground text-background">
-        <div className="mx-auto grid max-w-store gap-8 px-4 py-16 md:grid-cols-2 md:py-24">
+        <div className="mx-auto grid max-w-store gap-8 store-gutter py-12 md:grid-cols-2 md:py-24">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">Teamwear studio</p>
-            <h1 className="mt-3 font-heading text-5xl uppercase leading-[0.9] tracking-wide md:text-7xl">Create Your Team Jersey</h1>
+            <h1 className="mt-3 break-words font-heading text-[clamp(2rem,9vw,4.5rem)] uppercase leading-[0.9] tracking-wide md:text-7xl">Create Your Team Jersey</h1>
             <p className="mt-4 max-w-md text-lg text-background/75">
               Custom kits for clubs, colleges, corporates, and tournaments — names, numbers, logos, and bulk sizes, quoted and produced to order.
             </p>
@@ -53,7 +53,7 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
         </div>
       </section>
 
-      <section className="mx-auto max-w-store px-4 py-14">
+      <section className="mx-auto max-w-store store-gutter py-12 md:py-14">
         <h2 className="font-heading text-3xl uppercase tracking-wide">Why order here</h2>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           {[
@@ -70,7 +70,7 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
       </section>
 
       <section className="bg-muted">
-        <div className="mx-auto max-w-store px-4 py-14">
+        <div className="mx-auto max-w-store store-gutter py-12 md:py-14">
           <h2 className="font-heading text-3xl uppercase tracking-wide">Customization</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {config.customizationOptions.map((option) => (
@@ -90,7 +90,7 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
         </div>
       </section>
 
-      <section id="enquiry" className="mx-auto grid max-w-store gap-10 px-4 py-16 md:grid-cols-[1fr_1.2fr]">
+      <section id="enquiry" className="mx-auto grid max-w-store gap-10 store-gutter py-12 md:grid-cols-[1fr_1.2fr] md:py-16">
         <div>
           <h2 className="font-heading text-3xl uppercase tracking-wide">Bulk & team orders</h2>
           <p className="mt-3 text-muted-foreground">

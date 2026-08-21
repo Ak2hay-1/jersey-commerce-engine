@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Script from 'next/script';
 import { AuthProvider } from '@/lib/auth';
+import { RealtimeProvider } from '@/lib/realtime';
 import { inter } from '@/lib/fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'POS',
-  description: 'Tenant-aware point of sale application for the Jersey Commerce Engine.',
+  description: 'Jerzyfy point of sale.',
 };
 
 export default function RootLayout({
@@ -17,7 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <Script src="/runtime-config.js" strategy="beforeInteractive" />
+        <AuthProvider>
+          <RealtimeProvider>{children}</RealtimeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

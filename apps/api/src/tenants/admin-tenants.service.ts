@@ -23,6 +23,7 @@ export class AdminTenantsService {
           ownerEmail: dto.ownerEmail,
           ownerPasswordHash,
           ownerName: dto.ownerName,
+          mustChangePassword: true,
         }),
       );
       return {

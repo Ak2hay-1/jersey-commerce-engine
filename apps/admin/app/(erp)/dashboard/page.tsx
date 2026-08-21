@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Skeleton } from '@jersey-commerce/ui';
 import type { DashboardSummary, DashboardWidgets, RevenueSeries } from '@jersey-commerce/types';
+import { realtimeAffectsResource } from '@jersey-commerce/utils';
 import { apiRequest, queryString } from '@/lib/api';
 import { formatMoney, formatNumber, formatDateTime, statusLabel } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
+import { useRealtimeReload } from '@/lib/realtime';
 import { DataTable } from '@/components/data-table';
 import { KpiCard, PageHeader } from '@/components/page-header';
 import { ReportFilters, type ReportFilterValue } from '@/components/report-filters';
@@ -21,10 +23,11 @@ export default function DashboardPage(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load(): Promise<void> {
-      setLoading(true);
+  const load = useCallback(
+    async (silent = false) => {
+      if (!silent) {
+        setLoading(true);
+      }
       setError('');
       const qs = queryString({
         preset: filters.preset,
@@ -39,26 +42,23 @@ export default function DashboardPage(): React.JSX.Element {
             ? apiRequest<RevenueSeries>(`/dashboard/revenue${qs}`)
             : Promise.resolve(null),
         ]);
-        if (!cancelled) {
-          setSummary(nextSummary);
-          setWidgets(nextWidgets);
-          setRevenue(nextRevenue);
-        }
+        setSummary(nextSummary);
+        setWidgets(nextWidgets);
+        setRevenue(nextRevenue);
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Unable to load dashboard');
-        }
+        setError(err instanceof Error ? err.message : 'Unable to load dashboard');
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
-    }
+    },
+    [auth, filters.from, filters.preset, filters.to],
+  );
+
+  useEffect(() => {
     void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [auth, filters.from, filters.preset, filters.to]);
+  }, [load]);
+
+  useRealtimeReload((event) => realtimeAffectsResource('/dashboard', event.entity), () => load(true));
 
   const kpis = summary?.kpis;
 

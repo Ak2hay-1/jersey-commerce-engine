@@ -2,7 +2,7 @@
 
 ## Engine
 
-PostgreSQL 16 is the system of record. Redis 7 is the cache and future session/job substrate. Both run locally through `infra/docker/docker-compose.yml`.
+PostgreSQL 16 is the system of record. Redis 7 is the cache, auth rate-limit/denylist store, checkout lock, and realtime pub/sub substrate. Both run locally through `infra/docker/docker-compose.yml`.
 
 ## Prisma
 
@@ -94,7 +94,7 @@ Never use seeded credentials in production.
 | Payments | `Payment` (sale, order, or custom order) |
 | Refunds | `Refund`, `RefundItem`, `RefundPayment` |
 | Expenses | `ExpenseCategory`, `Expense` |
-| Website | `WebsiteSettings`, `TenantHost` |
+| Website | `WebsiteSettings`, `TenantHost`, `PromoCode` |
 | Audit | `AuditLog` |
 | Backup (schema only) | `BackupSettings`, `BackupRun` |
 
@@ -133,6 +133,7 @@ erDiagram
   Tenant ||--o{ Category : has
   Tenant ||--o{ Product : has
   Tenant ||--o| WebsiteSettings : has
+  Tenant ||--o{ PromoCode : offers
   Permission ||--o{ RolePermission : granted_by
   Role ||--o{ RolePermission : includes
   User ||--o{ UserRole : assigned
@@ -160,6 +161,7 @@ erDiagram
   PosCart ||--o{ PosCartItem : lines
   PosCartItem }o--|| ProductVariant : scans
   Tenant ||--o{ Cart : storefront
+  Cart }o--o| PromoCode : applies
   Cart ||--o{ CartItem : lines
   CartItem }o--|| ProductVariant : holds
   Customer ||--o{ Sale : purchases

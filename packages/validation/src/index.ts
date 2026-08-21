@@ -54,6 +54,15 @@ export {
   customerTopSortSchema,
 } from './customers';
 export {
+  storefrontGoogleExchangeSchema,
+  storefrontOtpRequestSchema,
+  storefrontOtpVerifySchema,
+  updateAuthSettingsSchema,
+  type StorefrontOtpRequestInput,
+  type StorefrontOtpVerifyInput,
+  type UpdateAuthSettingsInput,
+} from './auth-settings';
+export {
   storefrontLoginSchema,
   storefrontProfileSchema,
   storefrontRegisterSchema,

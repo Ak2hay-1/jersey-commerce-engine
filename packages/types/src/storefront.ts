@@ -1,5 +1,6 @@
 import type { CatalogStatus, FulfillmentMethod, StockStatus } from './enums';
 import type { PaginationMeta } from './api';
+import type { StorefrontAuthMethods } from './auth-settings';
 import type {
   CategoryDetail,
   CategorySummary,
@@ -26,6 +27,22 @@ export const HOMEPAGE_SECTION_TYPES = [
 ] as const;
 export type HomepageSectionType = (typeof HOMEPAGE_SECTION_TYPES)[number];
 
+/** Desktop hero / slider artwork. Cropped with object-cover on smaller screens. */
+export const HERO_BANNER_SPEC = {
+  ratio: '8:3',
+  width: 1920,
+  height: 720,
+  mimeHint: 'JPEG, PNG, or WEBP up to 5MB',
+} as const;
+
+/** Premium collection tile artwork. Matches the storefront 4:5 card. */
+export const COLLECTION_TILE_SPEC = {
+  ratio: '4:5',
+  width: 1080,
+  height: 1350,
+  mimeHint: 'JPEG, PNG, or WEBP up to 5MB',
+} as const;
+
 export const TENANT_HOST_KINDS = ['DOMAIN', 'SUBDOMAIN'] as const;
 export type TenantHostKind = (typeof TENANT_HOST_KINDS)[number];
 
@@ -35,6 +52,7 @@ export const CHECKOUT_ISSUE_CODES = [
   'ITEM_UNAVAILABLE',
   'INSUFFICIENT_STOCK',
   'PRICE_CHANGED',
+  'PROMO_INVALID',
 ] as const;
 export type CheckoutIssueCode = (typeof CHECKOUT_ISSUE_CODES)[number];
 
@@ -79,6 +97,15 @@ export interface StorefrontTrustItem {
   description: string;
 }
 
+export interface HomepageBannerSlide {
+  id?: string;
+  image: string;
+  heading?: string;
+  subheading?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
 export interface HomepageSection {
   type: HomepageSectionType;
   enabled: boolean;
@@ -90,11 +117,47 @@ export interface HomepageSection {
   categorySlugs?: string[];
   productSlugs?: string[];
   items?: StorefrontTrustItem[];
+  slides?: HomepageBannerSlide[];
 }
 
 export interface HomepageConfig {
   sections: HomepageSection[];
 }
+
+export interface StorefrontFooter {
+  kicker: string;
+  heading: string;
+  body: string;
+  aboutTitle: string;
+  aboutBody: string;
+  materialsTitle: string;
+  materials: string[];
+  showCollections: boolean;
+  collectionsTitle: string;
+  shopTitle: string;
+  contactTitle: string;
+  copyright: string;
+}
+
+export const DEFAULT_STOREFRONT_FOOTER: StorefrontFooter = {
+  kicker: 'Crafting your identity',
+  heading: 'Style is a reflection of the journey — on the street and on the pitch.',
+  body: '',
+  aboutTitle: 'About us',
+  aboutBody: '',
+  materialsTitle: 'What materials we use',
+  materials: [
+    'Heavyweight cotton and French terry for oversized tees.',
+    'Breathable knits for replica-inspired match kits.',
+    'Low-impact dyes and non-toxic prints wherever possible.',
+    'Pieces built to be worn hard, washed often, and kept.',
+  ],
+  showCollections: true,
+  collectionsTitle: 'Featured collections',
+  shopTitle: 'Shop',
+  contactTitle: 'Contact',
+  copyright: '',
+};
 
 export interface StorefrontWebsiteSettings {
   contactPhone: string | null;
@@ -105,6 +168,7 @@ export interface StorefrontWebsiteSettings {
   seoTitle: string | null;
   seoDescription: string | null;
   homepage: HomepageConfig;
+  footer: StorefrontFooter;
 }
 
 export interface StorefrontBootstrap {
@@ -112,6 +176,7 @@ export interface StorefrontBootstrap {
   theme: StorefrontTheme;
   website: StorefrontWebsiteSettings;
   navigation: CategorySummary[];
+  auth: StorefrontAuthMethods;
 }
 
 export interface StorefrontResolvedTenant {

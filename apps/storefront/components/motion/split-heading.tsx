@@ -6,7 +6,7 @@ import { MOTION_EASE } from './presence';
 export function SplitHeading({
   text,
   as = 'h1',
-  className = 'mt-4 font-heading text-6xl uppercase leading-[0.82] tracking-tight md:text-8xl lg:text-[9vw]',
+  className = 'mt-4 break-words font-heading text-[clamp(2.1rem,11vw,6rem)] uppercase leading-[0.88] tracking-tight md:text-8xl lg:text-[9vw]',
 }: {
   text: string;
   as?: 'h1' | 'h2';

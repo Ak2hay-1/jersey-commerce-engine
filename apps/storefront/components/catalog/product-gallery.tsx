@@ -79,7 +79,7 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
               aria-label={`View image ${imageIndex + 1}`}
               aria-current={imageIndex === index}
               className={cn(
-                'relative h-16 w-14 shrink-0 overflow-hidden border transition-opacity duration-300',
+                'relative h-16 w-14 min-h-11 shrink-0 overflow-hidden border transition-opacity duration-300',
                 imageIndex === index ? 'border-foreground opacity-100' : 'border-transparent opacity-70 hover:opacity-100',
               )}
             >
@@ -92,7 +92,7 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
         {zoomed ? (
           <motion.div
             key="zoom-modal"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
             role="dialog"
             aria-modal="true"
             aria-label="Zoomed product image"

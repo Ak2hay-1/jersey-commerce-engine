@@ -18,7 +18,7 @@ function AccountNav(): React.JSX.Element {
 export default function AccountLayout({ children }: { children: ReactNode }): React.JSX.Element {
   return (
     <RequireCustomer>
-      <div className="mx-auto max-w-store space-y-8 px-4 py-10">
+      <div className="mx-auto max-w-store space-y-8 store-gutter py-8 md:py-10">
         <AccountNav />
         {children}
       </div>

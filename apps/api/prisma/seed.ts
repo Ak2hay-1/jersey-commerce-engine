@@ -21,25 +21,17 @@ const DEMO_ASSET = (path: string) => `/demo/${path}`;
 const unsplash = (id: string, width = 1600) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=80`;
 const DEMO_PHOTOS = {
-  hero: unsplash('photo-1529139574466-a303027c1d8b', 2400),
-  cta: unsplash('photo-1483985988355-763728e1935b', 1800),
-  street: [
-    unsplash('photo-1576566588028-4147f3842f27'),
-    unsplash('photo-1521572163474-6864f9cf17ab'),
-    unsplash('photo-1583743814966-8936f5b7be1a'),
-    unsplash('photo-1581655353564-df123a1eb820'),
-    unsplash('photo-1503342217505-b0a15ec3261c'),
-    unsplash('photo-1622445275463-afa2ab738c34'),
-    unsplash('photo-1556905055-8f358a7a47b2'),
-    unsplash('photo-1552374196-1ab2a1c593e8'),
-  ],
+  hero: unsplash('photo-1574629810360-7efbbe195018', 2400),
+  cta: unsplash('photo-1522778119026-d647f0596c20', 1800),
   kits: [
     unsplash('photo-1579952363873-27f3bade9f55'),
     unsplash('photo-1431324155629-1a6deb1dec8d'),
     unsplash('photo-1522778119026-d647f0596c20'),
     unsplash('photo-1574629810360-7efbbe195018'),
     unsplash('photo-1517466787929-bc90951d0974'),
-    unsplash('photo-1546519638-68e109498ffc'),
+    unsplash('photo-1508098682722-e99c43a406b2'),
+    unsplash('photo-1575361204480-aadea25e6e68'),
+    unsplash('photo-1560272564-c83b66b1ad12'),
   ],
 };
 
@@ -52,10 +44,7 @@ function mediaHash(value: string): number {
 }
 
 function categoryPhoto(slug: string): string {
-  const pool = /football|jersey|cricket|ipl|sportswear|kids|club|national/i.test(slug)
-    ? DEMO_PHOTOS.kits
-    : DEMO_PHOTOS.street;
-  return pool[mediaHash(slug) % pool.length] ?? DEMO_PHOTOS.street[0];
+  return DEMO_PHOTOS.kits[mediaHash(slug) % DEMO_PHOTOS.kits.length] ?? DEMO_PHOTOS.hero;
 }
 
 const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const;
@@ -73,6 +62,12 @@ const EXPENSE_CATEGORIES = [
 ] as const;
 
 const ROLE_NAMES: Record<SharedRoleCode, { name: string; description: string; email: string; personName: string }> = {
+  SUPER_ADMIN: {
+    name: 'Superior Admin',
+    description: 'Protected full access for the operator and client. Cannot be assigned by other roles.',
+    email: 'superadmin@demo.local',
+    personName: 'Superior Admin',
+  },
   OWNER: {
     name: 'Owner',
     description: 'Full access to the tenant',
@@ -126,9 +121,33 @@ const SIZE_BARCODE: Record<string, string> = {
   '12': '22',
 };
 
-function barcodeFor(productIndex: number, size: string): string {
+function barcodeFor(skuPrefix: string, size: string, salt = 0): string {
   const sizeCode = SIZE_BARCODE[size] ?? '00';
-  return `8901${String(productIndex).padStart(4, '0')}${sizeCode}000`.slice(0, 13);
+  const prefixCode = String((mediaHash(skuPrefix) + salt) % 10000).padStart(4, '0');
+  return `8901${prefixCode}${sizeCode}000`.slice(0, 13);
+}
+
+async function allocateBarcode(
+  tenantId: string,
+  sku: string,
+  skuPrefix: string,
+  size: string,
+  existingBarcode?: string | null,
+): Promise<string> {
+  if (existingBarcode) {
+    return existingBarcode;
+  }
+  for (let salt = 0; salt < 50; salt += 1) {
+    const candidate = barcodeFor(skuPrefix, size, salt);
+    const clash = await prisma.productVariant.findFirst({
+      where: { tenantId, barcode: candidate, NOT: { sku } },
+      select: { id: true },
+    });
+    if (!clash) {
+      return candidate;
+    }
+  }
+  return barcodeFor(skuPrefix, size, Date.now() % 10000);
 }
 
 async function upsertCustomer(
@@ -290,7 +309,7 @@ async function seedPurchasingDemo(tenantId: string, ownerId: string): Promise<vo
     supplierId: wholesale.id,
     purchaseNumber: 'PO-000002',
     status: 'PARTIALLY_RECEIVED',
-    notes: 'Real Madrid restock in two deliveries',
+    notes: 'Madrid jersey restock in two deliveries',
     items: [
       {
         productVariantId: madridL.id,
@@ -585,7 +604,7 @@ async function main(): Promise<void> {
 
     const user = await prisma.user.upsert({
       where: { tenantId_email: { tenantId: tenant.id, email: meta.email } },
-      update: { name: meta.personName, passwordHash, status: 'ACTIVE' },
+      update: { name: meta.personName, passwordHash, status: 'ACTIVE', mustChangePassword: false },
       create: {
         tenantId: tenant.id,
         name: meta.personName,
@@ -593,6 +612,7 @@ async function main(): Promise<void> {
         phone: `+91 90000 0000${ROLE_CODES.indexOf(code) + 1}`,
         passwordHash,
         status: 'ACTIVE',
+        mustChangePassword: false,
       },
     });
 
@@ -634,35 +654,36 @@ async function main(): Promise<void> {
     });
   }
 
-  const categoryTree: Array<{ name: string; parent?: string }> = [
-    { name: 'Streetwear' },
-    { name: 'Oversized Tees', parent: 'Streetwear' },
-    { name: 'Polos', parent: 'Streetwear' },
-    { name: 'Sportswear' },
-    { name: 'Football', parent: 'Sportswear' },
-    { name: 'Cricket', parent: 'Sportswear' },
-    { name: 'Club Jerseys', parent: 'Football' },
-    { name: 'National Jerseys', parent: 'Football' },
-    { name: 'IPL', parent: 'Cricket' },
-    { name: 'International', parent: 'Cricket' },
-    { name: 'Custom Jerseys', parent: 'Sportswear' },
-    { name: 'Kids', parent: 'Sportswear' },
+  const categoryTree: Array<{ name: string; parent?: string; description?: string }> = [
+    { name: 'Football Jerseys', description: 'Replica-inspired football kits for match day and everyday wear.' },
+    { name: 'Club Jerseys', parent: 'Football Jerseys', description: 'Club home, away, and third kits.' },
+    { name: 'National Jerseys', parent: 'Football Jerseys', description: 'National team home and away kits.' },
+    { name: 'Kids Jerseys', parent: 'Football Jerseys', description: 'Youth sizes for young fans.' },
+    { name: 'Custom Jerseys', parent: 'Football Jerseys', description: 'Blank kits ready for name and number printing.' },
   ];
 
   const categoriesByName = new Map<string, { id: string }>();
+  const activeCategorySlugs = new Set(categoryTree.map((category) => slugify(category.name)));
 
   for (const category of categoryTree) {
     const parentId = category.parent ? categoriesByName.get(category.parent)?.id : undefined;
     const slug = slugify(category.name);
     const record = await prisma.category.upsert({
       where: { tenantId_slug: { tenantId: tenant.id, slug } },
-      update: { name: category.name, parentId: parentId ?? null, status: 'ACTIVE', image: categoryPhoto(slug) },
+      update: {
+        name: category.name,
+        parentId: parentId ?? null,
+        status: 'ACTIVE',
+        image: categoryPhoto(slug),
+        description: category.description ?? `${category.name} category`,
+        sortOrder: categoryTree.indexOf(category),
+      },
       create: {
         tenantId: tenant.id,
         parentId: parentId ?? null,
         name: category.name,
         slug,
-        description: `${category.name} category`,
+        description: category.description ?? `${category.name} category`,
         image: categoryPhoto(slug),
         sortOrder: categoryTree.indexOf(category),
         status: 'ACTIVE',
@@ -670,6 +691,11 @@ async function main(): Promise<void> {
     });
     categoriesByName.set(category.name, record);
   }
+
+  await prisma.category.updateMany({
+    where: { tenantId: tenant.id, slug: { notIn: [...activeCategorySlugs] } },
+    data: { status: 'ARCHIVED' },
+  });
 
   type SeedProduct = {
     name: string;
@@ -711,75 +737,81 @@ async function main(): Promise<void> {
       category: 'Club Jerseys',
       brand: 'Arena Knit',
       color: 'Red',
-      shortDescription: 'Home replica jersey with sublimated club crest.',
+      shortDescription: 'Home replica football jersey with sublimated crest and breathable mesh.',
       sizes: ADULT_SIZES,
       costPrice: 950,
       sellingPrice: 2499,
       compareAtPrice: 2999,
       skuPrefix: 'DJS-CLUB-HOME',
+      featured: true,
     },
     {
       name: 'Premier Club Away Jersey 2025',
       category: 'Club Jerseys',
       brand: 'Arena Knit',
       color: 'White',
-      shortDescription: 'Away replica jersey with breathable mesh panels.',
+      shortDescription: 'Away replica football jersey with contrast sleeves and moisture-wicking knit.',
       sizes: ADULT_SIZES,
       costPrice: 950,
       sellingPrice: 2499,
       compareAtPrice: 2999,
       skuPrefix: 'DJS-CLUB-AWAY',
+      featured: true,
+    },
+    {
+      name: 'Premier Club Third Jersey 2025',
+      category: 'Club Jerseys',
+      brand: 'Arena Knit',
+      color: 'Navy',
+      shortDescription: 'Third kit replica with tonal crest and match-day fit.',
+      sizes: ADULT_SIZES,
+      costPrice: 980,
+      sellingPrice: 2599,
+      compareAtPrice: 3099,
+      skuPrefix: 'DJS-CLUB-THIRD',
+      featured: true,
     },
     {
       name: 'National Team Home Jersey',
       category: 'National Jerseys',
       brand: 'Crest Athletic',
       color: 'Sky Blue',
-      shortDescription: 'National team home kit replica for match days.',
+      shortDescription: 'National team home football kit replica for match days.',
       sizes: ADULT_SIZES,
       costPrice: 1100,
       sellingPrice: 2799,
       compareAtPrice: 3299,
       skuPrefix: 'DJS-NAT-HOME',
+      featured: true,
     },
     {
-      name: 'IPL Franchise Home Jersey',
-      category: 'IPL',
-      brand: 'Pitch Pro',
-      color: 'Yellow',
-      shortDescription: 'Franchise home replica with season sleeve patch.',
+      name: 'National Team Away Jersey',
+      category: 'National Jerseys',
+      brand: 'Crest Athletic',
+      color: 'White',
+      shortDescription: 'National team away football kit with ventilated side panels.',
       sizes: ADULT_SIZES,
-      costPrice: 870,
-      sellingPrice: 2299,
-      compareAtPrice: 2699,
-      skuPrefix: 'DJS-IPL-HOME',
+      costPrice: 1100,
+      sellingPrice: 2799,
+      compareAtPrice: 3299,
+      skuPrefix: 'DJS-NAT-AWAY',
+      featured: true,
     },
     {
-      name: 'International Cricket Replica Jersey',
-      category: 'International',
-      brand: 'Pitch Pro',
-      color: 'Navy',
-      shortDescription: 'ODI-style replica jersey with moisture-wicking fabric.',
-      sizes: ADULT_SIZES,
-      costPrice: 990,
-      sellingPrice: 2599,
-      compareAtPrice: 3099,
-      skuPrefix: 'DJS-INT-ODI',
-    },
-    {
-      name: 'India Cricket Jersey',
-      category: 'International',
+      name: 'India Home Jersey',
+      category: 'National Jerseys',
       brand: 'Pitch Pro',
       color: 'Blue',
-      shortDescription: 'Fan replica cricket jersey inspired by national team colours. Generic kit, not licensed imagery.',
+      shortDescription: 'Fan replica football jersey inspired by national team colours. Generic kit, not licensed imagery.',
       sizes: ADULT_SIZES,
       costPrice: 450,
       sellingPrice: 899,
       compareAtPrice: 1299,
       skuPrefix: 'IND-JER',
+      featured: true,
     },
     {
-      name: 'Real Madrid Jersey',
+      name: 'Madrid Home Jersey',
       category: 'Club Jerseys',
       brand: 'Arena Knit',
       color: 'White',
@@ -789,141 +821,71 @@ async function main(): Promise<void> {
       sellingPrice: 1299,
       compareAtPrice: 1599,
       skuPrefix: 'RMA-JER',
+      featured: true,
+    },
+    {
+      name: 'Barcelona Home Jersey',
+      category: 'Club Jerseys',
+      brand: 'Arena Knit',
+      color: 'Blue',
+      shortDescription: 'Fan replica club jersey with classic blaugrana-inspired stripes. Generic kit, not licensed imagery.',
+      sizes: ADULT_SIZES,
+      costPrice: 420,
+      sellingPrice: 1399,
+      compareAtPrice: 1699,
+      skuPrefix: 'DJS-FCB-HOME',
+      featured: true,
+    },
+    {
+      name: 'London Club Home Jersey',
+      category: 'Club Jerseys',
+      brand: 'Arena Knit',
+      color: 'Red',
+      shortDescription: 'Fan replica London club home kit with clean crest placement. Generic kit, not licensed imagery.',
+      sizes: ADULT_SIZES,
+      costPrice: 430,
+      sellingPrice: 1399,
+      compareAtPrice: 1699,
+      skuPrefix: 'DJS-LDN-HOME',
+      featured: true,
+    },
+    {
+      name: 'Training Match Jersey',
+      category: 'Club Jerseys',
+      brand: 'Arena Knit',
+      color: 'Black',
+      shortDescription: 'Lightweight training football jersey for warm-ups and casual wear.',
+      sizes: ADULT_SIZES,
+      costPrice: 520,
+      sellingPrice: 1499,
+      compareAtPrice: 1799,
+      skuPrefix: 'DJS-TRAIN',
+      featured: true,
     },
     {
       name: 'Kids Training Jersey',
-      category: 'Kids',
+      category: 'Kids Jerseys',
       brand: 'Little Pitch',
       color: 'Green',
-      shortDescription: 'Lightweight training jersey sized for children.',
+      shortDescription: 'Lightweight kids football jersey sized for young fans.',
       sizes: KIDS_SIZES,
       costPrice: 420,
       sellingPrice: 999,
       compareAtPrice: 1299,
       skuPrefix: 'DJS-KIDS-TRN',
+      featured: false,
     },
     {
       name: 'Custom Fan Jersey',
       category: 'Custom Jerseys',
       brand: 'Studio Knit',
       color: 'Black',
-      shortDescription: 'Blank fan jersey ready for name and number printing.',
+      shortDescription: 'Blank football fan jersey ready for name and number printing.',
       sizes: ADULT_SIZES,
       costPrice: 780,
       sellingPrice: 1999,
       compareAtPrice: 2499,
       skuPrefix: 'DJS-CUSTOM-BLK',
-    },
-    {
-      name: 'The Night Shift Oversized Tee',
-      category: 'Oversized Tees',
-      brand: 'Jerzyfy',
-      color: 'Black',
-      shortDescription: '260 GSM oversized tee. Built for late kick-offs and later nights.',
-      sizes: ADULT_SIZES,
-      costPrice: 420,
-      sellingPrice: 899,
-      compareAtPrice: 1199,
-      skuPrefix: 'JFY-NIGHT',
-      imageSlug: 'custom-fan-jersey',
-      featured: true,
-    },
-    {
-      name: 'Pitchside Graphic Tee',
-      category: 'Oversized Tees',
-      brand: 'Jerzyfy',
-      color: 'White',
-      shortDescription: 'Heavyweight cotton with a quiet crest at the chest.',
-      sizes: ADULT_SIZES,
-      costPrice: 400,
-      sellingPrice: 849,
-      compareAtPrice: 1099,
-      skuPrefix: 'JFY-PITCH',
-      imageSlug: 'premier-club-away-jersey-2025',
-      featured: true,
-    },
-    {
-      name: 'After Hours Acid Wash Tee',
-      category: 'Oversized Tees',
-      brand: 'Jerzyfy',
-      color: 'Gray',
-      shortDescription: 'Acid-wash French terry. Dropped shoulder, longer hem.',
-      sizes: ADULT_SIZES,
-      costPrice: 450,
-      sellingPrice: 999,
-      compareAtPrice: 1299,
-      skuPrefix: 'JFY-ACID',
-      imageSlug: 'india-cricket-jersey',
-      featured: true,
-    },
-    {
-      name: 'North Stand Oversized Tee',
-      category: 'Oversized Tees',
-      brand: 'Jerzyfy',
-      color: 'Navy',
-      shortDescription: 'For the people who never sit when the anthem starts.',
-      sizes: ADULT_SIZES,
-      costPrice: 430,
-      sellingPrice: 899,
-      compareAtPrice: 1199,
-      skuPrefix: 'JFY-NORTH',
-      imageSlug: 'national-team-home-jersey',
-      featured: true,
-    },
-    {
-      name: 'Quiet Luxury Polo',
-      category: 'Polos',
-      brand: 'Jerzyfy',
-      color: 'Beige',
-      shortDescription: 'Textured polo with a clean collar and a hidden crest.',
-      sizes: ADULT_SIZES,
-      costPrice: 480,
-      sellingPrice: 849,
-      compareAtPrice: 1099,
-      skuPrefix: 'JFY-POLO',
-      imageSlug: 'premier-club-home-jersey-2025',
-      featured: true,
-    },
-    {
-      name: 'Matchday Striker Tee',
-      category: 'Oversized Tees',
-      brand: 'Jerzyfy',
-      color: 'Red',
-      shortDescription: 'Interlock jersey tee with a striker number on the back.',
-      sizes: ADULT_SIZES,
-      costPrice: 410,
-      sellingPrice: 799,
-      compareAtPrice: 999,
-      skuPrefix: 'JFY-STRIKE',
-      imageSlug: 'ipl-franchise-home-jersey',
-      featured: true,
-    },
-    {
-      name: 'Concrete Bloom Oversized Tee',
-      category: 'Oversized Tees',
-      brand: 'Jerzyfy',
-      color: 'Green',
-      shortDescription: 'Botanical print on 240 GSM cotton. Street, not stadium.',
-      sizes: ADULT_SIZES,
-      costPrice: 440,
-      sellingPrice: 899,
-      compareAtPrice: 1199,
-      skuPrefix: 'JFY-BLOOM',
-      imageSlug: 'kids-training-jersey',
-      featured: true,
-    },
-    {
-      name: 'Archive Number Tee',
-      category: 'Oversized Tees',
-      brand: 'Jerzyfy',
-      color: 'White',
-      shortDescription: 'A retired number, reprinted for the archive drop.',
-      sizes: ADULT_SIZES,
-      costPrice: 400,
-      sellingPrice: 799,
-      compareAtPrice: 999,
-      skuPrefix: 'JFY-ARCHIVE',
-      imageSlug: 'real-madrid-jersey',
       featured: true,
     },
   ];
@@ -931,6 +893,8 @@ async function main(): Promise<void> {
   const owner = await prisma.user.findFirstOrThrow({
     where: { tenantId: tenant.id, email: ROLE_NAMES.OWNER.email },
   });
+
+  const activeProductSlugs = new Set(products.map((product) => slugify(product.name)));
 
   for (const [productIndex, product] of products.entries()) {
     const slug = slugify(product.name);
@@ -945,7 +909,7 @@ async function main(): Promise<void> {
         brand: product.brand,
         categoryId,
         status: 'ACTIVE',
-        featured: product.featured ?? product.category !== 'Kids',
+        featured: product.featured ?? product.category !== 'Kids Jerseys',
         seoTitle: product.name,
         seoDescription: product.shortDescription,
       },
@@ -958,16 +922,14 @@ async function main(): Promise<void> {
         brand: product.brand,
         categoryId,
         status: 'ACTIVE',
-        featured: product.featured ?? product.category !== 'Kids',
+        featured: product.featured ?? product.category !== 'Kids Jerseys',
         seoTitle: product.name,
         seoDescription: product.shortDescription,
       },
     });
 
-    const kit = /jersey|ipl|cricket|kids|custom-fan/i.test(imageSlug);
-    const pool = kit ? DEMO_PHOTOS.kits : DEMO_PHOTOS.street;
-    const front = pool[productIndex % pool.length] ?? DEMO_PHOTOS.street[0];
-    const back = pool[(productIndex + 2) % pool.length] ?? DEMO_PHOTOS.street[1];
+    const front = DEMO_PHOTOS.kits[productIndex % DEMO_PHOTOS.kits.length] ?? DEMO_PHOTOS.hero;
+    const back = DEMO_PHOTOS.kits[(productIndex + 2) % DEMO_PHOTOS.kits.length] ?? DEMO_PHOTOS.cta;
     await prisma.productImage.deleteMany({ where: { productId: record.id } });
     await prisma.productImage.create({
       data: {
@@ -994,11 +956,15 @@ async function main(): Promise<void> {
 
     for (const size of product.sizes) {
       const sku = `${product.skuPrefix}-${size}`;
+      const existingVariant = await prisma.productVariant.findUnique({
+        where: { tenantId_sku: { tenantId: tenant.id, sku } },
+      });
+      const barcode = await allocateBarcode(tenant.id, sku, product.skuPrefix, size, existingVariant?.barcode);
       const variant = await prisma.productVariant.upsert({
         where: { tenantId_sku: { tenantId: tenant.id, sku } },
         update: {
           productId: record.id,
-          barcode: barcodeFor(productIndex, size),
+          barcode,
           size,
           color: product.color,
           costPrice: product.costPrice,
@@ -1011,7 +977,7 @@ async function main(): Promise<void> {
           tenantId: tenant.id,
           productId: record.id,
           sku,
-          barcode: barcodeFor(productIndex, size),
+          barcode,
           size,
           color: product.color,
           costPrice: product.costPrice,
@@ -1059,6 +1025,47 @@ async function main(): Promise<void> {
     }
   }
 
+  const retiredProducts = await prisma.product.findMany({
+    where: { tenantId: tenant.id, slug: { notIn: [...activeProductSlugs] } },
+    select: { id: true },
+  });
+  if (retiredProducts.length > 0) {
+    const retiredIds = retiredProducts.map((product) => product.id);
+    await prisma.product.updateMany({
+      where: { id: { in: retiredIds } },
+      data: { status: 'ARCHIVED', featured: false },
+    });
+    await prisma.productVariant.updateMany({
+      where: { productId: { in: retiredIds } },
+      data: { status: 'INACTIVE' },
+    });
+  }
+
+  // Keep legacy Real Madrid slug archived if it still exists under the old name.
+  await prisma.product.updateMany({
+    where: { tenantId: tenant.id, slug: 'real-madrid-jersey' },
+    data: { status: 'ARCHIVED', featured: false },
+  });
+  await prisma.productVariant.updateMany({
+    where: { tenantId: tenant.id, product: { slug: 'real-madrid-jersey' } },
+    data: { status: 'INACTIVE' },
+  });
+
+  // Migrate legacy India cricket product slug to the football jersey if present.
+  const legacyIndia = await prisma.product.findFirst({
+    where: { tenantId: tenant.id, slug: 'india-cricket-jersey' },
+  });
+  if (legacyIndia) {
+    await prisma.product.update({
+      where: { id: legacyIndia.id },
+      data: { status: 'ARCHIVED', featured: false },
+    });
+    await prisma.productVariant.updateMany({
+      where: { productId: legacyIndia.id },
+      data: { status: 'INACTIVE' },
+    });
+  }
+
   const websitePayload = {
     logo: tenant.logo,
     favicon: tenant.favicon,
@@ -1074,69 +1081,95 @@ async function main(): Promise<void> {
         {
           type: 'hero',
           enabled: true,
-          heading: 'New collection launched',
-          subheading: 'Streetwear cut for the stands. Kits cut for the street.',
-          ctaLabel: 'Shop the drop',
+          heading: 'Football jerseys, ready for match day',
+          subheading: 'Club, national, kids, and custom kits — fan replicas built to wear hard.',
+          ctaLabel: 'Shop jerseys',
           ctaHref: '/products',
           image: DEMO_PHOTOS.hero,
-        },
-        {
-          type: 'marquee',
-          enabled: true,
-          heading: 'UNLEASH THE DROP',
-          subheading: 'UNLEASH THE DROP',
+          slides: [
+            {
+              id: 'hero-1',
+              image: DEMO_PHOTOS.hero,
+              heading: 'Football jerseys, ready for match day',
+              subheading: 'Club, national, kids, and custom kits — fan replicas built to wear hard.',
+              ctaLabel: 'Shop jerseys',
+              ctaHref: '/products',
+            },
+            {
+              id: 'hero-2',
+              image: DEMO_PHOTOS.cta,
+              heading: 'Club kits for every stand',
+              subheading: 'Home, away, and third kits inspired by the game — not licensed merchandise.',
+              ctaLabel: 'Shop club jerseys',
+              ctaHref: '/category/club-jerseys',
+            },
+            {
+              id: 'hero-3',
+              image: DEMO_PHOTOS.kits[2] ?? DEMO_PHOTOS.hero,
+              heading: 'National colours',
+              subheading: 'Represent with breathable national team-inspired football jerseys.',
+              ctaLabel: 'Shop national kits',
+              ctaHref: '/category/national-jerseys',
+            },
+          ],
         },
         {
           type: 'statement',
           enabled: true,
-          heading: 'NOT FOR EVERYONE',
+          heading: 'WEAR THE GAME',
+          subheading: 'Cut for the pitch. Lived beyond the final whistle.',
         },
         {
           type: 'new-arrivals',
           enabled: true,
-          heading: 'Latest drop',
+          heading: 'Latest kits',
+          productSlugs: [
+            'premier-club-home-jersey-2025',
+            'premier-club-away-jersey-2025',
+            'national-team-home-jersey',
+            'madrid-home-jersey',
+          ],
         },
         {
           type: 'promo-banner',
           enabled: true,
-          heading: 'Jerzyfy premium',
-          subheading: 'Experience unparalleled quality and timeless design. Each piece is meticulously crafted to elevate everyday style.',
+          heading: 'Jerzyfy football',
+          subheading: 'Replica-inspired football jerseys with durable knits, clean crests, and match-day fit.',
         },
         {
           type: 'featured-products',
           enabled: true,
-          heading: 'Featured products',
-        },
-        {
-          type: 'marquee',
-          enabled: true,
-          heading: 'THE TREND IS IN U',
-          subheading: 'THE TREND IS IN U',
-          ctaLabel: 'dark',
+          heading: 'Featured jerseys',
+          productSlugs: [
+            'india-home-jersey',
+            'barcelona-home-jersey',
+            'london-club-home-jersey',
+            'custom-fan-jersey',
+          ],
         },
         {
           type: 'featured-categories',
           enabled: true,
-          heading: 'Premium collection',
-          categorySlugs: ['oversized-tees', 'football', 'custom-jerseys'],
+          heading: 'Shop by kit',
+          categorySlugs: ['club-jerseys', 'national-jerseys', 'kids-jerseys', 'custom-jerseys'],
         },
         {
           type: 'trust',
           enabled: true,
-          heading: 'Built for the drop',
+          heading: 'Built for match day',
           items: [
             { title: 'Free shipping', description: 'Complimentary delivery on every order.' },
-            { title: 'Cash on delivery', description: 'Pay when the drop arrives at your door.' },
-            { title: 'Heavyweight quality', description: 'GSM-first fabrics and durable prints.' },
-            { title: 'Easy returns', description: 'Contact the store if a piece does not fit as expected.' },
+            { title: 'Cash on delivery', description: 'Pay when the jersey arrives at your door.' },
+            { title: 'Breathable knits', description: 'Moisture-wicking fabrics made for long wears.' },
+            { title: 'Easy returns', description: 'Contact the store if a size does not fit as expected.' },
           ],
         },
         {
           type: 'cta',
           enabled: true,
-          heading: 'Find your drop',
-          subheading: 'Oversized tees, match kits, and custom pieces in one catalog.',
-          ctaLabel: 'Browse the catalog',
+          heading: 'Find your jersey',
+          subheading: 'Club, national, kids, and custom football kits in one catalog.',
+          ctaLabel: 'Browse all jerseys',
           ctaHref: '/products',
           image: DEMO_PHOTOS.cta,
         },
@@ -1159,8 +1192,28 @@ async function main(): Promise<void> {
       saturday: { open: '10:00', close: '22:00' },
       sunday: { open: '11:00', close: '20:00' },
     } as Prisma.InputJsonValue,
-    seoTitle: 'Jerzyfy',
-    seoDescription: 'Not for everyone. Premium streetwear and match kits.',
+    seoTitle: 'Jerzyfy — Football Jerseys',
+    seoDescription: 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
+    footerConfig: {
+      kicker: 'Match-day identity',
+      heading: 'Football jerseys for the stands, the street, and every kick-off.',
+      body: 'Jerzyfy is a football jersey store — club kits, national colours, kids sizes, and custom prints built to last beyond a season.',
+      aboutTitle: 'About us',
+      aboutBody:
+        'Welcome to Jerzyfy. We focus on football jerseys only: replica-inspired club and national kits, youth sizes, and blank customs ready for name and number.',
+      materialsTitle: 'What materials we use',
+      materials: [
+        'Breathable performance knits for replica-inspired football jerseys.',
+        'Durable crests and prints built for repeated washes.',
+        'Youth-friendly fits for kids match-day kits.',
+        'Blank bases ready for custom name and number printing.',
+      ],
+      showCollections: true,
+      collectionsTitle: 'Featured collections',
+      shopTitle: 'Shop',
+      contactTitle: 'Contact',
+      copyright: '',
+    } as Prisma.InputJsonValue,
   };
 
   await prisma.websiteSettings.upsert({
@@ -1171,6 +1224,26 @@ async function main(): Promise<void> {
       ...websitePayload,
     },
   });
+
+  const existingPromo = await prisma.promoCode.findFirst({
+    where: { tenantId: tenant.id, code: 'JFY-LAUNCH' },
+  });
+  if (!existingPromo) {
+    await prisma.promoCode.create({
+      data: {
+        tenantId: tenant.id,
+        code: 'JFY-LAUNCH',
+        name: 'Launch discount',
+        description: 'Development promo — 10% off storefront orders.',
+        discountType: 'PERCENTAGE',
+        discountValue: '10.00',
+        minSubtotal: '499.00',
+        usageLimit: 100,
+        status: 'ACTIVE',
+        createdById: owner.id,
+      },
+    });
+  }
 
   const customizationDefaults: Array<{
     name: string;
@@ -1233,10 +1306,10 @@ async function main(): Promise<void> {
     city: 'Bengaluru',
     state: 'Karnataka',
     postalCode: '560001',
-    notes: 'Development customer — IPL kits',
+    notes: 'Development customer — national football kits',
   });
 
-  const seedTags = ['Football', 'Cricket', 'IPL', 'VIP'] as const;
+  const seedTags = ['Football', 'Club', 'National', 'VIP'] as const;
   const tagsByName = new Map<string, { id: string }>();
   for (const name of seedTags) {
     const slug = slugify(name);
@@ -1267,8 +1340,9 @@ async function main(): Promise<void> {
 
   await assignTag(rahul.id, 'Football');
   await assignTag(rahul.id, 'VIP');
-  await assignTag(ananya.id, 'Cricket');
-  await assignTag(ananya.id, 'IPL');
+  await assignTag(rahul.id, 'Club');
+  await assignTag(ananya.id, 'Football');
+  await assignTag(ananya.id, 'National');
 
   if (owner) {
     const existingNote = await prisma.customerNote.findFirst({

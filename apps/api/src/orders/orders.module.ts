@@ -14,9 +14,10 @@ import { StoreCheckoutController } from '../store/store-checkout.controller';
 import { StoreCheckoutService } from '../store/store-checkout.service';
 import { StoreOrdersController } from '../store/store-orders.controller';
 import { StoreCoreModule } from '../store/store-core.module';
+import { PromoCodesModule } from '../promo-codes/promo-codes.module';
 
 @Module({
-  imports: [InventoryModule, CustomersModule, PaymentsModule, StoreCoreModule],
+  imports: [InventoryModule, CustomersModule, PaymentsModule, StoreCoreModule, PromoCodesModule],
   controllers: [OrdersController, StoreCartController, StoreCheckoutController, StoreOrdersController],
   providers: [
     OrdersService,

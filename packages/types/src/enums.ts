@@ -5,6 +5,7 @@ export const USER_STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED'] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 
 export const ROLE_CODES = [
+  'SUPER_ADMIN',
   'OWNER',
   'MANAGER',
   'CASHIER',
@@ -12,6 +13,18 @@ export const ROLE_CODES = [
   'WEBSITE_MANAGER',
 ] as const;
 export type RoleCode = (typeof ROLE_CODES)[number];
+
+export const PROTECTED_ROLE_CODES = ['SUPER_ADMIN'] as const;
+export type ProtectedRoleCode = (typeof PROTECTED_ROLE_CODES)[number];
+
+export const STAFF_PORTALS = ['admin', 'erp', 'all'] as const;
+export type StaffPortal = (typeof STAFF_PORTALS)[number];
+
+export const PROMO_CODE_STATUSES = ['ACTIVE', 'DISABLED'] as const;
+export type PromoCodeStatus = (typeof PROMO_CODE_STATUSES)[number];
+
+export const PROMO_DISCOUNT_TYPES = ['FIXED', 'PERCENTAGE'] as const;
+export type PromoDiscountType = (typeof PROMO_DISCOUNT_TYPES)[number];
 
 export const CATALOG_STATUSES = ['DRAFT', 'ACTIVE', 'ARCHIVED'] as const;
 export type CatalogStatus = (typeof CATALOG_STATUSES)[number];
@@ -271,3 +284,15 @@ export type ReportExportFormat = (typeof REPORT_EXPORT_FORMATS)[number];
 
 export const DASHBOARD_PAYMENT_GROUPS = ['CASH', 'UPI', 'CARD', 'ONLINE', 'OTHER'] as const;
 export type DashboardPaymentGroup = (typeof DASHBOARD_PAYMENT_GROUPS)[number];
+
+export const EMAIL_OTP_PROVIDERS = ['CONSOLE', 'RESEND', 'SMTP'] as const;
+export type EmailOtpProvider = (typeof EMAIL_OTP_PROVIDERS)[number];
+
+export const SMS_OTP_PROVIDERS = ['CONSOLE', 'MSG91', 'TWILIO'] as const;
+export type SmsOtpProvider = (typeof SMS_OTP_PROVIDERS)[number];
+
+export const CUSTOMER_IDENTITY_PROVIDERS = ['GOOGLE'] as const;
+export type CustomerIdentityProvider = (typeof CUSTOMER_IDENTITY_PROVIDERS)[number];
+
+export const OTP_CHANNELS = ['email', 'sms'] as const;
+export type OtpChannel = (typeof OTP_CHANNELS)[number];

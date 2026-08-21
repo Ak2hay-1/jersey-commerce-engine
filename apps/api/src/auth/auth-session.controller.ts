@@ -11,6 +11,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthTokenResponseDto } from './dto/auth-response.dto';
+import { LoginTenantsResponseDto } from './dto/login-tenants.dto';
 import { REFRESH_COOKIE_NAME } from './auth.constants';
 import { parseExpirationToMs } from '../common/time/expiration';
 
@@ -21,6 +22,14 @@ export class AuthSessionController {
     private readonly auth: AuthSessionService,
     private readonly config: ConfigService<ServerEnv, true>,
   ) {}
+
+  @Public()
+  @Get('login-tenants')
+  @ApiOperation({ summary: 'List active shops for the staff login picker' })
+  @ApiOkResponse({ type: LoginTenantsResponseDto })
+  listLoginTenants(@Req() request: Request) {
+    return this.auth.listLoginTenants(requestMeta(request));
+  }
 
   @Public()
   @Post('login')

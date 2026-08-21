@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from '@jersey-commerce/ui';
@@ -12,6 +12,7 @@ import { CartItemRow } from './cart-item';
 import { MOTION_TRANSITION } from '../motion/presence';
 
 export function CartDrawer(): React.JSX.Element {
+  const router = useRouter();
   const { cart, open, setOpen, updateItem, removeItem, error } = useCart();
   const { tenant } = useStore();
   const currency = tenant.currency;
@@ -29,10 +30,15 @@ export function CartDrawer(): React.JSX.Element {
     };
   }, [open]);
 
+  function navigate(href: string) {
+    setOpen(false);
+    router.push(href);
+  }
+
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-50" key="cart-drawer">
+        <div className="fixed inset-0 z-[110]" key="cart-drawer">
           <motion.button
             type="button"
             className="absolute inset-0 bg-black/45"
@@ -44,7 +50,7 @@ export function CartDrawer(): React.JSX.Element {
             transition={MOTION_TRANSITION}
           />
           <motion.aside
-            className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-background shadow-drawer"
+            className="absolute inset-y-0 right-0 z-10 flex w-full max-w-md flex-col border-l border-border bg-background shadow-drawer pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cart-title"
@@ -67,10 +73,8 @@ export function CartDrawer(): React.JSX.Element {
                 <div className="space-y-4">
                   <p className="font-heading text-2xl uppercase">Your cart is empty</p>
                   <p className="text-sm text-muted-foreground">You might also like the latest drop.</p>
-                  <Button asChild className="store-pill rounded-none bg-foreground text-background">
-                    <Link href="/products" onClick={() => setOpen(false)}>
-                      Continue shopping
-                    </Link>
+                  <Button type="button" className="store-pill rounded-none bg-foreground text-background" onClick={() => navigate('/products')}>
+                    Continue shopping
                   </Button>
                 </div>
               ) : (
@@ -89,21 +93,21 @@ export function CartDrawer(): React.JSX.Element {
               )}
             </div>
             {cart && cart.items.length > 0 ? (
-              <div className="space-y-3 border-t border-border px-5 py-5">
+              <div className="relative z-20 space-y-3 border-t border-border bg-background px-5 py-5">
                 <div className="flex justify-between text-sm uppercase tracking-[0.12em]">
                   <span>Subtotal</span>
                   <span>{formatMoney(cart.totals.subtotal, currency)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">Cash on delivery at checkout. Shipping calculated next.</p>
-                <Button asChild className="store-pill h-12 w-full rounded-none bg-foreground text-background hover:bg-foreground/90">
-                  <Link href="/checkout" onClick={() => setOpen(false)}>
-                    Checkout · COD
-                  </Link>
+                <Button
+                  type="button"
+                  className="store-pill h-12 w-full rounded-none bg-foreground text-background hover:bg-foreground/90"
+                  onClick={() => navigate('/checkout')}
+                >
+                  Checkout · COD
                 </Button>
-                <Button asChild variant="outline" className="store-pill h-11 w-full rounded-none">
-                  <Link href="/cart" onClick={() => setOpen(false)}>
-                    View cart
-                  </Link>
+                <Button type="button" variant="outline" className="store-pill h-11 w-full rounded-none" onClick={() => navigate('/cart')}>
+                  View cart
                 </Button>
               </div>
             ) : null}

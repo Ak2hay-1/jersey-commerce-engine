@@ -7,8 +7,10 @@ const REPLACED_UNSPLASH_IDS: Record<string, string> = {
   'photo-1461896836934-ffe607ba6851': 'photo-1546519638-68e109498ffc',
 };
 
-export const DEMO_HERO_IMAGE = unsplash('photo-1529139574466-a303027c1d8b', 2400);
-export const DEMO_CTA_IMAGE = unsplash('photo-1483985988355-763728e1935b', 1800);
+export const DEMO_HERO_IMAGE = unsplash('photo-1574629810360-7efbbe195018', 2400);
+export const DEMO_CTA_IMAGE = unsplash('photo-1522778119026-d647f0596c20', 1800);
+export const DEMO_STREET_IMAGE = unsplash('photo-1576566588028-4147f3842f27');
+export const DEMO_KITS_IMAGE = unsplash('photo-1579952363873-27f3bade9f55');
 
 const STREET = [
   unsplash('photo-1576566588028-4147f3842f27'),

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { PosSessionDto } from '@jersey-commerce/types';
 import { getCurrentSession } from './pos-api';
+import { useRealtimeReload } from './realtime';
 
 interface PosSessionState {
   loading: boolean;
@@ -32,6 +33,13 @@ export function PosSessionProvider({ children }: { children: ReactNode }): React
       setLoading(false);
     }
   }, []);
+
+  useRealtimeReload(
+    (event) => event.entity === 'PosSession' || event.entity === 'Sale',
+    () => {
+      void refresh();
+    },
+  );
 
   const value = useMemo<PosSessionState>(
     () => ({ loading, session, error, refresh }),

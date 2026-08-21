@@ -35,7 +35,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error({ message, code, status, path: request.url, requestId });
+      const detail = exception instanceof Error ? exception.message : String(exception);
+      this.logger.error(
+        { message, detail, code, status, path: request.url, requestId },
+        exception instanceof Error ? exception.stack : undefined,
+      );
     } else {
       this.logger.warn({ message, code, status, path: request.url, requestId });
     }

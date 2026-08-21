@@ -25,6 +25,7 @@ describe('SuppliersService', () => {
     email: 'owner@example.com',
     name: 'Owner',
     status: 'ACTIVE' as const,
+    mustChangePassword: false,
     roles: ['OWNER' as const],
     permissions: ['suppliers.delete' as const],
     tokenVersion: 1,

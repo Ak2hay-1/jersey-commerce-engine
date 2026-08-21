@@ -9,10 +9,16 @@ export interface AuthUser {
   name: string;
   phone: string | null;
   status: UserStatus;
+  mustChangePassword: boolean;
   roles: RoleCode[];
   permissions: PermissionCode[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LoginTenantOption {
+  name: string;
+  slug: string;
 }
 
 export interface AuthTokenResponse {

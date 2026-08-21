@@ -3,8 +3,15 @@ export const AUDIT_ACTIONS = {
   AUTH_LOGIN_FAILURE: 'auth.login.failure',
   AUTH_LOGOUT: 'auth.logout',
   AUTH_PASSWORD_CHANGE: 'auth.password.change',
+  AUTH_SETTINGS_UPDATED: 'auth.settings.updated',
+  AUTH_OTP_REQUESTED: 'auth.otp.requested',
+  AUTH_OTP_VERIFIED: 'auth.otp.verified',
+  AUTH_GOOGLE_LOGIN: 'auth.google.login',
+  AUTH_TEST_EMAIL_SENT: 'auth.test.email',
+  AUTH_TEST_SMS_SENT: 'auth.test.sms',
   USER_CREATED: 'users.created',
   USER_UPDATED: 'users.updated',
+  USER_TEMPORARY_PASSWORD_SET: 'users.temporary_password.set',
   USER_ACTIVATED: 'users.activated',
   USER_DEACTIVATED: 'users.deactivated',
   USER_ROLE_ASSIGNED: 'users.role.assigned',
@@ -95,6 +102,12 @@ export const AUDIT_ACTIONS = {
   EXPENSE_UPDATED: 'expenses.updated',
   EXPENSE_VOIDED: 'expenses.voided',
   REPORT_EXPORTED: 'reports.exported',
+  WEBSITE_SETTINGS_UPDATED: 'website.settings.updated',
+  WEBSITE_MEDIA_UPLOADED: 'website.media.uploaded',
+  PROMO_CODE_CREATED: 'promo_codes.created',
+  PROMO_CODE_UPDATED: 'promo_codes.updated',
+  PROMO_CODE_DISABLED: 'promo_codes.disabled',
+  PROMO_CODE_APPLIED: 'promo_codes.applied',
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

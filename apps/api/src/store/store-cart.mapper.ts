@@ -1,7 +1,8 @@
-import type { CartDto, CartItemDto, CartTotalsDto } from '@jersey-commerce/types';
+import type { AppliedPromoCode, CartDto, CartItemDto, CartTotalsDto } from '@jersey-commerce/types';
 import { Prisma } from '../prisma/client';
 import { lineGross, money, moneyString } from '../pos/pos-money';
 import { availableQuantity } from '../inventory/inventory-math';
+import { assertPromoApplicable } from '../promo-codes/promo-code.engine';
 
 export const cartInclude = {
   items: {
@@ -19,6 +20,7 @@ export const cartInclude = {
     },
     orderBy: { createdAt: 'asc' as const },
   },
+  promoCode: true,
 } satisfies Prisma.CartInclude;
 
 export type CartRecord = Prisma.CartGetPayload<{ include: typeof cartInclude }>;
@@ -50,12 +52,35 @@ function toItem(item: CartRecord['items'][number], unitPrice: Prisma.Decimal): C
 export function toCartDto(cart: CartRecord, options?: { cartToken?: string; currency?: string }): CartDto {
   const items = cart.items.map((item) => toItem(item, money(item.unitPrice.toString())));
   const subtotal = items.reduce((sum, item) => sum.add(money(item.lineTotal)), money(0));
+  let discount = money(0);
+  let promoCode: AppliedPromoCode | null = null;
+  if (cart.promoCode) {
+    try {
+      const resolved = assertPromoApplicable(cart.promoCode, subtotal);
+      discount = resolved.discountAmount;
+      promoCode = {
+        id: cart.promoCode.id,
+        code: cart.promoCode.code,
+        name: cart.promoCode.name,
+        discountType: resolved.discountType,
+        discountValue: moneyString(resolved.discountValue) ?? '0.00',
+      };
+    } catch {
+      promoCode = {
+        id: cart.promoCode.id,
+        code: cart.promoCode.code,
+        name: cart.promoCode.name,
+        discountType: cart.promoCode.discountType === 'PERCENTAGE' ? 'PERCENTAGE' : 'FIXED',
+        discountValue: moneyString(cart.promoCode.discountValue) ?? '0.00',
+      };
+    }
+  }
   const totals: CartTotalsDto = {
-    subtotal: moneyString(subtotal),
-    discount: moneyString(money(0)),
-    tax: moneyString(money(0)),
-    shippingAmount: moneyString(money(0)),
-    total: moneyString(subtotal),
+    subtotal: moneyString(subtotal) ?? '0.00',
+    discount: moneyString(discount) ?? '0.00',
+    tax: moneyString(money(0)) ?? '0.00',
+    shippingAmount: moneyString(money(0)) ?? '0.00',
+    total: moneyString(subtotal.sub(discount)) ?? '0.00',
     currency: options?.currency ?? 'INR',
   };
   return {
@@ -64,6 +89,7 @@ export function toCartDto(cart: CartRecord, options?: { cartToken?: string; curr
     itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     items,
     totals,
+    promoCode,
     expiresAt: cart.expiresAt.toISOString(),
     createdAt: cart.createdAt.toISOString(),
     updatedAt: cart.updatedAt.toISOString(),

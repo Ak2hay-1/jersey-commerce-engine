@@ -17,6 +17,10 @@ export default function HomePage(): React.JSX.Element {
       router.replace('/login');
       return;
     }
+    if (auth.user.mustChangePassword) {
+      router.replace('/change-password');
+      return;
+    }
     if (!auth.can('pos.access')) {
       router.replace('/register');
       return;

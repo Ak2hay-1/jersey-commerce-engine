@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { OTP_CHANNELS, type OtpChannel } from '@jersey-commerce/types';
 
 const emptyToUndefined = ({ value }: { value: unknown }) => {
   if (value === undefined || value === null || value === '') {
@@ -103,4 +104,47 @@ export class StoreProfileUpdateDto {
   @IsString()
   @MaxLength(20)
   postalCode?: string | null;
+}
+
+export class StoreOtpRequestDto {
+  @ApiProperty({ enum: OTP_CHANNELS })
+  @IsIn(OTP_CHANNELS)
+  channel!: OtpChannel;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsEmail()
+  @MaxLength(320)
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsString()
+  @MaxLength(32)
+  phone?: string;
+}
+
+export class StoreOtpVerifyDto extends StoreOtpRequestDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(4)
+  @MaxLength(12)
+  code!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(160)
+  name?: string;
+}
+
+export class StoreGoogleExchangeDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(512)
+  ticket!: string;
 }

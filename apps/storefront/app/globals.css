@@ -7,13 +7,38 @@
   --glass-border: 0 0% 100% / 0.35;
 }
 
+html {
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body {
   min-height: 100%;
+  min-height: 100dvh;
 }
 
 body {
   font-family: var(--font-body);
+  overflow-x: clip;
+}
+
+#main {
+  overflow-x: clip;
+}
+
+.store-gutter {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 h1,
@@ -171,11 +196,13 @@ h3,
   pointer-events: none;
   position: fixed;
   inset: 0;
-  z-index: 90;
+  /* Stay below drawers/modals (cart uses z-[110]) so blend mode cannot steal taps */
+  z-index: 40;
   opacity: 0.04;
   background-image: url('/demo/grain.png');
   background-size: 220px;
   mix-blend-mode: multiply;
+  transform: translateZ(0);
 }
 
 .product-tile {
@@ -240,6 +267,11 @@ html.lenis body {
 .coverflow-stage {
   overflow: hidden;
   background: linear-gradient(135deg, #750000 0%, #2d0000 100%);
+  contain: layout style;
+}
+
+.coverflow-stage.is-offscreen .coverflow-card {
+  transition: none;
 }
 
 .coverflow-shell {
@@ -263,7 +295,13 @@ html.lenis body {
   display: flex;
   align-items: center;
   justify-content: center;
-  perspective: 2000px;
+  isolation: isolate;
+  perspective: 1400px;
+  transform: translateZ(0);
+}
+
+a, button, [role='button'] {
+  touch-action: manipulation;
 }
 
 .coverflow-track {
@@ -280,8 +318,17 @@ html.lenis body {
   top: 50%;
   width: 280px;
   height: 420px;
+  translate: -50% -50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   transform-style: preserve-3d;
-  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease;
+}
+
+.coverflow-card.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
+  transition: none;
 }
 
 .coverflow-card-link {
@@ -299,13 +346,21 @@ html.lenis body {
   overflow: hidden;
   border-radius: 12px;
   background: #000;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
 
-.coverflow-card:hover .coverflow-card-inner {
-  transform: scale(1.05);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+.coverflow-card.is-active .coverflow-card-inner {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+}
+
+@media (hover: hover) {
+  .coverflow-card.is-active:hover .coverflow-card-inner {
+    transform: scale(1.03);
+  }
+
+  .coverflow-card.is-active:hover .coverflow-image-wrap img,
+  .coverflow-card.is-active:hover .coverflow-image {
+    transform: scale(1.04);
+  }
 }
 
 .coverflow-image-wrap {
@@ -320,12 +375,7 @@ html.lenis body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s ease;
-}
-
-.coverflow-card:hover .coverflow-image-wrap img,
-.coverflow-card:hover .coverflow-image {
-  transform: scale(1.05);
+  transition: transform 0.45s ease;
 }
 
 .coverflow-copy {
@@ -420,35 +470,97 @@ html.lenis body {
 }
 
 @media (max-width: 768px) {
+  .coverflow-shell {
+    padding: 28px 12px 24px;
+  }
+
   .coverflow-heading {
-    margin-bottom: 36px;
-    font-size: 19.6px;
+    margin-bottom: 28px;
+    font-size: 1.25rem;
   }
 
   .coverflow-scene {
-    height: 400px;
+    height: 380px;
   }
 
   .coverflow-card {
-    width: 220px;
-    height: 340px;
+    width: 200px;
+    height: 310px;
   }
 
   .coverflow-image-wrap {
-    height: 220px;
+    height: 200px;
+  }
+
+  .coverflow-copy {
+    padding: 14px 12px;
+    gap: 6px;
+  }
+
+  .coverflow-copy h3 {
+    font-size: 14px;
+  }
+
+  .coverflow-price {
+    font-size: 15px;
   }
 
   .coverflow-nav {
-    height: 40px;
-    width: 40px;
+    height: 44px;
+    width: 44px;
   }
 
   .coverflow-prev {
-    left: 10px;
+    left: 4px;
   }
 
   .coverflow-next {
-    right: 10px;
+    right: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .coverflow-shell {
+    padding: 22px 8px 18px;
+  }
+
+  .coverflow-heading {
+    margin-bottom: 18px;
+    font-size: 1.05rem;
+  }
+
+  .coverflow-scene {
+    height: 320px;
+  }
+
+  .coverflow-card {
+    width: 168px;
+    height: 262px;
+  }
+
+  .coverflow-image-wrap {
+    height: 168px;
+  }
+
+  .coverflow-blurb {
+    display: none;
+  }
+}
+
+.product-tile-actions {
+  transform: translateY(100%);
+}
+
+@media (hover: hover) {
+  .product-tile:hover .product-tile-actions,
+  .product-tile:focus-within .product-tile-actions {
+    transform: translateY(0);
+  }
+}
+
+@media (hover: none) {
+  .product-tile-actions {
+    transform: none;
   }
 }
 
@@ -492,6 +604,11 @@ html.lenis body {
   .product-tile,
   .product-tile:hover {
     transform: none;
+  }
+
+  .product-tile-actions {
+    transform: none;
+    transition: none !important;
   }
 
   .product-tile-media::after,

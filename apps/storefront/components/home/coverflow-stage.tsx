@@ -6,9 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import type { StorefrontProductListItem } from '@jersey-commerce/types';
 import { ProductImage } from '../catalog/product-image';
-import { useStore } from '../providers/store-provider';
 
-const RADIUS = 600;
+const DESKTOP_RADIUS = 520;
 const AUTOPLAY_MS = 3000;
 
 function formatRs(amount: string | null | undefined): string {
@@ -19,45 +18,38 @@ function formatRs(amount: string | null | undefined): string {
   return `Rs. ${value.toFixed(2)}`;
 }
 
-function cardPose(index: number, active: number, total: number): {
+function wrappedOffset(index: number, active: number, total: number): number {
+  const relativeIndex = (index - active + total) % total;
+  return relativeIndex > total / 2 ? relativeIndex - total : relativeIndex;
+}
+
+function cardPose(
+  index: number,
+  active: number,
+  total: number,
+  radius: number,
+  visibleSpan: number,
+): {
   transform: string;
   opacity: number;
   zIndex: number;
+  visible: boolean;
 } {
-  const relativeIndex = (index - active + total) % total;
-  const adjustedIndex = relativeIndex > total / 2 ? relativeIndex - total : relativeIndex;
+  const adjustedIndex = wrappedOffset(index, active, total);
+  const visible = total <= visibleSpan * 2 + 1 || Math.abs(adjustedIndex) <= visibleSpan;
   const angleStep = (Math.PI * 2) / total;
   const angle = adjustedIndex * angleStep;
-  const x = Math.sin(angle) * RADIUS;
-  const z = Math.cos(angle) * RADIUS - RADIUS;
+  const x = Math.sin(angle) * radius;
+  const z = Math.cos(angle) * radius - radius;
   const rotateY = -angle * (180 / Math.PI);
-  const scale = Math.max(1 - Math.abs(adjustedIndex) * 0.15, 0.7);
-  const opacity = Math.max(1 - Math.abs(adjustedIndex) * 0.2, 0.4);
+  const scale = Math.max(1 - Math.abs(adjustedIndex) * 0.12, 0.78);
+  const opacity = visible ? Math.max(1 - Math.abs(adjustedIndex) * 0.12, 0.76) : 0;
   return {
-    transform: `translate(-50%, -50%) translateX(${x}px) translateZ(${z}px) rotateY(${rotateY}deg) scale(${scale})`,
+    transform: `translate3d(${x}px, 0, ${z}px) rotateY(${rotateY}deg) scale(${scale})`,
     opacity,
     zIndex: Math.round(100 - Math.abs(adjustedIndex) * 10),
+    visible,
   };
-}
-
-function Ticker({ text }: { text: string }): React.JSX.Element {
-  const reduced = useReducedMotion();
-  const pieces = Array.from({ length: 10 }, () => text);
-  if (reduced) {
-    return <p className="px-4 py-3 text-center text-sm uppercase tracking-[0.18em]">{text}</p>;
-  }
-  return (
-    <div className="overflow-hidden">
-      <div className="coverflow-ticker-track">
-        {[...pieces, ...pieces].map((item, index) => (
-          <span key={`${item}-${index}`} className="inline-flex items-center gap-5 whitespace-nowrap px-2">
-            <span>{item}</span>
-            <span aria-hidden="true">✦</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 export function CoverflowStage({
@@ -69,10 +61,13 @@ export function CoverflowStage({
   currency: string;
   heading?: string;
 }): React.JSX.Element | null {
-  const store = useStore();
   const reduced = useReducedMotion();
+  const stageRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [inView, setInView] = useState(true);
+  const [radius, setRadius] = useState(DESKTOP_RADIUS);
+  const [visibleSpan, setVisibleSpan] = useState(2);
   const drag = useRef({ startX: 0, currentX: 0, moved: false, dragging: false });
   const items = useMemo(() => products.slice(0, 12), [products]);
   const count = items.length;
@@ -88,22 +83,53 @@ export function CoverflowStage({
   );
 
   useEffect(() => {
-    if (reduced || paused || count < 2) {
+    const node = stageRef.current;
+    if (!node) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setInView(Boolean(entry?.isIntersecting));
+      },
+      { rootMargin: '25% 0px', threshold: 0.05 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const node = stageRef.current;
+    if (!node) {
+      return;
+    }
+    const target = node;
+    function measure() {
+      const width = target.clientWidth;
+      setRadius(Math.round(Math.min(DESKTOP_RADIUS, Math.max(150, width * 0.46))));
+      setVisibleSpan(width < 640 ? 1 : 2);
+    }
+    measure();
+    const resize = new ResizeObserver(measure);
+    resize.observe(target);
+    return () => resize.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (reduced || paused || !inView || count < 2) {
       return;
     }
     const timer = window.setInterval(() => go(1), AUTOPLAY_MS);
     return () => window.clearInterval(timer);
-  }, [reduced, paused, count, go]);
+  }, [reduced, paused, inView, count, go]);
 
   if (items.length === 0) {
     return null;
   }
 
-  const ticker = `THE TREND IS IN U - ${store.tenant.name.toUpperCase()}`;
-
   return (
     <section
-      className="coverflow-stage relative text-white"
+      ref={stageRef}
+      className={`coverflow-stage relative text-white${inView ? '' : ' is-offscreen'}`}
       aria-roledescription="carousel"
       aria-label={heading}
       onMouseEnter={() => setPaused(true)}
@@ -112,7 +138,7 @@ export function CoverflowStage({
       <div className="coverflow-shell">
         {heading ? <h2 className="coverflow-heading">{heading}</h2> : null}
 
-        <div className="coverflow-scene" data-lenis-prevent>
+        <div className="coverflow-scene">
           {count > 1 ? (
             <button type="button" className="coverflow-nav coverflow-prev" aria-label="Previous product" onClick={() => go(-1)}>
               <ChevronLeft />
@@ -159,21 +185,37 @@ export function CoverflowStage({
             {items.map((product, index) => {
               const pose = reduced
                 ? {
-                    transform: `translate(-50%, -50%) scale(${index === active ? 1 : 0.86})`,
+                    transform: `scale(${index === active ? 1 : 0.86})`,
                     opacity: index === active ? 1 : 0,
                     zIndex: index === active ? 100 : 0,
+                    visible: index === active,
                   }
-                : cardPose(index, active, count);
+                : cardPose(index, active, count, radius, visibleSpan);
               return (
-                <article key={product.id} className="coverflow-card" style={pose}>
-                  <Link href={`/products/${product.slug}`} className="coverflow-card-link" tabIndex={index === active ? 0 : -1}>
+                <article
+                  key={product.id}
+                  className={`coverflow-card${index === active ? ' is-active' : ''}${pose.visible ? '' : ' is-hidden'}`}
+                  style={{ transform: pose.transform, opacity: pose.opacity, zIndex: pose.zIndex }}
+                  aria-hidden={!pose.visible}
+                >
+                  <Link
+                    href={`/products/${product.slug}`}
+                    className="coverflow-card-link"
+                    tabIndex={index === active ? 0 : -1}
+                    onClick={(event) => {
+                      if (drag.current.moved) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
                     <div className="coverflow-card-inner">
                       <div className="coverflow-image-wrap">
                         <ProductImage
                           src={product.primaryImage?.url}
                           alt={product.primaryImage?.altText ?? product.name}
                           className="coverflow-image object-cover"
-                          sizes="280px"
+                          sizes="(max-width: 480px) 168px, (max-width: 768px) 200px, 280px"
+                          priority={index === active}
                           fill
                         />
                       </div>
@@ -191,9 +233,6 @@ export function CoverflowStage({
             })}
           </div>
         </div>
-      </div>
-      <div className="relative bg-black text-[16px] uppercase tracking-[0.18em]">
-        <Ticker text={ticker} />
       </div>
     </section>
   );

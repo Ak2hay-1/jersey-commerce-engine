@@ -19,7 +19,7 @@ export function ScrollHeading({
   return (
     <motion.div ref={ref} style={{ opacity, y }}>
       {kicker ? <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">{kicker}</p> : null}
-      <h2 className="mt-2 font-heading text-3xl uppercase tracking-wide md:text-4xl">{children}</h2>
+      <h2 className="mt-2 break-words font-heading text-2xl uppercase tracking-wide md:text-4xl">{children}</h2>
     </motion.div>
   );
 }

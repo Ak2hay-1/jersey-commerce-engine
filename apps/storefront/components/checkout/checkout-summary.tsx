@@ -17,10 +17,10 @@ export function CheckoutSummary({
       <ul className="mt-4 space-y-3 text-sm">
         {cart.items.map((item) => (
           <li key={item.id} className="flex justify-between gap-3">
-            <span>
+            <span className="min-w-0 break-words">
               {item.productName} × {item.quantity}
             </span>
-            <span>{formatMoney(item.lineTotal, currency)}</span>
+            <span className="shrink-0">{formatMoney(item.lineTotal, currency)}</span>
           </li>
         ))}
       </ul>
@@ -29,6 +29,12 @@ export function CheckoutSummary({
           <dt>Subtotal</dt>
           <dd>{formatMoney(totals.subtotal, currency)}</dd>
         </div>
+        {Number(totals.discount) > 0 ? (
+          <div className="flex justify-between">
+            <dt>Discount{cart.promoCode ? ` (${cart.promoCode.code})` : ''}</dt>
+            <dd>−{formatMoney(totals.discount, currency)}</dd>
+          </div>
+        ) : null}
         <div className="flex justify-between">
           <dt>Shipping</dt>
           <dd>{formatMoney(totals.shippingAmount, currency)}</dd>

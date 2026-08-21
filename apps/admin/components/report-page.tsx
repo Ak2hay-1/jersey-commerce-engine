@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@jersey-commerce/ui';
+import { realtimeAffectsResource } from '@jersey-commerce/utils';
 import { apiRequest, queryString } from '@/lib/api';
 import { formatMoney, formatNumber } from '@/lib/format';
+import { useRealtimeReload } from '@/lib/realtime';
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
 import { ReportFilters, type ReportFilterValue } from '@/components/report-filters';
@@ -35,22 +37,37 @@ export function ReportPage<T>({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const load = useCallback(
+    async (silent = false) => {
+      const qs = queryString({
+        preset: filters.preset,
+        from: filters.preset === 'custom' ? filters.from : undefined,
+        to: filters.preset === 'custom' ? filters.to : undefined,
+        source: filters.source,
+        paymentMethod: filters.paymentMethod,
+        page,
+        pageSize: 20,
+      });
+      if (!silent) {
+        setLoading(true);
+      }
+      try {
+        setData(await apiRequest<typeof data>(`${path}${qs}`));
+        setError('');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load report');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filters, page, path],
+  );
+
   useEffect(() => {
-    const qs = queryString({
-      preset: filters.preset,
-      from: filters.preset === 'custom' ? filters.from : undefined,
-      to: filters.preset === 'custom' ? filters.to : undefined,
-      source: filters.source,
-      paymentMethod: filters.paymentMethod,
-      page,
-      pageSize: 20,
-    });
-    setLoading(true);
-    apiRequest<typeof data>(`${path}${qs}`)
-      .then(setData)
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [filters, page, path]);
+    void load();
+  }, [load]);
+
+  useRealtimeReload((event) => realtimeAffectsResource('/reports', event.entity), () => load(true));
 
   async function onExport(): Promise<void> {
     if (!exportPath) return;

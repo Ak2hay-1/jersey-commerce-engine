@@ -1,10 +1,16 @@
 import type { Metadata } from 'next';
 import type { HomepageSection, StorefrontProductListItem } from '@jersey-commerce/types';
-import { storeApi } from '../lib/api';
 import { serverStoreOptions } from '../lib/server-options';
 import {
+  cachedBootstrap,
+  cachedCategories,
+  cachedFeatured,
+  cachedProducts,
+  productsQueryKey,
+  tenantKey,
+} from '../lib/cached-store';
+import {
   CtaSection,
-  DualMarquee,
   FeaturedCategories,
   FeaturedProducts,
   LatestDrop,
@@ -15,11 +21,23 @@ import {
 import { CinematicHero } from '../components/home/cinematic-hero';
 import { CoverflowStage } from '../components/home/coverflow-stage';
 import { LookbookStrip } from '../components/home/lookbook-strip';
+import { storeApi } from '../lib/api';
+
+function pickBySlugs(items: StorefrontProductListItem[], slugs?: string[]): StorefrontProductListItem[] {
+  if (!slugs?.length) {
+    return items;
+  }
+  const bySlug = new Map(items.map((item) => [item.slug, item]));
+  return slugs.flatMap((slug) => {
+    const item = bySlug.get(slug);
+    return item ? [item] : [];
+  });
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const options = await serverStoreOptions();
-    const store = await storeApi.bootstrap(options);
+    const store = await cachedBootstrap(tenantKey(options));
     return {
       title: store.website.seoTitle || store.tenant.name,
       description: store.website.seoDescription || undefined,
@@ -30,24 +48,28 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     };
   } catch {
-    return { title: 'Store', description: 'Premium streetwear and match kits.' };
+    return { title: 'Store', description: 'Football jerseys for club, national, kids, and custom kits.' };
   }
 }
 
 export default async function HomePage(): Promise<React.JSX.Element> {
   const options = await serverStoreOptions();
-  const store = await storeApi.bootstrap(options);
+  const slug = tenantKey(options);
+  const catalogKey = productsQueryKey({ pageSize: 24, sort: 'newest' });
+
+  const [store, featured, catalog, categories] = await Promise.all([
+    cachedBootstrap(slug),
+    cachedFeatured(slug).catch(() => [] as StorefrontProductListItem[]),
+    cachedProducts(slug, catalogKey).catch(() => null),
+    cachedCategories(slug).catch(() => []),
+  ]);
+
   const currency = store.tenant.currency;
   const sections = store.website.homepage.sections.filter((section: HomepageSection) => section.enabled);
-
-  const [featured, catalog, categories] = await Promise.all([
-    storeApi.featured(options).catch(() => [] as StorefrontProductListItem[]),
-    storeApi.products({ pageSize: 8, sort: 'newest' }, options).catch(() => null),
-    storeApi.categories(options).catch(() => []),
-  ]);
   const products = featured.length ? featured : (catalog?.items ?? []);
-  const street = categories.find((item) => item.slug === 'oversized-tees' || item.slug === 'streetwear');
-  const pitch = categories.find((item) => item.slug === 'football' || item.slug === 'club-jerseys');
+  const catalogItems = catalog?.items ?? [];
+  const street = categories.find((item) => item.slug === 'club-jerseys' || item.slug === 'football-jerseys');
+  const pitch = categories.find((item) => item.slug === 'national-jerseys' || item.slug === 'custom-jerseys');
 
   const rendered = await Promise.all(
     sections.map(async (section: HomepageSection, index: number) => {
@@ -56,14 +78,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         return <CinematicHero key={key} section={section} fallbackImage={products[0]?.primaryImage} />;
       }
       if (section.type === 'marquee') {
-        return (
-          <DualMarquee
-            key={key}
-            heading={section.heading || store.tenant.name}
-            subheading={section.subheading}
-            inverted={section.ctaLabel === 'dark'}
-          />
-        );
+        return null;
       }
       if (section.type === 'statement') {
         return <StatementSection key={key} section={section} />;
@@ -75,11 +90,8 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         return <FeaturedCategories key={key} section={section} categories={listed} />;
       }
       if (section.type === 'featured-products') {
-        const listed = section.productSlugs?.length
-          ? (await storeApi.products({ pageSize: 12 }, options)).items.filter((item: StorefrontProductListItem) =>
-              section.productSlugs?.includes(item.slug),
-            )
-          : products;
+        const picked = section.productSlugs?.length ? pickBySlugs(catalogItems, section.productSlugs) : [];
+        const listed = picked.length ? picked : products;
         return <CoverflowStage key={key} products={listed} currency={currency} heading={section.heading} />;
       }
       if (section.type === 'promo-banner') {
@@ -90,7 +102,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         return <FeaturedProducts key={key} section={section} products={best} currency={currency} />;
       }
       if (section.type === 'new-arrivals') {
-        const newest = await storeApi.newest(options).catch(() => catalog?.items ?? []);
+        const picked = section.productSlugs?.length ? pickBySlugs(catalogItems, section.productSlugs) : [];
+        const newest = picked.length
+          ? picked
+          : await storeApi.newest(options).catch(() => catalogItems);
         return <LatestDrop key={key} section={section} products={newest} currency={currency} />;
       }
       if (section.type === 'trust') {

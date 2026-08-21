@@ -9,6 +9,8 @@ export type RbacDb = object;
 
 export function roleDisplayName(code: RoleCode): string {
   switch (code) {
+    case 'SUPER_ADMIN':
+      return 'Superior Admin';
     case 'OWNER':
       return 'Owner';
     case 'MANAGER':

@@ -35,9 +35,6 @@ const fragmentShader = /* glsl */ `
 
 function DisplacementPlane({ src }: { src: string }): React.JSX.Element {
   const texture = useTexture(src);
-  // #region agent log
-  fetch('http://127.0.0.1:7412/ingest/e788776b-2e05-46ac-bbcf-f37efdc25738',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'db5f59'},body:JSON.stringify({sessionId:'db5f59',hypothesisId:'A',location:'webgl-hero.tsx:DisplacementPlane',message:'useTexture resolved',data:{src, imageWidth: texture.image?.width ?? null, imageHeight: texture.image?.height ?? null},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -111,36 +108,6 @@ export function WebGLHero({ src }: { src: string }): React.JSX.Element | null {
   useEffect(() => {
     setSupported(canCreateWebGLContext());
   }, []);
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7412/ingest/e788776b-2e05-46ac-bbcf-f37efdc25738',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'db5f59'},body:JSON.stringify({sessionId:'db5f59',hypothesisId:'E',location:'webgl-hero.tsx:WebGLHero',message:'WebGLHero src',data:{src},timestamp:Date.now()})}).catch(()=>{});
-    const probeImage = (crossOrigin: string | null) =>
-      new Promise<{ ok: boolean; w?: number; h?: number }>((resolve) => {
-        const img = new Image();
-        if (crossOrigin) img.crossOrigin = crossOrigin;
-        img.onload = () => resolve({ ok: true, w: img.naturalWidth, h: img.naturalHeight });
-        img.onerror = () => resolve({ ok: false });
-        img.src = src;
-      });
-    void (async () => {
-      let fetchStatus: number | null = null;
-      let contentType: string | null = null;
-      let cors: string | null = null;
-      try {
-        const response = await fetch(src, { method: 'GET', mode: 'cors' });
-        fetchStatus = response.status;
-        contentType = response.headers.get('content-type');
-        cors = response.headers.get('access-control-allow-origin');
-      } catch (error) {
-        fetchStatus = -1;
-        contentType = error instanceof Error ? error.message : 'fetch-failed';
-      }
-      const [anon, noCors] = await Promise.all([probeImage('anonymous'), probeImage(null)]);
-      fetch('http://127.0.0.1:7412/ingest/e788776b-2e05-46ac-bbcf-f37efdc25738',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'db5f59'},body:JSON.stringify({sessionId:'db5f59',hypothesisId:'A',location:'webgl-hero.tsx:probe',message:'texture src probe',data:{src, fetchStatus, contentType, cors, anon, noCors},timestamp:Date.now()})}).catch(()=>{});
-    })();
-    // #endregion
-  }, [src]);
 
   if (!supported) {
     return null;

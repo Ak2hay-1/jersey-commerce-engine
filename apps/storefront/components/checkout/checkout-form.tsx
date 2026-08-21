@@ -12,6 +12,7 @@ import { useAuth } from '../providers/auth-provider';
 import { useStore } from '../providers/store-provider';
 import { AddressForm, emptyAddress, toShippingDto } from './address-form';
 import { CheckoutSummary } from './checkout-summary';
+import { PromoCodeField } from '../cart/promo-code-field';
 import { Alert } from '../ui/alert';
 import { Input } from '../ui/input';
 import { EmptyState } from '../ui/empty-state';
@@ -96,9 +97,9 @@ export function CheckoutForm(): React.JSX.Element {
   }
 
   return (
-    <form onSubmit={placeOrder} className="mx-auto grid max-w-store gap-8 px-4 py-10 lg:grid-cols-[1fr_20rem]">
+    <form onSubmit={placeOrder} className="mx-auto grid max-w-store gap-8 store-gutter py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="space-y-8">
-        <ol className="flex gap-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <ol className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {STEPS.map((label, index) => (
             <li key={label} className={index === step ? 'text-foreground' : undefined}>
               {index + 1}. {label}
@@ -112,7 +113,7 @@ export function CheckoutForm(): React.JSX.Element {
           </Alert>
         ))}
         <section className="space-y-3">
-          <h1 className="font-heading text-3xl uppercase tracking-wide">Contact</h1>
+          <h1 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Contact</h1>
           <label className="grid gap-1 text-sm">
             Name
             <Input value={name} onChange={(event) => setName(event.target.value)} required autoComplete="name" onFocus={() => setStep(0)} />
@@ -127,12 +128,16 @@ export function CheckoutForm(): React.JSX.Element {
           </label>
         </section>
         <section className="space-y-3">
-          <h2 className="font-heading text-3xl uppercase tracking-wide">Delivery</h2>
-          <div className="flex gap-3">
-            <Button type="button" variant={method === 'DELIVERY' ? 'default' : 'outline'} onClick={() => { setMethod('DELIVERY'); setStep(1); }}>
+          <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Promo code</h2>
+          <PromoCodeField />
+        </section>
+        <section className="space-y-3">
+          <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Delivery</h2>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button type="button" className="w-full sm:w-auto" variant={method === 'DELIVERY' ? 'default' : 'outline'} onClick={() => { setMethod('DELIVERY'); setStep(1); }}>
               Delivery
             </Button>
-            <Button type="button" variant={method === 'STORE_PICKUP' ? 'default' : 'outline'} onClick={() => { setMethod('STORE_PICKUP'); setStep(1); }}>
+            <Button type="button" className="w-full sm:w-auto" variant={method === 'STORE_PICKUP' ? 'default' : 'outline'} onClick={() => { setMethod('STORE_PICKUP'); setStep(1); }}>
               Store pickup
             </Button>
           </div>
@@ -141,7 +146,7 @@ export function CheckoutForm(): React.JSX.Element {
           )}
         </section>
         <section className="space-y-3">
-          <h2 className="font-heading text-3xl uppercase tracking-wide">Payment</h2>
+          <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Payment</h2>
           <div className="border border-foreground bg-foreground px-4 py-4 text-background">
             <p className="text-sm font-semibold uppercase tracking-[0.16em]">Cash on delivery</p>
             <p className="mt-2 text-sm text-background/75">

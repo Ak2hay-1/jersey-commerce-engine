@@ -44,6 +44,7 @@ export interface CreateOrderEngineInput {
   notes?: string | null;
   discountType?: DiscountType;
   discountValue?: Prisma.Decimal;
+  promoCodeId?: string | null;
   shippingAddress?: OrderShippingAddressDto;
   items: OrderLineRequest[];
   actor?: InventoryActor;
@@ -102,6 +103,7 @@ export class OrderEngineService {
         total: priced.total,
         currency: tenant.currency,
         notes: input.notes?.trim() || null,
+        promoCodeId: input.promoCodeId ?? null,
       },
     });
     for (const line of priced.lines) {

@@ -1,0 +1,60 @@
+{
+  "name": "@jersey-commerce/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Windows staff shell for POS and ERP against the cloud API.",
+  "author": "Jersey Commerce Engine",
+  "main": "src/main.cjs",
+  "scripts": {
+    "prepare:renderer": "node scripts/prepare-renderer.mjs",
+    "dev": "node scripts/prepare-renderer.mjs && electron .",
+    "pack": "node scripts/prepare-renderer.mjs && electron-builder --win nsis",
+    "pack:dir": "node scripts/prepare-renderer.mjs && electron-builder --win dir"
+  },
+  "build": {
+    "appId": "com.jerseycommerce.staff",
+    "productName": "Jersey Staff",
+    "copyright": "Copyright © Jersey Commerce Engine",
+    "electronVersion": "34.5.8",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "renderer",
+        "to": "renderer"
+      },
+      {
+        "from": "config.json",
+        "to": "config.json"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Jersey-Staff-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Jersey Staff"
+    }
+  },
+  "devDependencies": {
+    "electron": "34.5.8",
+    "electron-builder": "26.15.3"
+  }
+}

@@ -8,7 +8,7 @@ export class BackupSchedulerService {
 
   constructor(private readonly backups: BackupsService) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async tick(): Promise<void> {
     await this.backups.recoverStaleRuns();
     const tenantIds = await this.backups.findDueTenantIds();

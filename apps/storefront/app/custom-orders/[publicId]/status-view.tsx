@@ -33,9 +33,9 @@ export function CustomOrderStatusView({
   }
 
   return (
-    <div className="mx-auto max-w-store px-4 py-12">
+    <div className="mx-auto max-w-store store-gutter py-10 md:py-12">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">{order.orderNumber}</p>
-      <h1 className="mt-2 font-heading text-4xl uppercase tracking-wide">{order.teamName || 'Custom jersey order'}</h1>
+      <h1 className="mt-2 break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">{order.teamName || 'Custom jersey order'}</h1>
       <p className="mt-2 text-muted-foreground">
         Status {order.status.replaceAll('_', ' ').toLowerCase()} · Payment {order.paymentStatus.replaceAll('_', ' ').toLowerCase()}
       </p>

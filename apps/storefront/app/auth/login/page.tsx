@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Sign in' };
 
 export default function LoginPage(): React.JSX.Element {
   return (
-    <div className="px-4 py-16">
+    <div className="px-4 py-12 sm:py-16">
       <LoginForm />
     </div>
   );

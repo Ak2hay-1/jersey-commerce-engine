@@ -77,6 +77,16 @@ export class TokenService {
     return payload;
   }
 
+  verifyAccessToken(token: string): AccessTokenPayload {
+    const payload = this.jwt.verify<AccessTokenPayload>(token, {
+      secret: this.config.get('JWT_ACCESS_SECRET', { infer: true }),
+    });
+    if (payload.typ !== ACCESS_TOKEN_TYPE || !payload.sub || !payload.tenantId || !payload.jti) {
+      throw new Error('Invalid access token.');
+    }
+    return payload;
+  }
+
   createRefreshTokenValue(): { token: string; tokenHash: string; familyId: string } {
     const token = createOpaqueToken('rt_');
     return { token, tokenHash: this.hashRefreshToken(token), familyId: randomUUID() };

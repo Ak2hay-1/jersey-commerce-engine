@@ -4,6 +4,7 @@ import { asTx } from '../prisma/as-tx';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertFound } from '../common/http/assert-found';
 import { toPaginationArgs, toPaginationMeta, type PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { RealtimeService } from '../realtime/realtime.service';
 
 export interface AuditLogInput {
   action: string;
@@ -20,7 +21,10 @@ export interface AuditLogInput {
 
 @Injectable()
 export class AuditService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeService,
+  ) {}
 
   async log(input: AuditLogInput, db?: object): Promise<void> {
     const write = async (client: object) => {
@@ -41,9 +45,15 @@ export class AuditService {
     };
     if (db) {
       await write(db);
-      return;
+    } else {
+      await this.prisma.withoutTenantScope(async () => write(this.prisma));
     }
-    await this.prisma.withoutTenantScope(async () => write(this.prisma));
+    void this.realtime.publish({
+      action: input.action,
+      entity: input.entity,
+      entityId: input.entityId,
+      tenantId: input.tenantId,
+    });
   }
 
   async findAll(tenantId: string, query: PaginationQueryDto) {

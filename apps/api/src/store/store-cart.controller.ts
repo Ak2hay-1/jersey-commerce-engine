@@ -7,6 +7,7 @@ import { CART_TOKEN_COOKIE } from '../auth/auth.constants';
 import { StoreCartService } from './store-cart.service';
 import { StoreTenantGuard, cartTokenFromRequest } from './store-tenant.guard';
 import { AddStoreCartItemDto, UpdateStoreCartItemDto } from '../orders/dto/order.dto';
+import { ApplyStorePromoDto } from '../promo-codes/dto/promo-code.dto';
 
 @Controller('store/cart')
 @ApiTags('store')
@@ -60,6 +61,18 @@ export class StoreCartController {
   @ApiOperation({ summary: 'Clear all items from the cart' })
   clear(@TenantId() tenantId: string, @Req() request: Request) {
     return this.carts.clear(tenantId, cartTokenFromRequest(request));
+  }
+
+  @Post('promo')
+  @ApiOperation({ summary: 'Apply a promo code to the current cart. Discount is calculated server-side.' })
+  applyPromo(@TenantId() tenantId: string, @Req() request: Request, @Body() dto: ApplyStorePromoDto) {
+    return this.carts.applyPromo(tenantId, cartTokenFromRequest(request), dto.code);
+  }
+
+  @Delete('promo')
+  @ApiOperation({ summary: 'Remove the promo code from the current cart' })
+  removePromo(@TenantId() tenantId: string, @Req() request: Request) {
+    return this.carts.removePromo(tenantId, cartTokenFromRequest(request));
   }
 
   private setCartCookie(response: Response, request: Request, token: string) {

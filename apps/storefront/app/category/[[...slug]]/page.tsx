@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { storeApi } from '../../../lib/api';
 import { serverStoreOptions } from '../../../lib/server-options';
+import { cachedBootstrap, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
 import { ProductGrid } from '../../../components/catalog/product-grid';
 import { CatalogFilters } from '../../../components/catalog/catalog-filters';
@@ -63,21 +64,23 @@ export default async function CategoryPage({
     }
     throw error;
   }
-  const store = await storeApi.bootstrap(options);
-  const result = await storeApi.products(
-    {
-      categorySlug: category.slug,
-      search: query.search,
-      size: query.size,
-      colour: query.colour,
-      minPrice: query.minPrice,
-      maxPrice: query.maxPrice,
-      sort: query.sort,
-      page: query.page ? Number(query.page) : 1,
-      pageSize: 24,
-    },
-    options,
-  );
+  const [store, result] = await Promise.all([
+    cachedBootstrap(tenantKey(options)),
+    storeApi.products(
+      {
+        categorySlug: category.slug,
+        search: query.search,
+        size: query.size,
+        colour: query.colour,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
+        sort: query.sort,
+        page: query.page ? Number(query.page) : 1,
+        pageSize: 24,
+      },
+      options,
+    ),
+  ]);
   const host = (await headers()).get('host');
   const origin = `${host?.includes('localhost') ? 'http' : 'https'}://${host ?? 'localhost:3000'}`;
   const crumbs = [{ name: 'Home', href: '/' }, ...slug.map((part, index) => ({ name: part.replace(/-/g, ' '), href: `/category/${slug.slice(0, index + 1).join('/')}` }))];
@@ -89,18 +92,18 @@ export default async function CategoryPage({
         <div className="relative bg-muted">
           <ProductImage src={category.image} alt="" className="h-48 w-full object-cover md:h-72" sizes="100vw" priority />
           <div className="absolute inset-0 bg-black/45" />
-          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-store px-4 py-8 text-white">
-            <h1 className="font-heading text-4xl uppercase tracking-wide md:text-6xl">{category.name}</h1>
+          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-store store-gutter py-6 text-white md:py-8">
+            <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-6xl">{category.name}</h1>
             {category.description ? <p className="mt-2 max-w-2xl text-white/80">{category.description}</p> : null}
           </div>
         </div>
       ) : (
-        <div className="mx-auto max-w-store px-4 pt-10">
-          <h1 className="font-heading text-4xl uppercase tracking-wide">{category.name}</h1>
+        <div className="mx-auto max-w-store store-gutter pt-10">
+          <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">{category.name}</h1>
           {category.description ? <p className="mt-2 text-muted-foreground">{category.description}</p> : null}
         </div>
       )}
-      <div className="mx-auto max-w-store px-4 py-10">
+      <div className="mx-auto max-w-store store-gutter py-8 md:py-10">
         {category.children.length > 0 ? (
           <div className="mb-8 flex flex-wrap gap-2">
             {category.children.map((child) => (
@@ -110,7 +113,7 @@ export default async function CategoryPage({
             ))}
           </div>
         ) : null}
-        <div className="grid gap-10 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10">
           <aside>
             <CatalogFilters facets={result.facets} />
           </aside>

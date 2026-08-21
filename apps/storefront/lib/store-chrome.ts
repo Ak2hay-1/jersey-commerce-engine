@@ -1,11 +1,14 @@
-import { storeApi, type StoreRequestOptions } from './api';
+import { cachedFeatured, cachedProducts, productsQueryKey, tenantKey } from './cached-store';
 import { DEFAULT_STORE_CHROME, type StoreChrome } from './swatch';
+import type { StoreRequestOptions } from './api';
 
 export async function loadStoreChrome(options?: StoreRequestOptions): Promise<StoreChrome> {
+  const slug = tenantKey(options);
   try {
+    const chromeProductsKey = productsQueryKey({ pageSize: 1 });
     const [catalog, featured] = await Promise.all([
-      storeApi.products({ pageSize: 1 }, options),
-      storeApi.featured(options),
+      cachedProducts(slug, chromeProductsKey),
+      cachedFeatured(slug),
     ]);
     const first = featured[0] ?? catalog.items[0];
     return {

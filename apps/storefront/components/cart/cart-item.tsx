@@ -28,12 +28,12 @@ export function CartItemRow({
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <Link href={`/products/${item.productSlug}`} className="font-heading uppercase tracking-wide">
+            <Link href={`/products/${item.productSlug}`} className="break-words font-heading uppercase tracking-wide">
               {item.productName}
             </Link>
             {variant ? <p className="text-xs text-muted-foreground">{variant}</p> : null}
           </div>
-          <p className="text-sm font-medium">{formatMoney(item.lineTotal, currency)}</p>
+          <p className="shrink-0 text-sm font-medium">{formatMoney(item.lineTotal, currency)}</p>
         </div>
         {item.priceChanged ? (
           <Alert tone="warning">Price updated to {formatMoney(item.currentUnitPrice, currency)}.</Alert>

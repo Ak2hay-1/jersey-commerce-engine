@@ -29,6 +29,7 @@ describe('CustomersService', () => {
     email: 'owner@example.com',
     name: 'Owner',
     status: 'ACTIVE' as const,
+    mustChangePassword: false,
     roles: ['OWNER' as const],
     permissions: ['customers.delete' as const],
     tokenVersion: 1,

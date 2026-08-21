@@ -1,8 +1,10 @@
-import type { AuthMeResponse, AuthTokenResponse, AuthUser, PermissionCode } from '@jersey-commerce/types';
-import { publicEnv } from './env';
+import type { AuthMeResponse, AuthTokenResponse, AuthUser, LoginTenantOption, PermissionCode } from '@jersey-commerce/types';
+import { getApiUrl } from './env';
 
-const ACCESS_KEY = 'jersey-pos-access-token';
-const REFRESH_KEY = 'jersey-pos-refresh-token';
+const ACCESS_KEY = 'jersey-staff-access-token';
+const REFRESH_KEY = 'jersey-staff-refresh-token';
+const LEGACY_ACCESS_KEYS = ['jersey-pos-access-token', 'jersey-admin-access-token'] as const;
+const LEGACY_REFRESH_KEYS = ['jersey-pos-refresh-token', 'jersey-admin-refresh-token'] as const;
 
 interface ApiSuccess<T> {
   success: true;
@@ -25,28 +27,56 @@ export class ApiError extends Error {
   }
 }
 
+function readStoredToken(primary: string, legacyKeys: readonly string[]): string {
+  const current = window.localStorage.getItem(primary);
+  if (current) {
+    return current;
+  }
+  for (const key of legacyKeys) {
+    const legacy = window.localStorage.getItem(key);
+    if (legacy) {
+      window.localStorage.setItem(primary, legacy);
+      window.localStorage.removeItem(key);
+      return legacy;
+    }
+  }
+  return '';
+}
+
 export function readAccessToken(): string {
   if (typeof window === 'undefined') {
     return '';
   }
-  return window.localStorage.getItem(ACCESS_KEY) ?? '';
+  return readStoredToken(ACCESS_KEY, LEGACY_ACCESS_KEYS);
 }
 
 export function readRefreshToken(): string {
   if (typeof window === 'undefined') {
     return '';
   }
-  return window.localStorage.getItem(REFRESH_KEY) ?? '';
+  return readStoredToken(REFRESH_KEY, LEGACY_REFRESH_KEYS);
 }
 
 export function storeTokens(accessToken: string, refreshToken: string): void {
   window.localStorage.setItem(ACCESS_KEY, accessToken);
   window.localStorage.setItem(REFRESH_KEY, refreshToken);
+  for (const key of LEGACY_ACCESS_KEYS) {
+    window.localStorage.removeItem(key);
+  }
+  for (const key of LEGACY_REFRESH_KEYS) {
+    window.localStorage.removeItem(key);
+  }
 }
 
 export function clearTokens(): void {
   window.localStorage.removeItem(ACCESS_KEY);
   window.localStorage.removeItem(REFRESH_KEY);
+  for (const key of LEGACY_ACCESS_KEYS) {
+    window.localStorage.removeItem(key);
+  }
+  for (const key of LEGACY_REFRESH_KEYS) {
+    window.localStorage.removeItem(key);
+  }
 }
 
 export function isNotFound(error: unknown): boolean {
@@ -70,7 +100,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   }
-  const response = await fetch(`${publicEnv.NEXT_PUBLIC_API_URL}/api/v1${path}`, {
+  const response = await fetch(`${getApiUrl()}/api/v1${path}`, {
     ...init,
     headers,
     credentials: 'include',
@@ -79,7 +109,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     const refreshed = await tryRefresh();
     if (refreshed) {
       headers.set('authorization', `Bearer ${readAccessToken()}`);
-      const retry = await fetch(`${publicEnv.NEXT_PUBLIC_API_URL}/api/v1${path}`, {
+      const retry = await fetch(`${getApiUrl()}/api/v1${path}`, {
         ...init,
         headers,
         credentials: 'include',
@@ -99,7 +129,7 @@ async function tryRefresh(): Promise<boolean> {
     return false;
   }
   try {
-    const response = await fetch(`${publicEnv.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`, {
+    const response = await fetch(`${getApiUrl()}/api/v1/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
@@ -121,6 +151,14 @@ async function tryRefresh(): Promise<boolean> {
 
 export function login(input: { email: string; password: string; tenantSlug?: string }): Promise<AuthTokenResponse> {
   return apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export function listLoginTenants(): Promise<{ items: LoginTenantOption[] }> {
+  return apiRequest('/auth/login-tenants');
+}
+
+export function changePassword(input: { currentPassword: string; newPassword: string }): Promise<{ ok: true }> {
+  return apiRequest('/auth/change-password', { method: 'POST', body: JSON.stringify(input) });
 }
 
 export function logout(): Promise<{ ok?: boolean }> {

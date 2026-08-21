@@ -1,18 +1,21 @@
 import type {
   CategorySummary,
+  HomepageBannerSlide,
   HomepageConfig,
   HomepageSection,
   StorefrontAvailability,
   StorefrontBootstrap,
   StorefrontCatalogFacets,
   StorefrontCustomer,
+  StorefrontFooter,
   StorefrontProductDetail,
   StorefrontProductListItem,
   StorefrontTheme,
   StorefrontVariant,
   StorefrontWebsiteSettings,
+  StorefrontAuthMethods,
 } from '@jersey-commerce/types';
-import { HOMEPAGE_SECTION_TYPES } from '@jersey-commerce/types';
+import { DEFAULT_STOREFRONT_FOOTER, HOMEPAGE_SECTION_TYPES } from '@jersey-commerce/types';
 import { availableQuantity } from '../inventory/inventory-math';
 import { toCategorySummary, toImageDto } from '../catalog/catalog.mapper';
 import { moneyString } from '../catalog/money';
@@ -236,6 +239,40 @@ function asRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
+function parseSlides(value: unknown): HomepageBannerSlide[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const slides = value.flatMap((item) => {
+    if (typeof item !== 'object' || item === null) {
+      return [];
+    }
+    const slide = item as HomepageBannerSlide;
+    if (typeof slide.image !== 'string' || !slide.image.trim()) {
+      return [];
+    }
+    return [
+      {
+        id: typeof slide.id === 'string' ? slide.id : undefined,
+        image: slide.image.trim(),
+        heading: slide.heading,
+        subheading: slide.subheading,
+        ctaLabel: slide.ctaLabel,
+        ctaHref: slide.ctaHref,
+      },
+    ];
+  });
+  return slides.length ? slides : undefined;
+}
+
+function parseStringList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const items = value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+  return items.length ? items : undefined;
+}
+
 function parseSections(value: unknown): HomepageSection[] {
   const record = asRecord(value);
   const raw = Array.isArray(value) ? value : record.sections;
@@ -261,9 +298,10 @@ function parseSections(value: unknown): HomepageSection[] {
         image: section.image,
         ctaLabel: section.ctaLabel,
         ctaHref: section.ctaHref,
-        categorySlugs: section.categorySlugs,
-        productSlugs: section.productSlugs,
+        categorySlugs: parseStringList(section.categorySlugs),
+        productSlugs: parseStringList(section.productSlugs),
         items: section.items,
+        slides: parseSlides(section.slides),
       },
     ];
   });
@@ -276,12 +314,16 @@ export function defaultHomepageConfig(): HomepageConfig {
         type: 'hero',
         enabled: true,
         heading: 'New collection launched',
-        subheading: 'Premium streetwear and match kits, cut to last.',
+        subheading: 'Streetwear cut for the stands. Kits cut for the street.',
         ctaLabel: 'Shop the drop',
         ctaHref: '/products',
       },
-      { type: 'marquee', enabled: true, heading: 'UNLEASH THE DROP', subheading: 'UNLEASH THE DROP' },
-      { type: 'statement', enabled: true, heading: 'NOT FOR EVERYONE' },
+      {
+        type: 'statement',
+        enabled: true,
+        heading: 'THE TREND IS IN U',
+        subheading: 'Cut for the stands. Lived on the street.',
+      },
       { type: 'new-arrivals', enabled: true, heading: 'Latest drop' },
       {
         type: 'promo-banner',
@@ -322,6 +364,32 @@ export function toHomepageConfig(value: unknown): HomepageConfig {
   return { sections };
 }
 
+function asString(value: unknown, fallback: string, max = 800): string {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  return value.trim().slice(0, max) || fallback;
+}
+
+export function toFooterConfig(value: unknown): StorefrontFooter {
+  const record = asRecord(value);
+  const materials = parseStringList(record.materials) ?? DEFAULT_STOREFRONT_FOOTER.materials;
+  return {
+    kicker: asString(record.kicker, DEFAULT_STOREFRONT_FOOTER.kicker, 80),
+    heading: asString(record.heading, DEFAULT_STOREFRONT_FOOTER.heading, 240),
+    body: typeof record.body === 'string' ? record.body.trim().slice(0, 800) : DEFAULT_STOREFRONT_FOOTER.body,
+    aboutTitle: asString(record.aboutTitle, DEFAULT_STOREFRONT_FOOTER.aboutTitle, 80),
+    aboutBody: typeof record.aboutBody === 'string' ? record.aboutBody.trim().slice(0, 2000) : DEFAULT_STOREFRONT_FOOTER.aboutBody,
+    materialsTitle: asString(record.materialsTitle, DEFAULT_STOREFRONT_FOOTER.materialsTitle, 80),
+    materials: materials.slice(0, 12),
+    showCollections: record.showCollections === false ? false : true,
+    collectionsTitle: asString(record.collectionsTitle, DEFAULT_STOREFRONT_FOOTER.collectionsTitle, 80),
+    shopTitle: asString(record.shopTitle, DEFAULT_STOREFRONT_FOOTER.shopTitle, 80),
+    contactTitle: asString(record.contactTitle, DEFAULT_STOREFRONT_FOOTER.contactTitle, 80),
+    copyright: typeof record.copyright === 'string' ? record.copyright.trim().slice(0, 240) : DEFAULT_STOREFRONT_FOOTER.copyright,
+  };
+}
+
 export function mergeTheme(input: {
   logo?: string | null;
   favicon?: string | null;
@@ -355,6 +423,7 @@ export function toWebsiteSettings(settings: {
   seoTitle: string | null;
   seoDescription: string | null;
   homepageConfig: unknown;
+  footerConfig?: unknown;
 }): StorefrontWebsiteSettings {
   const social = asRecord(settings.socialLinks);
   const socialLinks = Object.fromEntries(
@@ -371,6 +440,7 @@ export function toWebsiteSettings(settings: {
     seoTitle: settings.seoTitle,
     seoDescription: settings.seoDescription,
     homepage: toHomepageConfig(settings.homepageConfig),
+    footer: toFooterConfig(settings.footerConfig),
   };
 }
 
@@ -412,8 +482,10 @@ export function toBootstrap(input: {
     seoTitle: string | null;
     seoDescription: string | null;
     homepageConfig: unknown;
+    footerConfig?: unknown;
   } | null;
   navigation: CategorySummary[];
+  auth?: StorefrontAuthMethods;
 }): StorefrontBootstrap {
   const website = input.website;
   return {
@@ -452,9 +524,16 @@ export function toBootstrap(input: {
         seoTitle: input.tenant.name,
         seoDescription: null,
         homepageConfig: null,
+        footerConfig: null,
       },
     ),
     navigation: input.navigation,
+    auth: input.auth ?? {
+      passwordLogin: true,
+      emailOtp: false,
+      smsOtp: false,
+      googleSignIn: false,
+    },
   };
 }
 

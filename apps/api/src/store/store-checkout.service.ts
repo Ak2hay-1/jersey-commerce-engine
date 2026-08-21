@@ -28,6 +28,8 @@ import type { AuthPrincipal } from '../common/context/request-context';
 import type { RequestMeta } from '../auth/auth-session.service';
 import { StoreCartService } from './store-cart.service';
 import { hashOpaqueToken } from '../common/crypto/token-hash';
+import { assertPromoApplicable } from '../promo-codes/promo-code.engine';
+import { PromoCodesService } from '../promo-codes/promo-codes.service';
 
 const TX_OPTIONS = {
   maxWait: 5_000,
@@ -46,6 +48,7 @@ export class StoreCheckoutService {
     private readonly tokens: TokenService,
     private readonly redis: RedisService,
     private readonly shipping: ShippingCalculator,
+    private readonly promoCodes: PromoCodesService,
   ) {}
 
   async quote(tenantId: string, token: string | undefined, fulfillmentMethod: FulfillmentMethod = 'DELIVERY'): Promise<CheckoutQuote> {
@@ -68,6 +71,7 @@ export class StoreCheckoutService {
             total: '0.00',
             currency: 'INR',
           },
+          promoCode: null,
           expiresAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -140,12 +144,27 @@ export class StoreCheckoutService {
     let totals = cart.totals;
     if (pricedInputs.length > 0) {
       const provisional = priceOrderLines(pricedInputs, 'NONE', money(0), money(0));
-      const shippingQuote = this.shipping.quote(fulfillmentMethod, provisional.total, {
+      let discountType: 'NONE' | 'FIXED' | 'PERCENTAGE' = 'NONE';
+      let discountValue = money(0);
+      if (cartRecord.promoCode) {
+        try {
+          const resolved = assertPromoApplicable(cartRecord.promoCode, provisional.subtotal);
+          discountType = resolved.discountType;
+          discountValue = resolved.discountValue;
+        } catch (error) {
+          issues.push({
+            code: 'PROMO_INVALID',
+            message: error instanceof Error ? error.message : 'This promo code cannot be applied.',
+          });
+        }
+      }
+      const afterDiscount = priceOrderLines(pricedInputs, discountType, discountValue, money(0));
+      const shippingQuote = this.shipping.quote(fulfillmentMethod, afterDiscount.total, {
         shippingCalculationMode: tenant.shippingCalculationMode,
         shippingFixedAmount: tenant.shippingFixedAmount,
         freeShippingMinSubtotal: tenant.freeShippingMinSubtotal,
       });
-      const priced = priceOrderLines(pricedInputs, 'NONE', money(0), shippingQuote.amount);
+      const priced = priceOrderLines(pricedInputs, discountType, discountValue, shippingQuote.amount);
       totals = {
         subtotal: moneyString(priced.subtotal) ?? '0.00',
         discount: moneyString(priced.discount) ?? '0.00',
@@ -187,6 +206,7 @@ export class StoreCheckoutService {
       customer: dto.customer,
       shippingAddress: dto.shippingAddress,
       notes: dto.notes,
+      promoCodeId: cart.promoCodeId,
     });
     if (idempotencyKey) {
       const replay = await this.findReplay(tenantId, idempotencyKey, fingerprint);
@@ -242,6 +262,18 @@ export class StoreCheckoutService {
           undefined,
           tx,
         );
+        let discountType: 'NONE' | 'FIXED' | 'PERCENTAGE' = 'NONE';
+        let discountValue = money(0);
+        if (cart.promoCode) {
+          const merchandise = cart.items.reduce(
+            (sum, item) => sum.add(money(item.productVariant.sellingPrice.toString()).mul(item.quantity)),
+            money(0),
+          );
+          const resolved = assertPromoApplicable(cart.promoCode, merchandise);
+          discountType = resolved.discountType;
+          discountValue = resolved.discountValue;
+          await this.promoCodes.consume(tx, tenantId, cart.promoCode.id);
+        }
         const order = await this.engine.createOrder(
           {
             tenantId,
@@ -249,6 +281,9 @@ export class StoreCheckoutService {
             customerId: customer.id,
             fulfillmentMethod: dto.fulfillmentMethod ?? 'DELIVERY',
             notes: dto.notes,
+            discountType,
+            discountValue,
+            promoCodeId: cart.promoCodeId,
             shippingAddress: dto.shippingAddress,
             items: cart.items.map((item) => ({
               productVariantId: item.productVariantId,

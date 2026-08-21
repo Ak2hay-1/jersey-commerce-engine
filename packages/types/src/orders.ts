@@ -10,6 +10,7 @@ import type {
   PaymentStatus,
 } from './enums';
 import type { MoneyString } from './catalog';
+import type { AppliedPromoCode } from './promo-codes';
 
 export interface OrderShippingAddressDto {
   fullName: string;
@@ -131,6 +132,7 @@ export interface CartDto {
   itemCount: number;
   items: CartItemDto[];
   totals: CartTotalsDto;
+  promoCode: AppliedPromoCode | null;
   expiresAt: string;
   createdAt: string;
   updatedAt: string;

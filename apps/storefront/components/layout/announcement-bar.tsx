@@ -20,8 +20,8 @@ export function AnnouncementBar(): React.JSX.Element {
   }, [reduced]);
 
   return (
-    <div className="border-b border-foreground/10 bg-foreground text-background">
-      <div className="mx-auto flex h-9 max-w-store items-center justify-center px-4 text-[10px] font-semibold uppercase tracking-[0.22em]">
+    <div className="border-b border-foreground/10 bg-foreground pt-[env(safe-area-inset-top)] text-background">
+      <div className="mx-auto flex min-h-9 max-w-store items-center justify-center store-gutter py-2 text-center text-[10px] font-semibold uppercase leading-tight tracking-[0.18em] sm:h-9 sm:py-0 sm:tracking-[0.22em]">
         {reduced ? (
           <span>{MESSAGES[0]}</span>
         ) : (

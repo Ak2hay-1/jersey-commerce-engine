@@ -1,4 +1,4 @@
-import { storefrontAvailability, toFacets } from './store-catalog.mapper';
+import { storefrontAvailability, toFacets, toFooterConfig, toHomepageConfig } from './store-catalog.mapper';
 
 describe('storefrontAvailability', () => {
   it('hides exact quantity when stock is healthy', () => {
@@ -30,6 +30,64 @@ describe('toFacets', () => {
       brands: ['Demo Athletic'],
       minPrice: '2499.00',
       maxPrice: '2599.00',
+    });
+  });
+});
+
+describe('toHomepageConfig', () => {
+  it('keeps hero slides with title and button fields', () => {
+    const config = toHomepageConfig({
+      sections: [
+        {
+          type: 'hero',
+          enabled: true,
+          slides: [
+            {
+              id: 'hero-1',
+              image: 'https://cdn.example.com/banner.jpg',
+              heading: 'New drop',
+              subheading: 'Cut for the stands',
+              ctaLabel: 'Shop',
+              ctaHref: '/products',
+            },
+          ],
+        },
+        {
+          type: 'new-arrivals',
+          enabled: true,
+          heading: 'Latest drop',
+          productSlugs: ['the-night-shift-oversized-tee'],
+        },
+      ],
+    });
+    expect(config.sections[0]?.slides).toEqual([
+      {
+        id: 'hero-1',
+        image: 'https://cdn.example.com/banner.jpg',
+        heading: 'New drop',
+        subheading: 'Cut for the stands',
+        ctaLabel: 'Shop',
+        ctaHref: '/products',
+      },
+    ]);
+    expect(config.sections[1]?.productSlugs).toEqual(['the-night-shift-oversized-tee']);
+  });
+});
+
+describe('toFooterConfig', () => {
+  it('keeps edited footer copy and material lines', () => {
+    expect(
+      toFooterConfig({
+        heading: 'Made for the stands',
+        aboutBody: 'Custom footer about copy.',
+        materials: ['Organic cotton.', 'Durable prints.'],
+        showCollections: false,
+      }),
+    ).toMatchObject({
+      heading: 'Made for the stands',
+      aboutBody: 'Custom footer about copy.',
+      materials: ['Organic cotton.', 'Durable prints.'],
+      showCollections: false,
     });
   });
 });

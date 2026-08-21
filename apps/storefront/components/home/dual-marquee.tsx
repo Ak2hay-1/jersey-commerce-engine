@@ -38,7 +38,7 @@ export function DualMarquee({
   return (
     <section
       className={cn(
-        'border-y border-foreground/10 font-heading text-2xl uppercase tracking-[0.14em] md:text-4xl',
+        'border-y border-foreground/10 font-heading text-xl uppercase tracking-[0.12em] sm:text-2xl sm:tracking-[0.14em] md:text-4xl',
         inverted ? 'bg-foreground text-background' : 'bg-transparent text-foreground',
       )}
       aria-hidden={reduced ? undefined : true}

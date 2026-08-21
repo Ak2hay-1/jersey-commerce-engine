@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@jersey-commerce/ui';
 import { resolveDemoMediaUrl } from '../../lib/demo-media';
 
@@ -23,12 +23,15 @@ export function ProductImage({
   const resolved = resolveDemoMediaUrl(src);
   const [failed, setFailed] = useState(false);
 
+  useEffect(() => {
+    setFailed(false);
+  }, [resolved]);
+
   if (!resolved || failed) {
-    return <div className={cn('bg-muted', className)} aria-hidden="true" />;
+    return <div className={cn(fill && 'absolute inset-0', 'bg-muted', className)} aria-hidden="true" />;
   }
 
-  const remote = resolved.startsWith('http');
-  const unoptimized = remote || resolved.includes('placehold.co');
+  const unoptimized = resolved.includes('placehold.co') || resolved.startsWith('data:');
 
   if (fill) {
     return (

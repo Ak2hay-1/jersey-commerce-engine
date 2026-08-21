@@ -24,7 +24,7 @@ export function BrandPreloader(): React.JSX.Element | null {
       // Ignore storage failures and still show once this session.
     }
     setVisible(true);
-    const timer = window.setTimeout(() => setVisible(false), 1600);
+    const timer = window.setTimeout(() => setVisible(false), 700);
     return () => window.clearTimeout(timer);
   }, [reduced]);
 

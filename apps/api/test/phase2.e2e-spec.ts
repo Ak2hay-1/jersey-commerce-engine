@@ -9,6 +9,7 @@ import { PasswordService } from '../src/auth/password.service';
 import { RbacService } from '../src/rbac/rbac.service';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
 import { ApiSuccessInterceptor } from '../src/common/interceptors/api-success.interceptor';
+import { attachRealtimeAdapter } from './attach-realtime-adapter';
 
 const PASSWORD = 'OwnerDemo!123';
 const CASHIER_PASSWORD = 'CashierDemo!123';
@@ -35,6 +36,7 @@ describe('Phase 2 authentication, RBAC, and tenant isolation', () => {
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
+    attachRealtimeAdapter(app);
     app.use(cookieParser());
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
     app.useGlobalInterceptors(new ApiSuccessInterceptor());
@@ -97,7 +99,7 @@ describe('Phase 2 authentication, RBAC, and tenant isolation', () => {
         email: `cashier-a-${suffix}@example.com`,
         password: CASHIER_PASSWORD,
         name: 'Cashier A',
-        roleCodes: ['CASHIER'],
+        roleCodes: ['CASHIER'], mustChangePassword: false,
       })
       .expect(201);
     const cashierLogin = await request(app.getHttpServer())
@@ -170,7 +172,7 @@ describe('Phase 2 authentication, RBAC, and tenant isolation', () => {
         email: `blocked-${suffix}@example.com`,
         password: CASHIER_PASSWORD,
         name: 'Blocked',
-        roleCodes: ['CASHIER'],
+        roleCodes: ['CASHIER'], mustChangePassword: false,
       })
       .expect(403);
   });
@@ -195,7 +197,7 @@ describe('Phase 2 authentication, RBAC, and tenant isolation', () => {
         email: `inactive-${suffix}@example.com`,
         password: CASHIER_PASSWORD,
         name: 'Inactive User',
-        roleCodes: ['CASHIER'],
+        roleCodes: ['CASHIER'], mustChangePassword: false,
       })
       .expect(201);
     const userId = created.body.data?.id ?? created.body.id;

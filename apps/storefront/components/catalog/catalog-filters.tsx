@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { StorefrontCatalogFacets } from '@jersey-commerce/types';
+import { cn } from '@jersey-commerce/ui';
 import { Input } from '../ui/input';
 
 const SORTS = [
@@ -16,6 +18,7 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const [open, setOpen] = useState(false);
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(params.toString());
@@ -29,8 +32,18 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
   }
 
   return (
-    <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Filter</p>
+    <div>
+      <button
+        type="button"
+        className="flex min-h-11 w-full items-center justify-between border border-foreground/15 px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.16em] lg:hidden"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        Filters & sort
+        <span aria-hidden="true">{open ? '–' : '+'}</span>
+      </button>
+    <form className={cn('grid gap-4', open ? 'mt-4 border border-foreground/10 p-4 lg:mt-0 lg:border-0 lg:p-0' : 'max-lg:hidden')} onSubmit={(event) => event.preventDefault()}>
+      <p className="hidden text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:block">Filter</p>
       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
         Search
         <Input
@@ -42,7 +55,7 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
         Sort
         <select
-          className="h-11 border border-input bg-background px-2 text-sm font-normal normal-case"
+          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
           value={params.get('sort') ?? 'featured'}
           onChange={(event) => setParam('sort', event.target.value)}
         >
@@ -56,7 +69,7 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
         Size
         <select
-          className="h-11 border border-input bg-background px-2 text-sm font-normal normal-case"
+          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
           value={params.get('size') ?? ''}
           onChange={(event) => setParam('size', event.target.value)}
         >
@@ -71,7 +84,7 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
         Colour
         <select
-          className="h-11 border border-input bg-background px-2 text-sm font-normal normal-case"
+          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
           value={params.get('colour') ?? ''}
           onChange={(event) => setParam('colour', event.target.value)}
         >
@@ -86,7 +99,7 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
         Brand
         <select
-          className="h-11 border border-input bg-background px-2 text-sm font-normal normal-case"
+          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
           value={params.get('brand') ?? ''}
           onChange={(event) => setParam('brand', event.target.value)}
         >
@@ -107,5 +120,6 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
         <Input defaultValue={params.get('maxPrice') ?? ''} inputMode="decimal" onBlur={(event) => setParam('maxPrice', event.target.value)} />
       </label>
     </form>
+    </div>
   );
 }

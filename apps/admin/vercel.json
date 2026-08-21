@@ -1,0 +1,30 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "cd ../.. && node infra/vercel/build-admin.mjs",
+  "outputDirectory": "out",
+  "rewrites": [
+    { "source": "/sales/:id", "destination": "/sales/[id]/index.html" },
+    { "source": "/sales/:id/", "destination": "/sales/[id]/index.html" },
+    { "source": "/orders/:id", "destination": "/orders/[id]/index.html" },
+    { "source": "/orders/:id/", "destination": "/orders/[id]/index.html" },
+    { "source": "/products/:id", "destination": "/products/[id]/index.html" },
+    { "source": "/products/:id/", "destination": "/products/[id]/index.html" },
+    { "source": "/purchases/:id", "destination": "/purchases/[id]/index.html" },
+    { "source": "/purchases/:id/", "destination": "/purchases/[id]/index.html" },
+    { "source": "/suppliers/:id", "destination": "/suppliers/[id]/index.html" },
+    { "source": "/suppliers/:id/", "destination": "/suppliers/[id]/index.html" },
+    { "source": "/customers/:id", "destination": "/customers/[id]/index.html" },
+    { "source": "/customers/:id/", "destination": "/customers/[id]/index.html" },
+    { "source": "/expenses/:id", "destination": "/expenses/[id]/index.html" },
+    { "source": "/expenses/:id/", "destination": "/expenses/[id]/index.html" },
+    { "source": "/custom-orders/:id", "destination": "/custom-orders/[id]/index.html" },
+    { "source": "/custom-orders/:id/", "destination": "/custom-orders/[id]/index.html" },
+    { "source": "/inventory/:variantId", "destination": "/inventory/[variantId]/index.html" },
+    { "source": "/inventory/:variantId/", "destination": "/inventory/[variantId]/index.html" },
+    { "source": "/promo-codes/:id", "destination": "/promo-codes/[id]/index.html" },
+    { "source": "/promo-codes/:id/", "destination": "/promo-codes/[id]/index.html" },
+    { "source": "/users/:id", "destination": "/users/[id]/index.html" },
+    { "source": "/users/:id/", "destination": "/users/[id]/index.html" }
+  ]
+}

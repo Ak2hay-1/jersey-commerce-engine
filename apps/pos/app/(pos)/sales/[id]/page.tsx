@@ -10,6 +10,7 @@ import { ReceiptDialog } from '@/components/receipt-dialog';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
 import { cancelSale, getSale, refundSale } from '@/lib/pos-api';
+import { useRealtimeReload } from '@/lib/realtime';
 
 function remainingQuantity(sale: PosSaleDto, itemId: string, sold: number): number {
   const refunded = sale.refunds
@@ -43,6 +44,18 @@ export default function SaleDetailPage(): React.JSX.Element {
       })
       .catch((err: Error) => setError(err.message));
   }, [params.id]);
+
+  useRealtimeReload(
+    (event) => event.entity === 'Sale' && event.entityId === params.id,
+    () => {
+      if (busy) {
+        return;
+      }
+      void getSale(params.id)
+        .then(setSale)
+        .catch((err: Error) => setError(err.message));
+    },
+  );
 
   const canRefund =
     Boolean(sale) &&

@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
+import { MustChangePasswordGuard } from './guards/must-change-password.guard';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { ApiSuccessInterceptor } from './interceptors/api-success.interceptor';
 import { RequestContextInterceptor } from './context/request-context.interceptor';
@@ -12,6 +13,7 @@ import { TenantContextModule } from './context/tenant-context.module';
   imports: [TenantContextModule],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: MustChangePasswordGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_INTERCEPTOR, useClass: RequestContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: ApiSuccessInterceptor },

@@ -7,6 +7,7 @@ export interface AuthPrincipal {
   email: string;
   name: string;
   status: UserStatus;
+  mustChangePassword: boolean;
   roles: RoleCode[];
   permissions: PermissionCode[];
   tokenVersion: number;

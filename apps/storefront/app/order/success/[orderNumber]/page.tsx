@@ -20,8 +20,8 @@ export default async function OrderSuccessPage({ params }: { params: Promise<Par
   const options = await serverStoreOptions();
   if (!options.accessToken) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="font-heading text-4xl uppercase tracking-wide">Order placed</h1>
+      <div className="mx-auto max-w-lg store-gutter py-12 text-center md:py-16">
+        <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">Order placed</h1>
         <p className="mt-3 text-muted-foreground">
           Your order number is <strong>{orderNumber}</strong>. Pay cash on delivery when it arrives. Sign in to view full details.
         </p>
@@ -43,9 +43,9 @@ export default async function OrderSuccessPage({ params }: { params: Promise<Par
   const store = await storeApi.bootstrap(options);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-12">
+    <div className="mx-auto max-w-3xl space-y-6 store-gutter py-10 md:py-12">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Thank you</p>
-      <h1 className="font-heading text-4xl uppercase tracking-wide">Order {order.orderNumber}</h1>
+      <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">Order {order.orderNumber}</h1>
       <p className="text-muted-foreground">{nextStepCopy(order)}</p>
       <div className="border border-foreground/15 bg-muted/40 px-4 py-4 text-sm">
         <p className="font-semibold uppercase tracking-[0.14em]">Cash on delivery</p>
@@ -57,11 +57,11 @@ export default async function OrderSuccessPage({ params }: { params: Promise<Par
       <OrderStatus order={order} />
       <ul className="divide-y border-y">
         {order.items.map((item) => (
-          <li key={item.id} className="flex justify-between py-3 text-sm">
-            <span>
+          <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
+            <span className="min-w-0 break-words">
               {item.productName} × {item.quantity}
             </span>
-            <span>{formatMoney(item.total, store.tenant.currency)}</span>
+            <span className="shrink-0">{formatMoney(item.total, store.tenant.currency)}</span>
           </li>
         ))}
       </ul>

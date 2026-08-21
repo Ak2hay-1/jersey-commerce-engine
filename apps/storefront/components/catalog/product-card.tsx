@@ -82,16 +82,16 @@ export function ProductCard({
             {availabilityLabel(product.availability, null)}
           </span>
         ) : null}
-        <div className="absolute inset-x-0 bottom-0 z-[2] flex translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 group-focus-within:translate-y-0">
+        <div className="product-tile-actions absolute inset-x-0 bottom-0 z-[2] flex transition-transform duration-300 ease-out">
           <Link
             href={`/products/${product.slug}`}
-            className="flex-1 bg-background/90 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.2em]"
+            className="flex-1 bg-background/90 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] sm:py-3 sm:tracking-[0.2em]"
           >
             View
           </Link>
           <button
             type="button"
-            className="flex-1 bg-foreground py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-background disabled:opacity-50"
+            className="flex-1 bg-foreground py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-background disabled:opacity-50 sm:py-3 sm:tracking-[0.2em]"
             disabled={out || pending}
             onClick={() => void onAdd()}
           >
@@ -112,7 +112,7 @@ export function ProductCard({
                     disabled={unavailable || pending}
                     onClick={() => variant && void pickSize(variant)}
                     className={cn(
-                      'min-w-9 border border-foreground/20 px-2 py-1 text-xs uppercase',
+                      'min-h-9 min-w-9 border border-foreground/20 px-2 py-1 text-xs uppercase',
                       unavailable && 'cursor-not-allowed opacity-40',
                     )}
                   >
@@ -127,7 +127,7 @@ export function ProductCard({
       <div className="space-y-1 pt-3">
         {product.brand ? <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{product.brand}</p> : null}
         <h3>
-          <Link href={`/products/${product.slug}`} className="product-tile-title font-heading text-xl uppercase leading-tight tracking-wide">
+          <Link href={`/products/${product.slug}`} className="product-tile-title font-heading text-base uppercase leading-tight tracking-wide sm:text-xl">
             {product.name}
           </Link>
         </h3>

@@ -19,6 +19,7 @@ import {
   removeCartItem,
 } from '@/lib/pos-api';
 import { usePosSession } from '@/lib/session';
+import { useRealtimeReload } from '@/lib/realtime';
 
 export default function RegisterPage(): React.JSX.Element {
   const auth = useAuth();
@@ -40,6 +41,13 @@ export default function RegisterPage(): React.JSX.Element {
   useEffect(() => {
     void loadCart().catch((err: Error) => setError(err.message));
   }, [loadCart]);
+
+  useRealtimeReload(
+    (event) => event.entity === 'PosCart' || event.entity === 'PosCartItem',
+    () => {
+      void loadCart().catch((err: Error) => setError(err.message));
+    },
+  );
 
   async function mutate(action: () => Promise<PosCartDto>): Promise<void> {
     setBusy(true);
@@ -71,12 +79,16 @@ export default function RegisterPage(): React.JSX.Element {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_24rem] xl:grid-cols-[minmax(0,1.6fr)_28rem]">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_26rem] xl:grid-cols-[minmax(0,1.7fr)_30rem]">
       <div className="space-y-3">
-        {error ? <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
+        {error ? (
+          <p className="rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
         <ProductSearch onAdd={addLookup} busy={busy} />
       </div>
-      <div className="lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+      <div className="lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)]">
         <CartPanel
           cart={cart}
           canDiscount={auth.can('sales.discount')}

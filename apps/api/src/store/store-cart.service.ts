@@ -15,6 +15,7 @@ import { createOpaqueToken, hashOpaqueToken } from '../common/crypto/token-hash'
 import { money } from '../pos/pos-money';
 import { cartInclude, toCartDto, type CartRecord } from './store-cart.mapper';
 import type { AddStoreCartItemDto, UpdateStoreCartItemDto } from '../orders/dto/order.dto';
+import { assertPromoApplicable, normalizePromoCode } from '../promo-codes/promo-code.engine';
 
 const CART_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -119,6 +120,43 @@ export class StoreCartService {
   async clear(tenantId: string, token: string | undefined) {
     const cart = await this.requireActiveCart(tenantId, token);
     await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id, tenantId } });
+    return this.reload(tenantId, cart.id);
+  }
+
+  async applyPromo(tenantId: string, token: string | undefined, code: string) {
+    const cart = await this.requireActiveCart(tenantId, token);
+    const normalized = normalizePromoCode(code);
+    const promo = await this.prisma.promoCode.findFirst({
+      where: { tenantId, code: normalized },
+    });
+    if (!promo) {
+      throw new NotFoundException('Promo code was not found.');
+    }
+    const subtotal = cart.items.reduce(
+      (sum, item) => sum.add(money(item.productVariant.sellingPrice.toString()).mul(item.quantity)),
+      money(0),
+    );
+    assertPromoApplicable(promo, subtotal);
+    await this.prisma.cart.update({
+      where: { id: cart.id },
+      data: { promoCodeId: promo.id },
+    });
+    await this.audit.log({
+      action: AUDIT_ACTIONS.PROMO_CODE_APPLIED,
+      tenantId,
+      entity: 'Cart',
+      entityId: cart.id,
+      metadata: { code: promo.code },
+    });
+    return this.reload(tenantId, cart.id);
+  }
+
+  async removePromo(tenantId: string, token: string | undefined) {
+    const cart = await this.requireActiveCart(tenantId, token);
+    await this.prisma.cart.update({
+      where: { id: cart.id },
+      data: { promoCodeId: null },
+    });
     return this.reload(tenantId, cart.id);
   }
 

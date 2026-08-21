@@ -14,6 +14,7 @@ import { TenantContextService } from '../common/context/tenant-context.service';
 import type { AuthPrincipal } from '../common/context/request-context';
 import { toAuthUser, userAuthInclude, type UserWithAuth } from './user.mapper';
 import type { AssignRoleDto, CreateUserDto, UpdateUserDto } from './dto/user-mutations.dto';
+import type { SetTemporaryPasswordDto } from './dto/set-temporary-password.dto';
 import type { RequestMeta } from '../auth/auth-session.service';
 
 @Injectable()
@@ -38,6 +39,7 @@ export class UsersAdminService {
             name: dto.name,
             phone: dto.phone,
             status: UserStatus.ACTIVE,
+            mustChangePassword: dto.mustChangePassword === false ? false : true,
           },
         });
         const roles = await tx.role.findMany({
@@ -96,6 +98,42 @@ export class UsersAdminService {
       }
       throw error;
     }
+  }
+
+  async setTemporaryPassword(
+    id: string,
+    dto: SetTemporaryPasswordDto,
+    actor: AuthPrincipal,
+    meta: RequestMeta,
+  ): Promise<AuthUser> {
+    const target = await this.findTenantUser(id);
+    if (target.id === actor.userId) {
+      throw new ForbiddenException('Use change password to update your own password.');
+    }
+    this.assertCanMutateUser(actor, target);
+    const updated = await this.prisma.user.update({
+      where: { id: target.id },
+      data: {
+        passwordHash: await this.passwords.hash(dto.password),
+        mustChangePassword: true,
+        tokenVersion: { increment: 1 },
+      },
+      include: userAuthInclude,
+    });
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: target.id, tenantId: actor.tenantId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await this.audit.log({
+      action: AUDIT_ACTIONS.USER_TEMPORARY_PASSWORD_SET,
+      tenantId: actor.tenantId,
+      userId: actor.userId,
+      entity: 'User',
+      entityId: updated.id,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+    });
+    return toAuthUser(updated as UserWithAuth);
   }
 
   async setActive(id: string, isActive: boolean, actor: AuthPrincipal, meta: RequestMeta): Promise<AuthUser> {
@@ -173,6 +211,14 @@ export class UsersAdminService {
     }
     this.assertCanMutateUser(actor, target);
     this.assertCanAssignRoles(actor, [roleCode]);
+    if (roleCode === RoleCode.SUPER_ADMIN) {
+      const superCount = await this.prisma.userRole.count({
+        where: { tenantId: actor.tenantId, role: { code: RoleCode.SUPER_ADMIN } },
+      });
+      if (superCount <= 1 && target.userRoles.some((assignment) => assignment.role.code === RoleCode.SUPER_ADMIN)) {
+        throw new ForbiddenException('The tenant must keep at least one superior admin.');
+      }
+    }
     if (roleCode === RoleCode.OWNER) {
       const ownerCount = await this.prisma.userRole.count({
         where: { tenantId: actor.tenantId, role: { code: RoleCode.OWNER } },
@@ -215,15 +261,22 @@ export class UsersAdminService {
   }
 
   private assertCanAssignRoles(actor: AuthPrincipal, roleCodes: RoleCode[]): void {
-    if (roleCodes.includes(RoleCode.OWNER) && !actor.roles.includes('OWNER')) {
-      throw new ForbiddenException('Only an owner can assign the owner role.');
+    if (roleCodes.includes(RoleCode.SUPER_ADMIN) && !actor.roles.includes('SUPER_ADMIN')) {
+      throw new ForbiddenException('Only a superior admin can assign the superior admin role.');
+    }
+    if (roleCodes.includes(RoleCode.OWNER) && !actor.roles.includes('OWNER') && !actor.roles.includes('SUPER_ADMIN')) {
+      throw new ForbiddenException('Only an owner or superior admin can assign the owner role.');
     }
   }
 
   private assertCanMutateUser(actor: AuthPrincipal, target: UserWithAuth): void {
+    const targetIsSuperAdmin = target.userRoles.some((assignment) => assignment.role.code === RoleCode.SUPER_ADMIN);
+    if (targetIsSuperAdmin && !actor.roles.includes('SUPER_ADMIN')) {
+      throw new ForbiddenException('Only a superior admin can modify a superior admin account.');
+    }
     const targetIsOwner = target.userRoles.some((assignment) => assignment.role.code === RoleCode.OWNER);
-    if (targetIsOwner && !actor.roles.includes('OWNER')) {
-      throw new ForbiddenException('Only an owner can modify an owner account.');
+    if (targetIsOwner && !actor.roles.includes('OWNER') && !actor.roles.includes('SUPER_ADMIN')) {
+      throw new ForbiddenException('Only an owner or superior admin can modify an owner account.');
     }
   }
 }

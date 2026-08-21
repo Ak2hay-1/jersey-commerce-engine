@@ -8,6 +8,7 @@ import { PasswordService } from '../src/auth/password.service';
 import { RbacService } from '../src/rbac/rbac.service';
 import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
 import { ApiSuccessInterceptor } from '../src/common/interceptors/api-success.interceptor';
+import { attachRealtimeAdapter } from './attach-realtime-adapter';
 
 const PASSWORD = 'OwnerDemo!123';
 const CUSTOMER_PASSWORD = 'FanPass123!';
@@ -43,6 +44,7 @@ describe('Phase 10 storefront engine', () => {
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
+    attachRealtimeAdapter(app);
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
     app.useGlobalInterceptors(new ApiSuccessInterceptor());
     app.useGlobalFilters(new AllExceptionsFilter());
@@ -161,9 +163,10 @@ describe('Phase 10 storefront engine', () => {
   it('bootstraps tenant branding without exposing another store', async () => {
     const bootstrap = unwrap(
       (await request(app.getHttpServer()).get('/api/v1/store/bootstrap').set(store(tenantA.slug)).expect(200)).body,
-    ) as { tenant: { name: string }; theme: { primaryColor: string } };
+    ) as { tenant: { name: string }; theme: { primaryColor: string }; auth: { passwordLogin: boolean } };
     expect(bootstrap.tenant.name).toBe('Phase 10 Store A');
     expect(bootstrap.theme.primaryColor.toLowerCase()).toBe('#111111');
+    expect(bootstrap.auth.passwordLogin).toBe(true);
     await request(app.getHttpServer()).get('/api/v1/store/bootstrap').set(store(tenantB.slug)).expect(200);
   });
 
@@ -281,5 +284,90 @@ describe('Phase 10 storefront engine', () => {
       ).body,
     ) as { items: Array<{ orderNumber: string }> };
     expect(orders.items.some((item) => item.orderNumber === checkout.order.orderNumber)).toBe(true);
+  });
+
+  it('issues a customer session from email OTP when enabled', async () => {
+    const saved = unwrap(
+      (
+        await request(app.getHttpServer())
+          .put('/api/v1/auth-settings')
+          .set({ Authorization: `Bearer ${accessA}` })
+          .send({
+            passwordLoginEnabled: true,
+            emailOtpEnabled: true,
+            smsOtpEnabled: false,
+            googleSignInEnabled: false,
+            emailProvider: 'CONSOLE',
+            smsProvider: 'CONSOLE',
+          })
+          .expect(200)
+      ).body,
+    ) as { emailOtpEnabled: boolean; hasResendApiKey: boolean };
+    expect(saved.emailOtpEnabled).toBe(true);
+    expect(saved.hasResendApiKey).toBe(false);
+
+    const requested = unwrap(
+      (
+        await request(app.getHttpServer())
+          .post('/api/v1/store/auth/otp/request')
+          .set(store(tenantA.slug))
+          .send({ channel: 'email', email: `otp-${suffix}@example.com` })
+          .expect(201)
+      ).body,
+    ) as { sent: boolean; debugCode?: string };
+    expect(requested.sent).toBe(true);
+    expect(requested.debugCode).toMatch(/^\d{6}$/);
+
+    const verified = unwrap(
+      (
+        await request(app.getHttpServer())
+          .post('/api/v1/store/auth/otp/verify')
+          .set(store(tenantA.slug))
+          .send({
+            channel: 'email',
+            email: `otp-${suffix}@example.com`,
+            code: requested.debugCode,
+            name: 'Otp Fan',
+          })
+          .expect(201)
+      ).body,
+    ) as { accessToken: string; customer: { email: string } };
+    expect(verified.customer.email).toBe(`otp-${suffix}@example.com`);
+    expect(verified.accessToken.length).toBeGreaterThan(20);
+  });
+
+  it('rejects password login when the tenant disables it', async () => {
+    await request(app.getHttpServer())
+      .put('/api/v1/auth-settings')
+      .set({ Authorization: `Bearer ${accessA}` })
+      .send({
+        passwordLoginEnabled: false,
+        emailOtpEnabled: true,
+        smsOtpEnabled: false,
+        googleSignInEnabled: false,
+        emailProvider: 'CONSOLE',
+        smsProvider: 'CONSOLE',
+      })
+      .expect(200);
+
+    const rejected = await request(app.getHttpServer())
+      .post('/api/v1/store/auth/login')
+      .set(store(tenantA.slug))
+      .send({ email: `fan-${suffix}@example.com`, password: CUSTOMER_PASSWORD })
+      .expect(403);
+    expect(rejected.body.error.message).toMatch(/Password sign-in is disabled/);
+
+    await request(app.getHttpServer())
+      .put('/api/v1/auth-settings')
+      .set({ Authorization: `Bearer ${accessA}` })
+      .send({
+        passwordLoginEnabled: false,
+        emailOtpEnabled: false,
+        smsOtpEnabled: false,
+        googleSignInEnabled: true,
+        emailProvider: 'CONSOLE',
+        smsProvider: 'CONSOLE',
+      })
+      .expect(400);
   });
 });

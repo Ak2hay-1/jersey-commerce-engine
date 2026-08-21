@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { CartDto } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
-import { STORE_COOKIES, clearBrowserCookie, writeBrowserCookie } from '../../lib/cookies';
+import { STORE_COOKIES, clearBrowserCookie, readBrowserCookie, writeBrowserCookie } from '../../lib/cookies';
 import { StoreApiError } from '../../lib/errors';
 
 type CartContextValue = {
@@ -16,6 +16,8 @@ type CartContextValue = {
   addItem: (productVariantId: string, quantity?: number) => Promise<void>;
   updateItem: (id: string, quantity: number) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
+  applyPromo: (code: string) => Promise<void>;
+  removePromo: () => Promise<void>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -59,13 +61,17 @@ export function CartProvider({ children }: { children: React.ReactNode }): React
   const addItem = useCallback(
     async (productVariantId: string, quantity = 1) => {
       setError(null);
+      const addToCart = async () => rememberToken(await storeApi.addCartItem({ productVariantId, quantity }));
       try {
-        rememberToken(await storeApi.addCartItem({ productVariantId, quantity }));
+        if (!readBrowserCookie(STORE_COOKIES.cart)) {
+          rememberToken(await storeApi.createCart());
+        }
+        await addToCart();
         setOpen(true);
       } catch (caught) {
         if (caught instanceof StoreApiError && (caught.status === 400 || caught.status === 404)) {
           rememberToken(await storeApi.createCart());
-          rememberToken(await storeApi.addCartItem({ productVariantId, quantity }));
+          await addToCart();
           setOpen(true);
           return;
         }
@@ -89,9 +95,20 @@ export function CartProvider({ children }: { children: React.ReactNode }): React
     [rememberToken],
   );
 
+  const applyPromo = useCallback(
+    async (code: string) => {
+      rememberToken(await storeApi.applyPromo(code));
+    },
+    [rememberToken],
+  );
+
+  const removePromo = useCallback(async () => {
+    rememberToken(await storeApi.removePromo());
+  }, [rememberToken]);
+
   const value = useMemo(
-    () => ({ cart, open, loading, error, setOpen, refresh, addItem, updateItem, removeItem }),
-    [cart, open, loading, error, refresh, addItem, updateItem, removeItem],
+    () => ({ cart, open, loading, error, setOpen, refresh, addItem, updateItem, removeItem, applyPromo, removePromo }),
+    [cart, open, loading, error, refresh, addItem, updateItem, removeItem, applyPromo, removePromo],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

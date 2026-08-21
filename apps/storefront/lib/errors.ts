@@ -16,7 +16,14 @@ export function publicErrorMessage(error: unknown, fallback = 'Something went wr
     }
     return error.message || fallback;
   }
+  if (error instanceof TypeError) {
+    return 'Could not reach the store. Please try again.';
+  }
   if (error instanceof Error && error.message) {
+    const message = error.message.toLowerCase();
+    if (message.includes('failed to fetch') || message.includes('networkerror') || message.includes('load failed')) {
+      return 'Could not reach the store. Please try again.';
+    }
     return error.message;
   }
   return fallback;

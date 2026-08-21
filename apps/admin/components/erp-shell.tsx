@@ -5,7 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Badge, Button, cn } from '@jersey-commerce/ui';
 import { ERP_NAV, filterErpNav } from '@jersey-commerce/types';
+import { DesktopModeSwitch } from '@/components/desktop-mode-switch';
 import { useAuth } from '@/lib/auth';
+import { useRealtime } from '@/lib/realtime';
+import { getStaffPortal } from '@/lib/env';
 
 function navActive(pathname: string, href: string): boolean {
   const path = href.split('?')[0] ?? href;
@@ -17,6 +20,7 @@ function navActive(pathname: string, href: string): boolean {
 
 export function ErpShell({ children }: { children: ReactNode }): React.JSX.Element {
   const auth = useAuth();
+  const realtime = useRealtime();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -24,6 +28,10 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
   useEffect(() => {
     if (!auth.loading && !auth.user) {
       router.replace('/login');
+      return;
+    }
+    if (!auth.loading && auth.user?.mustChangePassword) {
+      router.replace('/change-password');
     }
   }, [auth.loading, auth.user, router]);
 
@@ -31,7 +39,9 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
     setOpen(false);
   }, [pathname]);
 
-  const sections = useMemo(() => filterErpNav(auth.permissions), [auth.permissions]);
+  const portal = getStaffPortal();
+  const sections = useMemo(() => filterErpNav(auth.permissions, portal), [auth.permissions, portal]);
+  const portalLabel = portal === 'admin' ? 'Admin Panel' : portal === 'erp' ? 'ERP' : 'Admin & ERP';
 
   if (auth.loading || !auth.user || !auth.tenant) {
     return (
@@ -41,13 +51,21 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
     );
   }
 
+  if (auth.user.mustChangePassword) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/40 text-sm text-muted-foreground">
+        Opening password change…
+      </div>
+    );
+  }
+
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="border-b px-4 py-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Jersey Commerce</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{portalLabel}</p>
         <p className="mt-1 truncate text-sm font-semibold">{auth.tenant.name}</p>
       </div>
-      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="ERP">
+      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label={portalLabel}>
         {sections.map((section) => (
           <div key={section.id} className="mb-4">
             <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -101,8 +119,11 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
               <p className="truncate text-sm font-medium">{auth.tenant.name}</p>
               <p className="truncate text-xs text-muted-foreground">{auth.tenant.slug}</p>
             </div>
+            <DesktopModeSwitch active="erp" />
             <div className="hidden items-center gap-2 sm:flex" aria-label="Notifications">
-              <Badge variant="secondary">Live</Badge>
+              <Badge variant={realtime.connected ? 'secondary' : 'outline'}>
+                {realtime.connected ? 'Live' : 'Offline'}
+              </Badge>
             </div>
             <div className="text-right">
               <p className="text-sm font-medium">{auth.user.name}</p>

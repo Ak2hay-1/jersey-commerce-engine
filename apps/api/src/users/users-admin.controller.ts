@@ -8,6 +8,7 @@ import type { AuthPrincipal } from '../common/context/request-context';
 import { requestMeta } from '../auth/auth-session.service';
 import { UsersAdminService } from './users-admin.service';
 import { AssignRoleDto, CreateUserDto, UpdateUserDto } from './dto/user-mutations.dto';
+import { SetTemporaryPasswordDto } from './dto/set-temporary-password.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -43,6 +44,18 @@ export class UsersAdminController {
   @RequirePermissions('users.manage')
   deactivate(@Param('id') id: string, @CurrentUser() actor: AuthPrincipal, @Req() request: Request) {
     return this.users.setActive(id, false, actor, requestMeta(request));
+  }
+
+  @Post(':id/temporary-password')
+  @RequirePermissions('users.manage')
+  @ApiOperation({ summary: 'Set a temporary password that must be changed on next sign-in' })
+  setTemporaryPassword(
+    @Param('id') id: string,
+    @Body() dto: SetTemporaryPasswordDto,
+    @CurrentUser() actor: AuthPrincipal,
+    @Req() request: Request,
+  ) {
+    return this.users.setTemporaryPassword(id, dto, actor, requestMeta(request));
   }
 
   @Delete(':id')
