@@ -114,8 +114,14 @@ services:
 
 volumes:
   postgres_data:
+    external: true
+    name: jersey-commerce-prod_postgres_data
   redis_data:
+    external: true
+    name: jersey-commerce-prod_redis_data
   api_uploads:
+    external: true
+    name: jersey-commerce-prod_api_uploads
   caddy_data:
   caddy_config:
 
