@@ -17,7 +17,7 @@ cd a:\jerzyfy
 
 # Env (once)
 "https://45-76-61-16.sslip.io" | npx vercel env add NEXT_PUBLIC_API_URL production --cwd apps/storefront --force
-"main-jersey-store" | npx vercel env add NEXT_PUBLIC_DEFAULT_TENANT_SLUG production --cwd apps/storefront --force
+"jerzyfy" | npx vercel env add NEXT_PUBLIC_DEFAULT_TENANT_SLUG production --cwd apps/storefront --force
 
 # Deploy (from repo root — uploads whole workspace)
 npx vercel --prod --archive=tgz --force --yes --local-config infra/vercel/storefront.vercel.json
@@ -26,22 +26,27 @@ npx vercel --prod --archive=tgz --force --yes --local-config infra/vercel/storef
 Config: [`infra/vercel/storefront.vercel.json`](./storefront.vercel.json)  
 (`outputDirectory` = `apps/storefront/.next`)
 
-## Admin (separate project)
+## Admin (project `jerzyfy-admin`)
+
+Production alias: **https://jerzyfy-admin.vercel.app**
 
 ```powershell
 cd a:\jerzyfy
-npx vercel link --cwd apps/admin
-# Create project e.g. jerzyfy-admin (do NOT reuse jerzyfy)
 
-"https://45-76-61-16.sslip.io" | npx vercel env add NEXT_PUBLIC_API_URL production --cwd apps/admin --force
+# Link root .vercel to the admin project (storefront uses project `jerzyfy` — switch back after)
+npx vercel link --yes --project jerzyfy-admin --scope frndswork-7090s-projects
 
-# Prefer the same full-repo archive pattern once admin.vercel.json at infra/vercel exists;
-# or from root after linking admin at root .vercel (switch project first).
-npx vercel --prod --archive=tgz --force --yes --cwd apps/admin
+"https://45-76-61-16.sslip.io" | npx vercel env add NEXT_PUBLIC_API_URL production --force
+"jerzyfy" | npx vercel env add NEXT_PUBLIC_DEFAULT_TENANT_SLUG production --force
+"admin" | npx vercel env add NEXT_PUBLIC_PORTAL production --force
+
+npx vercel --prod --archive=tgz --force --yes --local-config infra/vercel/admin.vercel.json
+
+# Switch link back to storefront project
+npx vercel link --yes --project jerzyfy --scope frndswork-7090s-projects
 ```
 
-Until admin has a root-level local-config like storefront, link carefully so the monorepo uploads.
-
+Config: [`infra/vercel/admin.vercel.json`](./admin.vercel.json)  
 Build script: [`build-admin.mjs`](./build-admin.mjs).
 
 ## CORS
@@ -54,7 +59,7 @@ After both URLs exist:
   -ApiHost 45-76-61-16.sslip.io `
   -AcmeEmail frndswork@gmail.com `
   -StorefrontOrigin https://jerzyfy.vercel.app `
-  -AdminOrigin https://YOUR_ADMIN.vercel.app `
+  -AdminOrigin https://jerzyfy-admin.vercel.app `
   -UpdateCorsOnly
 ```
 
