@@ -57,12 +57,16 @@ function modeUrl(mode) {
 }
 
 function iconPath() {
-  const packaged = path.join(process.resourcesPath, 'build', 'icon.ico');
-  if (app.isPackaged && fs.existsSync(packaged)) {
-    return packaged;
+  const packagedPng = path.join(process.resourcesPath, 'build', 'logo.png');
+  if (app.isPackaged && fs.existsSync(packagedPng)) {
+    return packagedPng;
   }
-  const dev = path.join(__dirname, '..', 'build', 'icon.ico');
-  return fs.existsSync(dev) ? dev : undefined;
+  const devPng = path.join(__dirname, '..', 'build', 'logo.png');
+  if (fs.existsSync(devPng)) {
+    return devPng;
+  }
+  const devIco = path.join(__dirname, '..', 'build', 'icon.ico');
+  return fs.existsSync(devIco) ? devIco : undefined;
 }
 
 async function createWindow() {

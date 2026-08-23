@@ -48,7 +48,7 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
+      "icon": "build/logo.png",
       "artifactName": "Jerzyfy-Staff-Setup-${version}.${ext}"
     },
     "nsis": {
@@ -56,9 +56,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Jerzyfy Staff",
-      "installerIcon": "build/installerIcon.ico",
-      "uninstallerIcon": "build/uninstallerIcon.ico"
+      "shortcutName": "Jerzyfy Staff"
     }
   },
   "devDependencies": {

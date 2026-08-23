@@ -69,8 +69,10 @@ if ($ClientName) {
   if (-not $safe) { $safe = "client" }
   $copyName = "Jerzyfy-Staff-Setup-$safe.exe"
   $copyPath = Join-Path $distDir $copyName
-  Copy-Item -Path $setup.FullName -Destination $copyPath -Force
-  Write-Host "Client copy: $copyPath"
+  if ($setup.FullName -ne $copyPath) {
+    Copy-Item -Path $setup.FullName -Destination $copyPath -Force
+    Write-Host "Client copy: $copyPath"
+  }
   Write-Host "Share this EXE with the client. After install they log in against $trimmed"
 }
 else {

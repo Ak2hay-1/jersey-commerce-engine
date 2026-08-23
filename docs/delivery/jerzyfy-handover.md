@@ -23,7 +23,19 @@ Create all staff in **Admin → Users** with temporary passwords. Each user must
 
 ## Logo
 
-Upload shop logo and favicon in **Admin → Website → Branding**, then save. Storefront header and splash update within ~60 seconds.
+Logo and favicon are set in production `website_settings`. To change later: **Admin → Website → Branding** → upload → Save.
+
+Current production logo URL is served from the API media path (`/api/v1/media/...`).
+
+## Staff EXE
+
+Installer: `apps/desktop/dist/Jerzyfy-Staff-Setup-Jerzyfy.exe` (~136 MB)
+
+Pack again after API URL changes:
+
+```powershell
+.\infra\desktop\pack-client.ps1 -ApiUrl "https://45-76-61-16.sslip.io" -ClientName "Jerzyfy"
+```
 
 ## Known limitations (not bugs)
 
