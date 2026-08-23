@@ -39,6 +39,7 @@
     "prisma:migrate": "npm run prisma:migrate -w apps/api",
     "prisma:migrate:deploy": "npm run prisma:migrate:deploy -w apps/api",
     "prisma:seed": "npm run prisma:seed -w apps/api",
+    "prisma:reset-staff": "npm run prisma:reset-staff -w apps/api",
     "prisma:studio": "npm run prisma:studio -w apps/api",
     "desktop:prepare": "npm run prepare:renderer -w @jersey-commerce/desktop",
     "desktop:dev": "npm run dev -w @jersey-commerce/desktop",

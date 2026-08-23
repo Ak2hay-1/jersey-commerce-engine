@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@jersey-commerce/ui';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, PasswordInput } from '@jersey-commerce/ui';
 import type { LoginTenantOption } from '@jersey-commerce/types';
 import { DesktopModeSwitch } from '@/components/desktop-mode-switch';
 import { useAuth } from '@/lib/auth';
@@ -123,9 +123,8 @@ export default function LoginPage(): React.JSX.Element {
               </div>
               <div>
                 <Label htmlFor="password">Password</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="current-password"
                   className="mt-1 h-11 rounded-xl"
                   value={password}

@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@jersey-commerce/ui';
+import { Button, PasswordInput } from '@jersey-commerce/ui';
 import { Input } from '../ui/input';
 import { Alert } from '../ui/alert';
 import { useAuth } from '../providers/auth-provider';
@@ -192,7 +192,7 @@ export function LoginForm(): React.JSX.Element {
           </label>
           <label className="grid gap-1 text-sm">
             Password
-            <Input name="password" type="password" autoComplete="current-password" required />
+            <PasswordInput name="password" autoComplete="current-password" className="h-11 md:text-sm" required />
           </label>
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? 'Signing in…' : 'Sign in'}
