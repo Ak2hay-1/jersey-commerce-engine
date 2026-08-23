@@ -17,7 +17,7 @@ const ITEMS = [
   },
   {
     title: 'Payment methods',
-    body: 'Cash on delivery is available at checkout. Pay the rider when your order arrives. Online gateways will follow in a later drop.',
+    body: 'Pay securely online with Razorpay — UPI, cards, and net banking. Free delivery on orders above ₹2,000.',
   },
 ];
 

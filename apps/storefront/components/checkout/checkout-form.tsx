@@ -23,6 +23,7 @@ const STEPS = ['Contact', 'Delivery', 'Payment', 'Confirmation'] as const;
 export function CheckoutForm(): React.JSX.Element {
   const router = useRouter();
   const store = useStore();
+  const razorpayEnabled = store.payments?.razorpay ?? false;
   const { cart, refresh } = useCart();
   const { customer } = useAuth();
   const [step, setStep] = useState(0);
@@ -80,7 +81,7 @@ export function CheckoutForm(): React.JSX.Element {
           fulfillmentMethod: method,
           customer: { name, email: email || undefined, phone: phone || undefined },
           shippingAddress: method === 'DELIVERY' ? toShippingDto(address) : undefined,
-          notes: 'COD',
+          notes: razorpayEnabled ? 'ONLINE' : undefined,
         },
         { idempotencyKey },
       );
@@ -148,14 +149,18 @@ export function CheckoutForm(): React.JSX.Element {
         <section className="space-y-3">
           <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Payment</h2>
           <div className="border border-foreground bg-foreground px-4 py-4 text-background">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em]">Cash on delivery</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em]">
+              {razorpayEnabled ? 'Pay with Razorpay' : 'Online payment'}
+            </p>
             <p className="mt-2 text-sm text-background/75">
-              Pay the rider when your order arrives. Keep the exact amount ready. This order stays pending until delivery is confirmed.
+              {razorpayEnabled
+                ? 'Pay securely with UPI, cards, or net banking. Your order is confirmed once payment succeeds.'
+                : 'Online checkout is being set up. Contact the store if you need help placing an order.'}
             </p>
           </div>
         </section>
-        <Button type="submit" className="store-cta w-full rounded-none md:w-auto" disabled={pending || blocking.length > 0} onClick={() => setStep(3)}>
-          {pending ? 'Placing order…' : 'Place COD order'}
+        <Button type="submit" className="store-cta w-full rounded-none md:w-auto" disabled={pending || blocking.length > 0 || !razorpayEnabled} onClick={() => setStep(3)}>
+          {pending ? 'Placing order…' : razorpayEnabled ? 'Pay & place order' : 'Checkout unavailable'}
         </Button>
       </div>
       <CheckoutSummary cart={cart} quote={quote} currency={store.tenant.currency} />

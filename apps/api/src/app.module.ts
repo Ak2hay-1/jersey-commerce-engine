@@ -35,6 +35,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { CustomOrdersModule } from './custom-orders/custom-orders.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { AuthSettingsModule } from './auth-settings/auth-settings.module';
+import { PaymentSettingsModule } from './payment-settings/payment-settings.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { AuthSettingsModule } from './auth-settings/auth-settings.module';
     CustomOrdersModule,
     PromoCodesModule,
     AuthSettingsModule,
+    PaymentSettingsModule,
   ],
   controllers: [AppController],
 })

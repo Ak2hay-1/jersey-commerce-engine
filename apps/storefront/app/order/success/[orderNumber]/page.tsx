@@ -23,7 +23,7 @@ export default async function OrderSuccessPage({ params }: { params: Promise<Par
       <div className="mx-auto max-w-lg store-gutter py-12 text-center md:py-16">
         <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">Order placed</h1>
         <p className="mt-3 text-muted-foreground">
-          Your order number is <strong>{orderNumber}</strong>. Pay cash on delivery when it arrives. Sign in to view full details.
+          Your order number is <strong>{orderNumber}</strong>. Sign in to view full details and payment status.
         </p>
         <Button asChild className="mt-6">
           <Link href="/auth/login">View order</Link>
@@ -48,8 +48,8 @@ export default async function OrderSuccessPage({ params }: { params: Promise<Par
       <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">Order {order.orderNumber}</h1>
       <p className="text-muted-foreground">{nextStepCopy(order)}</p>
       <div className="border border-foreground/15 bg-muted/40 px-4 py-4 text-sm">
-        <p className="font-semibold uppercase tracking-[0.14em]">Cash on delivery</p>
-        <p className="mt-2 text-muted-foreground">Pay the rider when your order arrives. Keep the order number handy.</p>
+        <p className="font-semibold uppercase tracking-[0.14em]">Order received</p>
+        <p className="mt-2 text-muted-foreground">We will confirm your payment and dispatch details shortly. Keep the order number handy.</p>
       </div>
       <p className="text-sm">
         Status: {order.status.replaceAll('_', ' ')} · Payment: {order.paymentState.replaceAll('_', ' ')}

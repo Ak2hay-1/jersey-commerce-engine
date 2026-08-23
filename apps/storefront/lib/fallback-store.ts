@@ -105,8 +105,8 @@ export const fallbackStore: StorefrontBootstrap = {
           enabled: true,
           heading: 'Built for match day',
           items: [
-            { title: 'Free shipping', description: 'Complimentary delivery on every order.' },
-            { title: 'Cash on delivery', description: 'Pay when the jersey arrives at your door.' },
+            { title: 'Free delivery', description: 'Complimentary delivery on orders above ₹2,000.' },
+            { title: 'Secure checkout', description: 'Pay safely online with Razorpay.' },
             { title: 'Breathable knits', description: 'Moisture-wicking fabrics made for long wears.' },
             { title: 'Easy returns', description: 'Contact the store if a size does not fit as expected.' },
           ],
@@ -135,5 +135,9 @@ export const fallbackStore: StorefrontBootstrap = {
     emailOtp: false,
     smsOtp: false,
     googleSignIn: false,
+  },
+  payments: {
+    razorpay: false,
+    razorpayKeyId: null,
   },
 };

@@ -21,6 +21,16 @@ export default function SettingsPage(): React.JSX.Element {
           </CardContent>
         </Card>
         {auth.can('settings.read') || auth.can('settings.manage') ? (
+          <Link href="/settings/payments">
+            <Card className="h-full hover:bg-muted/40">
+              <CardHeader className="p-4"><CardTitle className="text-sm">Payments</CardTitle></CardHeader>
+              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+                Razorpay integration for secure online checkout on the storefront.
+              </CardContent>
+            </Card>
+          </Link>
+        ) : null}
+        {auth.can('settings.read') || auth.can('settings.manage') ? (
           <Link href="/settings/authentication">
             <Card className="h-full hover:bg-muted/40">
               <CardHeader className="p-4"><CardTitle className="text-sm">Authentication</CardTitle></CardHeader>

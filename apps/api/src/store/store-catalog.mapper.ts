@@ -14,6 +14,7 @@ import type {
   StorefrontVariant,
   StorefrontWebsiteSettings,
   StorefrontAuthMethods,
+  StorefrontPaymentMethods,
 } from '@jersey-commerce/types';
 import { DEFAULT_STOREFRONT_FOOTER, HOMEPAGE_SECTION_TYPES } from '@jersey-commerce/types';
 import { availableQuantity } from '../inventory/inventory-math';
@@ -338,9 +339,9 @@ export function defaultHomepageConfig(): HomepageConfig {
         enabled: true,
         heading: 'Why shop with us',
         items: [
-          { title: 'Free shipping', description: 'Complimentary delivery on every order.' },
-          { title: 'Cash on delivery', description: 'Pay when the drop arrives at your door.' },
-          { title: 'Heavyweight quality', description: 'GSM-first fabrics and durable prints.' },
+          { title: 'Free delivery', description: 'Complimentary delivery on orders above ₹2,000.' },
+          { title: 'Secure checkout', description: 'Pay safely online with Razorpay.' },
+          { title: 'Quality fabrics', description: 'GSM-first fabrics and durable prints.' },
           { title: 'Easy returns', description: 'Contact the store if a piece does not fit as expected.' },
         ],
       },
@@ -486,6 +487,7 @@ export function toBootstrap(input: {
   } | null;
   navigation: CategorySummary[];
   auth?: StorefrontAuthMethods;
+  payments?: StorefrontPaymentMethods;
 }): StorefrontBootstrap {
   const website = input.website;
   return {
@@ -533,6 +535,10 @@ export function toBootstrap(input: {
       emailOtp: false,
       smsOtp: false,
       googleSignIn: false,
+    },
+    payments: input.payments ?? {
+      razorpay: false,
+      razorpayKeyId: null,
     },
   };
 }

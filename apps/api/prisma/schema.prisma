@@ -380,6 +380,7 @@ model Tenant {
   customers          Customer[]
   customerIdentities CustomerIdentity[]
   authSettings       AuthSettings?
+  paymentSettings    PaymentSettings?
   tags               Tag[]
   customerTags       CustomerTag[]
   customerNotes      CustomerNote[]
@@ -795,6 +796,21 @@ model AuthSettings {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@map("auth_settings")
+}
+
+/// Per-tenant storefront payment gateway credentials.
+model PaymentSettings {
+  id                         String   @id @default(cuid())
+  tenantId                   String   @unique @map("tenant_id")
+  razorpayEnabled            Boolean  @default(false) @map("razorpay_enabled")
+  razorpayKeyId              String?  @map("razorpay_key_id")
+  razorpayKeySecretEncrypted String?  @map("razorpay_key_secret_encrypted") @db.Text
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@map("payment_settings")
 }
 
 /// Linked OAuth identities for a storefront customer. Tenant-scoped.

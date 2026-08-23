@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 
-const MESSAGES = ['Enjoy free shipping', 'Cash on delivery available', 'Secure and reliable checkout'];
+const MESSAGES = ['Free delivery on orders above ₹2,000', 'Secure checkout with Razorpay', 'Replica-inspired football jerseys'];
 
 export function AnnouncementBar(): React.JSX.Element {
   const reduced = useReducedMotion();
@@ -20,7 +20,7 @@ export function AnnouncementBar(): React.JSX.Element {
   }, [reduced]);
 
   return (
-    <div className="border-b border-foreground/10 bg-foreground pt-[env(safe-area-inset-top)] text-background">
+    <div className="sticky top-0 z-50 border-b border-foreground/10 bg-foreground pt-[env(safe-area-inset-top)] text-background">
       <div className="mx-auto flex min-h-9 max-w-store items-center justify-center store-gutter py-2 text-center text-[10px] font-semibold uppercase leading-tight tracking-[0.18em] sm:h-9 sm:py-0 sm:tracking-[0.22em]">
         {reduced ? (
           <span>{MESSAGES[0]}</span>

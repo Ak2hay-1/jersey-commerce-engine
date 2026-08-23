@@ -218,6 +218,38 @@ export class FooterConfigDto {
   copyright?: string;
 }
 
+export class SocialLinksDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  instagram?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  facebook?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  twitter?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  youtube?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  whatsapp?: string;
+}
+
 export class UpdateWebsiteSettingsDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -258,4 +290,10 @@ export class UpdateWebsiteSettingsDto {
   @ValidateNested()
   @Type(() => FooterConfigDto)
   footerConfig?: FooterConfigDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SocialLinksDto)
+  socialLinks?: SocialLinksDto;
 }

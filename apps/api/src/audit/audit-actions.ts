@@ -9,6 +9,7 @@ export const AUDIT_ACTIONS = {
   AUTH_GOOGLE_LOGIN: 'auth.google.login',
   AUTH_TEST_EMAIL_SENT: 'auth.test.email',
   AUTH_TEST_SMS_SENT: 'auth.test.sms',
+  PAYMENT_SETTINGS_UPDATED: 'payment.settings.updated',
   USER_CREATED: 'users.created',
   USER_UPDATED: 'users.updated',
   USER_TEMPORARY_PASSWORD_SET: 'users.temporary_password.set',

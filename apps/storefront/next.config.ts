@@ -24,6 +24,15 @@ function apiImagePattern(): Array<{ protocol: 'http' | 'https'; hostname: string
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
+  async rewrites() {
+    const apiUrl = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${apiUrl.replace(/\/$/, '')}/api/v1/:path*`,
+      },
+    ];
+  },
   transpilePackages: [
     '@jersey-commerce/ui',
     '@jersey-commerce/types',

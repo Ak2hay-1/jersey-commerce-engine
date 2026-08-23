@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { toCategorySummary } from '../catalog/catalog.mapper';
 import { toBootstrap } from './store-catalog.mapper';
 import { AuthSettingsService } from '../auth-settings/auth-settings.service';
+import { PaymentSettingsService } from '../payment-settings/payment-settings.service';
 
 const INACTIVE = new Set(['SUSPENDED', 'CANCELLED']);
 
@@ -15,6 +16,7 @@ export class StoreBootstrapService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService<ServerEnv, true>,
     private readonly authSettings: AuthSettingsService,
+    private readonly paymentSettings: PaymentSettingsService,
   ) {}
 
   async resolve(input: { slug?: string; host?: string }) {
@@ -40,11 +42,13 @@ export class StoreBootstrapService {
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
     const auth = await this.authSettings.getPublicFlags(tenantId);
+    const payments = await this.paymentSettings.getPublicFlags(tenantId);
     return toBootstrap({
       tenant,
       website: tenant.websiteSettings,
       navigation: navigation.map(toCategorySummary),
       auth,
+      payments,
     });
   }
 

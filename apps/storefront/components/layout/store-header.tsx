@@ -53,7 +53,7 @@ export function StoreHeader(): React.JSX.Element {
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 bg-background/85 backdrop-blur-xl transition-shadow duration-300',
+        'sticky top-9 z-40 bg-background/85 backdrop-blur-xl transition-shadow duration-300',
         scrolled ? 'shadow-header' : 'shadow-none',
       )}
     >

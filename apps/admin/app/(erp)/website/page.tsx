@@ -23,6 +23,7 @@ interface WebsiteSettings {
   contactEmail?: string | null;
   homepageConfig?: { sections?: HomepageSection[] } | null;
   footerConfig?: StorefrontFooter | null;
+  socialLinks?: Record<string, string | undefined> | null;
 }
 
 interface TileDraft {
@@ -82,6 +83,13 @@ export default function WebsitePage(): React.JSX.Element {
   const [categories, setCategories] = useState<CategoryDetail[]>([]);
   const [tiles, setTiles] = useState<TileDraft[]>([]);
   const [footer, setFooter] = useState<StorefrontFooter>(DEFAULT_STOREFRONT_FOOTER);
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({
+    instagram: '',
+    facebook: '',
+    twitter: '',
+    youtube: '',
+    whatsapp: '',
+  });
 
   const hero = sectionOf(sections, 'hero');
   const statement = sectionOf(sections, 'statement');
@@ -112,6 +120,13 @@ export default function WebsitePage(): React.JSX.Element {
         setProducts(nextProducts);
         setCategories(nextCategories);
         setFooter({ ...DEFAULT_STOREFRONT_FOOTER, ...(nextSettings.footerConfig ?? {}) });
+        setSocialLinks({
+          instagram: nextSettings.socialLinks?.instagram ?? '',
+          facebook: nextSettings.socialLinks?.facebook ?? '',
+          twitter: nextSettings.socialLinks?.twitter ?? '',
+          youtube: nextSettings.socialLinks?.youtube ?? '',
+          whatsapp: nextSettings.socialLinks?.whatsapp ?? '',
+        });
         const nextSections = nextSettings.homepageConfig?.sections ?? [];
         setSections(nextSections);
         const featuredSection = nextSections.find((section) => section.type === 'featured-categories');
@@ -195,6 +210,11 @@ export default function WebsitePage(): React.JSX.Element {
             ...footer,
             materials: footer.materials.map((item) => item.trim()).filter(Boolean),
           },
+          socialLinks: Object.fromEntries(
+            Object.entries(socialLinks)
+              .map(([key, value]) => [key, value.trim()])
+              .filter(([, value]) => value),
+          ),
         }),
       });
       setSettings(updated);
@@ -530,6 +550,31 @@ export default function WebsitePage(): React.JSX.Element {
               onChange={(event) => setFooter((current) => ({ ...current, copyright: event.target.value }))}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="p-4">
+          <CardTitle className="text-sm">Social profiles</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 p-4 pt-0 md:grid-cols-2">
+          <p className="text-sm text-muted-foreground md:col-span-2">
+            Links appear in the storefront footer. Use full URLs (https://…).
+          </p>
+          {(['instagram', 'facebook', 'twitter', 'youtube', 'whatsapp'] as const).map((network) => (
+            <div key={network} className="space-y-1">
+              <Label htmlFor={`social-${network}`} className="capitalize">
+                {network}
+              </Label>
+              <Input
+                id={`social-${network}`}
+                value={socialLinks[network]}
+                disabled={!canEdit}
+                placeholder={`https://${network === 'whatsapp' ? 'wa.me/…' : `${network}.com/…`}`}
+                onChange={(event) => setSocialLinks((current) => ({ ...current, [network]: event.target.value }))}
+              />
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>

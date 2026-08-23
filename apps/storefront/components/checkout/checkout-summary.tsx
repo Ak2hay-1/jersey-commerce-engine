@@ -47,7 +47,7 @@ export function CheckoutSummary({
           <dt>Total</dt>
           <dd>{formatMoney(totals.total, currency)}</dd>
         </div>
-        <p className="text-xs text-muted-foreground">Cash on delivery. Pay when it arrives.</p>
+        <p className="text-xs text-muted-foreground">Free delivery on orders above ₹2,000.</p>
       </dl>
     </aside>
   );

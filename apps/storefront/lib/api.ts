@@ -50,12 +50,11 @@ type ListQuery = {
 };
 
 function apiBase(): string {
-  // Server-side: prefer Docker-internal URL so SSR does not hairpin via PUBLIC_IP.
-  // Browser: always the public NEXT_PUBLIC_API_URL.
-  const raw =
-    typeof window === 'undefined'
-      ? process.env.API_INTERNAL_URL || publicEnv.NEXT_PUBLIC_API_URL
-      : publicEnv.NEXT_PUBLIC_API_URL;
+  // Browser: same-origin proxy (next.config rewrites) avoids CORS and mixed-content fetch failures.
+  if (typeof window !== 'undefined') {
+    return '/api/v1';
+  }
+  const raw = process.env.API_INTERNAL_URL || publicEnv.NEXT_PUBLIC_API_URL;
   return `${raw.replace(/\/$/, '')}/api/v1`;
 }
 

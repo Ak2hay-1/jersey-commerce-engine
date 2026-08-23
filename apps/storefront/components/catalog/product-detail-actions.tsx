@@ -91,7 +91,7 @@ export function ProductDetailActions({
         currency={currency}
         size="lg"
       />
-      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Shipping calculated at checkout. Cash on delivery available.</p>
+      <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Free delivery on orders above ₹2,000. Shipping calculated at checkout.</p>
       <ProductVariantSelector variants={product.variants} selectedId={selected?.id} onSelect={setSelected} />
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Quantity</p>

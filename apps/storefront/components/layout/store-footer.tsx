@@ -1,9 +1,21 @@
 'use client';
 
 import Link from 'next/link';
+import { Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
 import { useStore } from '../providers/store-provider';
-import { DEFAULT_STOREFRONT_FOOTER } from '@jersey-commerce/types';
+import { DEFAULT_STOREFRONT_FOOTER, type StorefrontSocialLinks } from '@jersey-commerce/types';
 import { useState } from 'react';
+
+const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  instagram: Instagram,
+  facebook: Facebook,
+  twitter: Twitter,
+  youtube: Youtube,
+};
+
+function socialEntries(links: StorefrontSocialLinks): Array<[string, string]> {
+  return Object.entries(links).filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
+}
 
 function Accordion({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
   const [open, setOpen] = useState(false);
@@ -27,7 +39,7 @@ export function StoreFooter(): React.JSX.Element {
   const store = useStore();
   const year = new Date().getFullYear();
   const footer = { ...DEFAULT_STOREFRONT_FOOTER, ...store.website.footer };
-  const social = Object.entries(store.website.socialLinks).filter((entry): entry is [string, string] => Boolean(entry[1]));
+  const social = socialEntries(store.website.socialLinks);
   const collections = store.navigation.filter((item) => !item.parentId).slice(0, 6);
   const intro = footer.body.trim() || `${store.tenant.name} is a football jersey store — club kits, national colours, kids sizes, and custom prints built to last beyond a season.`;
   const about =
@@ -129,6 +141,28 @@ export function StoreFooter(): React.JSX.Element {
           </div>
         </div>
       </div>
+      {social.length > 0 ? (
+        <div className="border-t border-background/15 px-4 py-6">
+          <ul className="flex flex-wrap items-center justify-center gap-4">
+            {social.map(([name, href]) => {
+              const Icon = SOCIAL_ICONS[name.toLowerCase()];
+              return (
+                <li key={name}>
+                  <a
+                    href={href}
+                    rel="noreferrer"
+                    target="_blank"
+                    aria-label={name}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-background/25 text-background transition hover:border-background hover:bg-background/10"
+                  >
+                    {Icon ? <Icon className="h-4 w-4" /> : <span className="text-xs uppercase">{name.slice(0, 2)}</span>}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
       <div className="border-t border-background/15 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-[11px] uppercase tracking-[0.16em] text-background/55">
         {copyright}
       </div>

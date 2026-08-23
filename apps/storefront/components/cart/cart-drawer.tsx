@@ -54,6 +54,7 @@ export function CartDrawer(): React.JSX.Element {
             role="dialog"
             aria-modal="true"
             aria-labelledby="cart-title"
+            data-cursor="hover"
             initial={reduced ? { opacity: 0 } : { x: '100%' }}
             animate={reduced ? { opacity: 1 } : { x: 0 }}
             exit={reduced ? { opacity: 0 } : { x: '100%' }}
@@ -98,15 +99,16 @@ export function CartDrawer(): React.JSX.Element {
                   <span>Subtotal</span>
                   <span>{formatMoney(cart.totals.subtotal, currency)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Cash on delivery at checkout. Shipping calculated next.</p>
+                <p className="text-xs text-muted-foreground">Free delivery on orders above ₹2,000. Shipping calculated at checkout.</p>
                 <Button
                   type="button"
                   className="store-pill h-12 w-full rounded-none bg-foreground text-background hover:bg-foreground/90"
+                  data-cursor="hover"
                   onClick={() => navigate('/checkout')}
                 >
-                  Checkout · COD
+                  Checkout
                 </Button>
-                <Button type="button" variant="outline" className="store-pill h-11 w-full rounded-none" onClick={() => navigate('/cart')}>
+                <Button type="button" variant="outline" className="store-pill h-11 w-full rounded-none" data-cursor="hover" onClick={() => navigate('/cart')}>
                   View cart
                 </Button>
               </div>

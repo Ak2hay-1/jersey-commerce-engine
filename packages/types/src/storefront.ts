@@ -9,6 +9,7 @@ import type {
   ProductSort,
 } from './catalog';
 import type { CartDto, CartTotalsDto } from './orders';
+import type { StorefrontPaymentMethods } from './payment-settings';
 
 export const STOREFRONT_AVAILABILITY = ['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK'] as const;
 export type StorefrontAvailability = (typeof STOREFRONT_AVAILABILITY)[number];
@@ -147,12 +148,12 @@ export const DEFAULT_STOREFRONT_FOOTER: StorefrontFooter = {
   aboutBody: '',
   materialsTitle: 'What materials we use',
   materials: [
-    'Heavyweight cotton and French terry for oversized tees.',
+    'Premium cotton and French terry for oversized tees.',
     'Breathable knits for replica-inspired match kits.',
     'Low-impact dyes and non-toxic prints wherever possible.',
     'Pieces built to be worn hard, washed often, and kept.',
   ],
-  showCollections: true,
+  showCollections: false,
   collectionsTitle: 'Featured collections',
   shopTitle: 'Shop',
   contactTitle: 'Contact',
@@ -177,6 +178,7 @@ export interface StorefrontBootstrap {
   website: StorefrontWebsiteSettings;
   navigation: CategorySummary[];
   auth: StorefrontAuthMethods;
+  payments: StorefrontPaymentMethods;
 }
 
 export interface StorefrontResolvedTenant {

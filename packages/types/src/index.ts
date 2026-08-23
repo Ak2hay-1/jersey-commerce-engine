@@ -138,6 +138,11 @@ export {
   type UpdateAuthSettingsInput,
 } from './auth-settings';
 export {
+  type PaymentSettings,
+  type StorefrontPaymentMethods,
+  type UpdatePaymentSettingsInput,
+} from './payment-settings';
+export {
   type BackupRun,
   type BackupSettings,
   type UpdateBackupSettingsInput,

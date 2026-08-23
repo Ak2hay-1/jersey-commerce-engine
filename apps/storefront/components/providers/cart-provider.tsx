@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { CartDto } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
 import { STORE_COOKIES, clearBrowserCookie, readBrowserCookie, writeBrowserCookie } from '../../lib/cookies';
-import { StoreApiError } from '../../lib/errors';
+import { StoreApiError, publicErrorMessage } from '../../lib/errors';
 
 type CartContextValue = {
   cart: CartDto | null;
@@ -48,7 +48,7 @@ export function CartProvider({ children }: { children: React.ReactNode }): React
         throw error;
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Cart is unavailable.');
+      setError(publicErrorMessage(caught, 'Cart is unavailable. Please try again.'));
     } finally {
       setLoading(false);
     }

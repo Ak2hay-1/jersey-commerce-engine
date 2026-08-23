@@ -1,7 +1,7 @@
 /**
  * Reset staff accounts for a tenant (CommonJS — runs inside the production API container).
  */
-const { PrismaClient } = require('./generated/prisma');
+const { PrismaClient } = require('../generated/prisma');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();

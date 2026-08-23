@@ -45,6 +45,11 @@ export class WebsiteService {
     const footerConfig = dto.footerConfig
       ? (toFooterConfig(dto.footerConfig) as unknown as Prisma.InputJsonValue)
       : undefined;
+    const socialLinks = dto.socialLinks
+      ? (Object.fromEntries(
+          Object.entries(dto.socialLinks).filter(([, value]) => typeof value === 'string' && value.trim()),
+        ) as Prisma.InputJsonValue)
+      : undefined;
     const updated = await this.prisma.websiteSettings.update({
       where: { tenantId },
       data: {
@@ -54,6 +59,7 @@ export class WebsiteService {
         contactEmail: dto.contactEmail === undefined ? undefined : dto.contactEmail,
         homepageConfig,
         footerConfig,
+        socialLinks,
       },
     });
     await this.audit.log({
