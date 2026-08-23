@@ -9,6 +9,7 @@
  */
 import { PrismaClient, RoleCode } from '../generated/prisma';
 import bcrypt from 'bcryptjs';
+import { seedTenantRolesForClient } from '../src/rbac/rbac.service';
 
 const prisma = new PrismaClient();
 
@@ -80,6 +81,8 @@ async function main(): Promise<void> {
   if (!tenant) {
     throw new Error(`Tenant not found for slug "${TENANT_SLUG}".`);
   }
+
+  await seedTenantRolesForClient(prisma, tenant.id);
 
   const passwordHash = await bcrypt.hash(STAFF_PASSWORD, 12);
   const roleByCode = new Map<RoleCode, { id: string }>();

@@ -75,6 +75,9 @@ async function main() {
     throw new Error(`Tenant not found for slug "${TENANT_SLUG}".`);
   }
 
+  const { seedTenantRolesForClient } = require('../dist/rbac/rbac.service');
+  await seedTenantRolesForClient(prisma, tenant.id);
+
   const passwordHash = await bcrypt.hash(STAFF_PASSWORD, 12);
   const roleByCode = new Map();
 
