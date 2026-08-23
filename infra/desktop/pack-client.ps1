@@ -48,9 +48,15 @@ finally {
 }
 
 $distDir = Join-Path $desktopDir "dist"
-$setup = Get-ChildItem -Path $distDir -Filter "Jersey-Staff-Setup-*.exe" |
+$setup = Get-ChildItem -Path $distDir -Filter "Jerzyfy-Staff-Setup-*.exe" |
   Sort-Object LastWriteTime -Descending |
   Select-Object -First 1
+
+if (-not $setup) {
+  $setup = Get-ChildItem -Path $distDir -Filter "Jersey-Staff-Setup-*.exe" |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+}
 
 if (-not $setup) {
   throw "Installer not found under $distDir"
@@ -61,7 +67,7 @@ Write-Host "Built: $($setup.FullName)"
 if ($ClientName) {
   $safe = ($ClientName -replace '[^\w\-]+', '-').Trim('-')
   if (-not $safe) { $safe = "client" }
-  $copyName = "Jersey-Staff-Setup-$safe.exe"
+  $copyName = "Jerzyfy-Staff-Setup-$safe.exe"
   $copyPath = Join-Path $distDir $copyName
   Copy-Item -Path $setup.FullName -Destination $copyPath -Force
   Write-Host "Client copy: $copyPath"

@@ -21,6 +21,8 @@ interface WebsiteSettings {
   seoDescription?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
+  logo?: string | null;
+  favicon?: string | null;
   homepageConfig?: { sections?: HomepageSection[] } | null;
   footerConfig?: StorefrontFooter | null;
   socialLinks?: Record<string, string | undefined> | null;
@@ -205,6 +207,8 @@ export default function WebsitePage(): React.JSX.Element {
         body: JSON.stringify({
           seoTitle: settings?.seoTitle,
           seoDescription: settings?.seoDescription,
+          logo: settings?.logo ?? null,
+          favicon: settings?.favicon ?? null,
           homepageConfig: { sections: nextSections.filter((section) => section.type !== 'marquee') },
           footerConfig: {
             ...footer,
@@ -243,6 +247,81 @@ export default function WebsitePage(): React.JSX.Element {
       />
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {saved ? <p className="text-sm text-muted-foreground">{saved}</p> : null}
+
+      <Card>
+        <CardHeader className="p-4">
+          <CardTitle className="text-sm">Branding</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 p-4 pt-0 text-sm">
+          <p className="text-muted-foreground">
+            Logo appears in the storefront header and splash screen. Use a square PNG with a light background.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Shop logo</Label>
+              {settings?.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={settings.logo} alt="" className="h-24 w-24 rounded border bg-muted object-contain p-2" />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
+                  No logo
+                </div>
+              )}
+              {canEdit ? (
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) {
+                      return;
+                    }
+                    void uploadWebsiteImage(file)
+                      .then((url) => setSettings((current) => (current ? { ...current, logo: url } : current)))
+                      .catch((err: Error) => setError(err.message));
+                  }}
+                />
+              ) : null}
+              {canEdit && settings?.logo ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => setSettings((current) => (current ? { ...current, logo: null } : current))}>
+                  Remove logo
+                </Button>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label>Favicon</Label>
+              {settings?.favicon ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={settings.favicon} alt="" className="h-12 w-12 rounded border bg-muted object-contain p-1" />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
+                  None
+                </div>
+              )}
+              {canEdit ? (
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) {
+                      return;
+                    }
+                    void uploadWebsiteImage(file)
+                      .then((url) => setSettings((current) => (current ? { ...current, favicon: url } : current)))
+                      .catch((err: Error) => setError(err.message));
+                  }}
+                />
+              ) : null}
+              {canEdit && settings?.favicon ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => setSettings((current) => (current ? { ...current, favicon: null } : current))}>
+                  Remove favicon
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="p-4">

@@ -56,13 +56,23 @@ function modeUrl(mode) {
   return `${staticServer.origin}${MODE_URL[mode]}`;
 }
 
+function iconPath() {
+  const packaged = path.join(process.resourcesPath, 'build', 'icon.ico');
+  if (app.isPackaged && fs.existsSync(packaged)) {
+    return packaged;
+  }
+  const dev = path.join(__dirname, '..', 'build', 'icon.ico');
+  return fs.existsSync(dev) ? dev : undefined;
+}
+
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Jersey Staff',
+    title: 'Jerzyfy Staff',
+    icon: iconPath(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

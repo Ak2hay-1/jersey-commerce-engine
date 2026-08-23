@@ -12,9 +12,9 @@
     "pack:dir": "node scripts/prepare-renderer.mjs && electron-builder --win dir"
   },
   "build": {
-    "appId": "com.jerseycommerce.staff",
-    "productName": "Jersey Staff",
-    "copyright": "Copyright © Jersey Commerce Engine",
+    "appId": "com.jerzyfy.staff",
+    "productName": "Jerzyfy Staff",
+    "copyright": "Copyright © Jerzyfy",
     "electronVersion": "34.5.8",
     "directories": {
       "output": "dist",
@@ -32,6 +32,11 @@
       {
         "from": "config.json",
         "to": "config.json"
+      },
+      {
+        "from": "build",
+        "to": "build",
+        "filter": ["**/*"]
       }
     ],
     "win": {
@@ -43,14 +48,17 @@
           ]
         }
       ],
-      "artifactName": "Jersey-Staff-Setup-${version}.${ext}"
+      "icon": "build/icon.ico",
+      "artifactName": "Jerzyfy-Staff-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Jersey Staff"
+      "shortcutName": "Jerzyfy Staff",
+      "installerIcon": "build/installerIcon.ico",
+      "uninstallerIcon": "build/uninstallerIcon.ico"
     }
   },
   "devDependencies": {

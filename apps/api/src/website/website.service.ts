@@ -57,6 +57,8 @@ export class WebsiteService {
         seoDescription: dto.seoDescription === undefined ? undefined : dto.seoDescription,
         contactPhone: dto.contactPhone === undefined ? undefined : dto.contactPhone,
         contactEmail: dto.contactEmail === undefined ? undefined : dto.contactEmail,
+        logo: dto.logo === undefined ? undefined : dto.logo,
+        favicon: dto.favicon === undefined ? undefined : dto.favicon,
         homepageConfig,
         footerConfig,
         socialLinks,
@@ -71,10 +73,14 @@ export class WebsiteService {
       oldValue: {
         seoTitle: existing.seoTitle,
         seoDescription: existing.seoDescription,
+        logo: existing.logo,
+        favicon: existing.favicon,
       },
       newValue: {
         seoTitle: updated.seoTitle,
         seoDescription: updated.seoDescription,
+        logo: updated.logo,
+        favicon: updated.favicon,
       },
     });
     return {

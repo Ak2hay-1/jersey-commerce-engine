@@ -281,6 +281,20 @@ export class UpdateWebsiteSettingsDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(2048)
+  logo?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(2048)
+  favicon?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @ValidateNested()
   @Type(() => HomepageConfigDto)
   homepageConfig?: HomepageConfigDto;

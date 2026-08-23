@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -83,8 +84,19 @@ export function StoreHeader(): React.JSX.Element {
           </nav>
         </div>
 
-        <Link href="/" className="min-w-0 justify-self-center px-1">
-          <span className="block max-w-[42vw] truncate text-center font-heading text-lg uppercase tracking-[0.14em] sm:max-w-[46vw] sm:text-xl sm:tracking-[0.18em] md:text-2xl lg:max-w-none lg:tracking-[0.2em]">{store.tenant.name}</span>
+        <Link href="/" className="min-w-0 justify-self-center px-1" aria-label={store.tenant.name}>
+          {store.theme.logo ? (
+            <Image
+              src={store.theme.logo}
+              alt={store.tenant.name}
+              width={120}
+              height={40}
+              className="mx-auto h-8 w-auto max-w-[42vw] object-contain sm:h-9 sm:max-w-[46vw] md:h-10 lg:max-w-none"
+              priority
+            />
+          ) : (
+            <span className="block max-w-[42vw] truncate text-center font-heading text-lg uppercase tracking-[0.14em] sm:max-w-[46vw] sm:text-xl sm:tracking-[0.18em] md:text-2xl lg:max-w-none lg:tracking-[0.2em]">{store.tenant.name}</span>
+          )}
         </Link>
 
         <div className="flex items-center justify-end gap-1">

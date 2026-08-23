@@ -10,7 +10,7 @@ Running `npx vercel` **inside** `apps/storefront` only uploads that folder (~183
 
 ## Storefront (project `jerzyfy`)
 
-Production alias: **https://jerzyfy.vercel.app**
+Production alias: **https://www.jerzyfy.in** (also `https://jerzyfy.vercel.app`)
 
 ```powershell
 cd a:\jerzyfy
@@ -28,7 +28,7 @@ Config: [`infra/vercel/storefront.vercel.json`](./storefront.vercel.json)
 
 ## Admin (project `jerzyfy-admin`)
 
-Production alias: **https://jerzyfy-admin.vercel.app**
+Production alias: **https://admin.jerzyfy.in** (also `https://jerzyfy-admin.vercel.app`)
 
 ```powershell
 cd a:\jerzyfy
@@ -58,8 +58,8 @@ After both URLs exist:
   -PublicIp 45.76.61.16 `
   -ApiHost 45-76-61-16.sslip.io `
   -AcmeEmail frndswork@gmail.com `
-  -StorefrontOrigin https://jerzyfy.vercel.app `
-  -AdminOrigin https://jerzyfy-admin.vercel.app `
+  -StorefrontOrigin https://www.jerzyfy.in `
+  -AdminOrigin https://admin.jerzyfy.in `
   -UpdateCorsOnly
 ```
 

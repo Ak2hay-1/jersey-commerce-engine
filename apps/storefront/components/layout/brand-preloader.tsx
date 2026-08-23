@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useStore } from '../providers/store-provider';
@@ -48,15 +49,34 @@ export function BrandPreloader(): React.JSX.Element | null {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
-          <motion.p
-            className="font-heading text-5xl uppercase tracking-[0.18em] md:text-7xl"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {store.tenant.name}
-          </motion.p>
+          {store.theme.logo ? (
+            <motion.div
+              className="px-6"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Image
+                src={store.theme.logo}
+                alt={store.tenant.name}
+                width={240}
+                height={240}
+                className="mx-auto h-32 w-auto object-contain md:h-40"
+                priority
+              />
+            </motion.div>
+          ) : (
+            <motion.p
+              className="font-heading text-5xl uppercase tracking-[0.18em] md:text-7xl"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {store.tenant.name}
+            </motion.p>
+          )}
         </motion.div>
       ) : null}
     </AnimatePresence>
