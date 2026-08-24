@@ -2,30 +2,36 @@
 
 ## Live URLs
 
-| App | URL |
-| --- | --- |
-| Storefront | https://www.jerzyfy.in |
-| Admin (CMS + users) | https://admin.jerzyfy.in |
-| API | https://45-76-61-16.sslip.io |
-| Staff EXE | `Jerzyfy-Staff-Setup-Jerzyfy.exe` (POS + ERP) |
+
+| App                 | URL                                                          |
+| ------------------- | ------------------------------------------------------------ |
+| Storefront          | [https://www.jerzyfy.in](https://www.jerzyfy.in)             |
+| Admin (CMS + users) | [https://admin.jerzyfy.in](https://admin.jerzyfy.in)         |
+| API                 | [https://45-76-61-16.sslip.io](https://45-76-61-16.sslip.io) |
+| Staff EXE6          | `Jerzyfy-Staff-Setup-Jerzyfy.exe` (POS + ERP)                |
+
 
 ## Staff accounts
 
 Create all staff in **Admin → Users** with temporary passwords. Each user must change password on first login. Do not use demo scripts or `DevPassword123!` in production.
 
-| Role | Access |
-| --- | --- |
-| SUPER_ADMIN / OWNER | Full shop control |
-| MANAGER | Ops without settings.manage |
-| CASHIER | POS + sales only |
-| INVENTORY_MANAGER | Stock + purchasing |
-| WEBSITE_MANAGER | CMS + promo codes |
+
+| Role                | Access                      |
+| ------------------- | --------------------------- |
+| SUPER_ADMIN / OWNER | Full shop control           |
+| MANAGER             | Ops without settings.manage |
+| CASHIER             | POS + sales only            |
+| INVENTORY_MANAGER   | Stock + purchasing          |
+| WEBSITE_MANAGER     | CMS + promo codes           |
+
+
+
 
 ## Logo
 
 Logo and favicon are set in production `website_settings`. To change later: **Admin → Website → Branding** → upload → Save.
 
-Current production logo URL is served from the API media path (`/api/v1/media/...`).
+Current production logo URL is served from the API media path (`/api/v1/media/...`). Admin Website previews and detail routes (`/users/{id}`, etc.) need an **Admin redeploy** after the media-URL + static `[id]` shell fix (branch `fix/admin-media-and-detail-shells`).
 
 ## Staff EXE
 
@@ -36,6 +42,8 @@ Pack again after API URL changes:
 ```powershell
 .\infra\desktop\pack-client.ps1 -ApiUrl "https://45-76-61-16.sslip.io" -ClientName "Jerzyfy"
 ```
+
+
 
 ## Known limitations (not bugs)
 
@@ -53,6 +61,8 @@ See [known-limitations.md](./known-limitations.md).
 - [ ] **Bootstrap secret**: Clear or rotate `BOOTSTRAP_SECRET` in VM `.env.production` after all tenants are created (empty secret → bootstrap route 404s).
 - [ ] **Install EXE** on staff PCs from `apps/desktop/dist/Jerzyfy-Staff-Setup-Jerzyfy.exe`.
 
+
+
 ## Operations
 
 - API updates: `.\infra\docker\run-production-deploy.ps1`
@@ -60,7 +70,10 @@ See [known-limitations.md](./known-limitations.md).
 - Never run `prisma:seed` on the VM
 - Backup restore drill: weekly at first
 
+
+
 ## Emergency
 
 - API health: `https://45-76-61-16.sslip.io/health`
 - VM: Vultr `45.76.61.16`
+

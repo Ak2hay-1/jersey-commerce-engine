@@ -55,6 +55,22 @@ export function ensureAdminDynamicShells(outDir) {
       }
     }
   }
+
+  assertAdminDynamicShells(outDir);
+}
+
+/** Fail the build if rewrite destinations are missing after copy. */
+export function assertAdminDynamicShells(outDir) {
+  const missing = [];
+  for (const { segment, to } of SHELLS) {
+    const dest = path.join(outDir, segment, to, 'index.html');
+    if (!fs.existsSync(dest)) {
+      missing.push(path.relative(outDir, dest).replace(/\\/g, '/'));
+    }
+  }
+  if (missing.length > 0) {
+    throw new Error(`Missing dynamic shell destinations: ${missing.join(', ')}`);
+  }
 }
 
 export function resolveAdminExportRoot(adminOut) {

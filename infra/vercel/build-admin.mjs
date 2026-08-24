@@ -54,7 +54,7 @@ if (!fs.existsSync(path.join(outDir, 'index.html'))) {
 
 const exportRoot = resolveAdminExportRoot(outDir);
 ensureAdminDynamicShells(exportRoot);
-console.log('[vercel-admin] Ensured dynamic [id] shells under', exportRoot);
+console.log('[vercel-admin] Ensured and asserted dynamic [id] shells under', exportRoot);
 
 fs.writeFileSync(path.join(outDir, 'runtime-config.js'), runtimeBody, 'utf8');
 console.log('[vercel-admin] Admin static export ready at', outDir);
