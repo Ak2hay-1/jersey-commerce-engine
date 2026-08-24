@@ -10,6 +10,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ensureAdminDynamicShells, resolveAdminExportRoot } from './ensure-admin-dynamic-shells.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '../..');
@@ -50,6 +51,10 @@ if (!fs.existsSync(path.join(outDir, 'index.html'))) {
   console.error('[vercel-admin] Missing out/index.html after build');
   process.exit(1);
 }
+
+const exportRoot = resolveAdminExportRoot(outDir);
+ensureAdminDynamicShells(exportRoot);
+console.log('[vercel-admin] Ensured dynamic [id] shells under', exportRoot);
 
 fs.writeFileSync(path.join(outDir, 'runtime-config.js'), runtimeBody, 'utf8');
 console.log('[vercel-admin] Admin static export ready at', outDir);

@@ -25,6 +25,48 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
+/** @type {Array<{ prefix: string; shell: string }>} */
+const DYNAMIC_SHELLS = [
+  { prefix: '/sales/', shell: path.join('sales', '[id]', 'index.html') },
+  { prefix: '/orders/', shell: path.join('orders', '[id]', 'index.html') },
+  { prefix: '/products/', shell: path.join('products', '[id]', 'index.html') },
+  { prefix: '/purchases/', shell: path.join('purchases', '[id]', 'index.html') },
+  { prefix: '/suppliers/', shell: path.join('suppliers', '[id]', 'index.html') },
+  { prefix: '/customers/', shell: path.join('customers', '[id]', 'index.html') },
+  { prefix: '/expenses/', shell: path.join('expenses', '[id]', 'index.html') },
+  { prefix: '/custom-orders/', shell: path.join('custom-orders', '[id]', 'index.html') },
+  { prefix: '/promo-codes/', shell: path.join('promo-codes', '[id]', 'index.html') },
+  { prefix: '/users/', shell: path.join('users', '[id]', 'index.html') },
+  { prefix: '/inventory/', shell: path.join('inventory', '[variantId]', 'index.html') },
+];
+
+/**
+ * @param {string} appRoot
+ * @param {string} relative pathname under the app (starts with /)
+ * @returns {string | null}
+ */
+function resolveDynamicShell(appRoot, relative) {
+  const normalized = relative.endsWith('/') && relative.length > 1 ? relative.slice(0, -1) : relative;
+  for (const { prefix, shell } of DYNAMIC_SHELLS) {
+    if (!normalized.startsWith(prefix)) {
+      continue;
+    }
+    const rest = normalized.slice(prefix.length);
+    if (!rest || rest.includes('/')) {
+      continue;
+    }
+    // Skip known non-detail inventory paths
+    if (prefix === '/inventory/' && (rest === 'movements' || rest === 'low-stock')) {
+      continue;
+    }
+    const candidate = path.join(appRoot, shell);
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 /**
  * @param {string} rendererRoot Absolute path containing pos/ and erp/ folders
  * @param {() => { apiUrl: string }} getConfig
@@ -83,13 +125,18 @@ function startStaticServer(rendererRoot, getConfig) {
       }
 
       if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-        // SPA-style fallback for client routes under the base path.
-        const fallback = path.join(appRoot, 'index.html');
-        if (fs.existsSync(fallback)) {
-          filePath = fallback;
+        const dynamicShell = resolveDynamicShell(appRoot, relative);
+        if (dynamicShell) {
+          filePath = dynamicShell;
         } else {
-          res.writeHead(404).end('Not found');
-          return;
+          // SPA-style fallback for client routes under the base path.
+          const fallback = path.join(appRoot, 'index.html');
+          if (fs.existsSync(fallback)) {
+            filePath = fallback;
+          } else {
+            res.writeHead(404).end('Not found');
+            return;
+          }
         }
       }
 

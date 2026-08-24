@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ensureAdminDynamicShells, resolveAdminExportRoot } from '../../../infra/vercel/ensure-admin-dynamic-shells.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(__dirname, '..');
@@ -79,6 +80,9 @@ if (!fs.existsSync(posOut) || !fs.existsSync(erpOut)) {
   console.error('[desktop] Missing static export folders. Run without DESKTOP_SKIP_BUILD=1.');
   process.exit(1);
 }
+
+ensureAdminDynamicShells(resolveAdminExportRoot(erpOut));
+console.log('[desktop] Ensured ERP dynamic [id] shells');
 
 function copyExport(outDir, baseSegment, dest) {
   const nested = path.join(outDir, baseSegment);
