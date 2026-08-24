@@ -16,7 +16,8 @@ function readApiUrl() {
     return fallback;
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const raw = fs.readFileSync(configPath, 'utf8').replace(/^\uFEFF/, '');
+    const parsed = JSON.parse(raw);
     if (typeof parsed.apiUrl === 'string' && parsed.apiUrl.trim()) {
       return parsed.apiUrl.trim().replace(/\/$/, '');
     }

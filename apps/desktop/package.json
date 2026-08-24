@@ -48,7 +48,7 @@
           ]
         }
       ],
-      "icon": "build/logo.png",
+      "icon": "build/icon.ico",
       "artifactName": "Jerzyfy-Staff-Setup-${version}.${ext}"
     },
     "nsis": {

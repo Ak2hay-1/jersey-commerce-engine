@@ -30,10 +30,11 @@ if ($DefaultMode -ne "pos" -and $DefaultMode -ne "erp") {
 }
 
 Write-Host "Writing desktop config -> $trimmed"
-@{
+$json = (@{
   apiUrl = $trimmed
   defaultMode = $DefaultMode
-} | ConvertTo-Json | Set-Content -Path $configPath -Encoding utf8
+} | ConvertTo-Json -Compress)
+[System.IO.File]::WriteAllText($configPath, $json + "`n", (New-Object System.Text.UTF8Encoding $false))
 
 Push-Location $repoRoot
 try {

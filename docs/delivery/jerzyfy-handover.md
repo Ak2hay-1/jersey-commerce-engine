@@ -1,5 +1,9 @@
 # Jerzyfy production handover
 
+Filled instance of [CLIENT-HANDOVER-TEMPLATE.md](./CLIENT-HANDOVER-TEMPLATE.md).  
+Every update after launch: [RELEASE-OPS-PLAYBOOK.md](./RELEASE-OPS-PLAYBOOK.md).  
+Company context: [../rkyves/BUSINESS-CONTEXT.md](../rkyves/BUSINESS-CONTEXT.md).
+
 ## Live URLs
 
 
@@ -55,10 +59,14 @@ See [known-limitations.md](./known-limitations.md).
 
 ## Go-live checklist (remaining manual steps)
 
+- [x] **Admin redeploy** (media previews + `/users/{id}` shells): production [admin.jerzyfy.in](https://admin.jerzyfy.in) updated 2026-08-24; `/users/smoke-id` returns SPA shell (not Next 404).
+- [x] **API health**: `https://45-76-61-16.sslip.io/health` OK.
+- [x] **CORS for Staff EXE**: `Access-Control-Allow-Origin: http://127.0.0.1:39217` already present on API (re-run `deploy.ps1 -UpdateCorsOnly` only if login still fails; needs VM SSH key).
+- [x] **Repack Staff EXE**: `apps/desktop/dist/Jerzyfy-Staff-Setup-Jerzyfy.exe` rebuilt against prod API (also `Jerzyfy-Staff-Setup-0.1.0.exe`).
 - [ ] **Staff accounts**: Owner logs into [admin.jerzyfy.in](https://admin.jerzyfy.in) → **Users** → create manager, cashier, inventory, and website manager with temporary passwords (forced change on first login).
 - [ ] **UAT sign-off**: Print and sign [uat-signoff.md](./uat-signoff.md) after first POS sale and web order.
 - [ ] **Backup**: In Admin → Settings → Backup, set path under `BACKUP_ALLOWED_ROOT` and confirm one backup file exists.
-- [ ] **Bootstrap secret**: Clear or rotate `BOOTSTRAP_SECRET` in VM `.env.production` after all tenants are created (empty secret → bootstrap route 404s).
+- [ ] **Bootstrap secret**: Clear or rotate `BOOTSTRAP_SECRET` in VM `.env.production` after all tenants are created (empty secret → bootstrap route 404s). Requires SSH to `45.76.61.16`.
 - [ ] **Install EXE** on staff PCs from `apps/desktop/dist/Jerzyfy-Staff-Setup-Jerzyfy.exe`.
 
 
