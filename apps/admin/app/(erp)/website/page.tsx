@@ -15,6 +15,7 @@ import {
 import { apiRequest, queryString } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { useAuth } from '@/lib/auth';
+import { resolveMediaUrl } from '@/lib/env';
 
 interface WebsiteSettings {
   seoTitle?: string | null;
@@ -261,7 +262,7 @@ export default function WebsitePage(): React.JSX.Element {
               <Label>Shop logo</Label>
               {settings?.logo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={settings.logo} alt="" className="h-24 w-24 rounded border bg-muted object-contain p-2" />
+                <img src={resolveMediaUrl(settings.logo)} alt="" className="h-24 w-24 rounded border bg-muted object-contain p-2" />
               ) : (
                 <div className="flex h-24 w-24 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
                   No logo
@@ -292,7 +293,7 @@ export default function WebsitePage(): React.JSX.Element {
               <Label>Favicon</Label>
               {settings?.favicon ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={settings.favicon} alt="" className="h-12 w-12 rounded border bg-muted object-contain p-1" />
+                <img src={resolveMediaUrl(settings.favicon)} alt="" className="h-12 w-12 rounded border bg-muted object-contain p-1" />
               ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded border bg-muted text-xs text-muted-foreground">
                   None
@@ -344,7 +345,7 @@ export default function WebsitePage(): React.JSX.Element {
               </div>
               {slide.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={slide.image} alt="" className="h-28 w-full rounded object-cover" />
+                <img src={resolveMediaUrl(slide.image)} alt="" className="h-28 w-full rounded object-cover" />
               ) : (
                 <div className="flex h-28 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
                   {HERO_BANNER_SPEC.ratio} · {HERO_BANNER_SPEC.width}×{HERO_BANNER_SPEC.height}
@@ -505,7 +506,7 @@ export default function WebsitePage(): React.JSX.Element {
               </div>
               {tile.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={tile.image} alt="" className="h-40 w-32 rounded object-cover" />
+                <img src={resolveMediaUrl(tile.image)} alt="" className="h-40 w-32 rounded object-cover" />
               ) : (
                 <div className="flex h-40 w-32 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
                   {COLLECTION_TILE_SPEC.ratio}

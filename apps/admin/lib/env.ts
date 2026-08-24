@@ -19,6 +19,20 @@ export function getApiUrl(): string {
   return (runtime || publicEnv.NEXT_PUBLIC_API_URL).replace(/\/$/, '');
 }
 
+/** Prefix relative `/api/v1/media/...` URLs with the API host for admin previews. */
+export function resolveMediaUrl(url: string | null | undefined): string {
+  if (!url) {
+    return '';
+  }
+  if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  if (url.startsWith('/')) {
+    return `${getApiUrl()}${url}`;
+  }
+  return url;
+}
+
 export function getStaffPortal(): StaffPortal {
   const runtime = typeof window !== 'undefined' ? window.__JCE_PUBLIC__?.portal?.trim() : undefined;
   const value = runtime || publicEnv.NEXT_PUBLIC_PORTAL;
