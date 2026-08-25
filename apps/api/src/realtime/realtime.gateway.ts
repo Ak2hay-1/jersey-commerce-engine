@@ -63,8 +63,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   private originAllowed(origin: string | undefined): boolean {
+    // Missing Origin is allowed when the JWT path already authenticated the socket
+    // (some Electron / staff clients omit Origin on the upgrade request).
     if (!origin) {
-      return process.env.NODE_ENV !== 'production';
+      return true;
     }
     const allowed = (process.env.CORS_ORIGINS ?? '')
       .split(',')

@@ -120,9 +120,13 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
               <p className="truncate text-xs text-muted-foreground">{auth.tenant.slug}</p>
             </div>
             <DesktopModeSwitch active="erp" />
-            <div className="hidden items-center gap-2 sm:flex" aria-label="Notifications">
-              <Badge variant={realtime.connected ? 'secondary' : 'outline'}>
-                {realtime.connected ? 'Live' : 'Offline'}
+            <div className="hidden items-center gap-2 sm:flex" aria-label="Connection status">
+              <Badge
+                variant={
+                  realtime.status === 'live' ? 'secondary' : realtime.status === 'connecting' ? 'outline' : 'outline'
+                }
+              >
+                {realtime.status === 'live' ? 'Live' : realtime.status === 'connecting' ? 'Connecting' : 'Offline'}
               </Badge>
             </div>
             <div className="text-right">

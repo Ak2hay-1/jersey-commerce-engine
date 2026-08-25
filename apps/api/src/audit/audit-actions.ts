@@ -33,6 +33,8 @@ export const AUDIT_ACTIONS = {
   CATEGORY_UPDATED: 'categories.updated',
   CATEGORY_ARCHIVED: 'categories.archived',
   CATEGORY_DELETED: 'categories.deleted',
+  CATEGORY_IMAGE_UPLOADED: 'categories.image.uploaded',
+  CATEGORY_IMAGE_DELETED: 'categories.image.deleted',
   INVENTORY_OPENING_STOCK: 'inventory.opening_stock',
   INVENTORY_ADJUSTED: 'inventory.adjusted',
   INVENTORY_DAMAGED: 'inventory.damaged',

@@ -6,6 +6,7 @@ export {
   realtimeAffectsResource,
   shouldPublishRealtime,
   REALTIME_PATH,
+  REALTIME_OFFLINE_DEBOUNCE_MS,
   type RealtimeEventPayload,
   type RealtimeSocketHandle,
 } from './realtime';

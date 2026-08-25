@@ -80,6 +80,9 @@ export function shouldPublishRealtime(action: string, tenantId?: string): boolea
 
 export const REALTIME_PATH = '/realtime';
 
+/** Delay before reporting Offline so brief reconnects do not flicker the badge. */
+export const REALTIME_OFFLINE_DEBOUNCE_MS = 2000;
+
 export interface RealtimeSocketHandle {
   close: () => void;
 }
@@ -89,6 +92,7 @@ export function openRealtimeSocket(options: {
   token: string;
   onEvent: (event: RealtimeEventPayload) => void;
   onStatus: (connected: boolean) => void;
+  offlineDebounceMs?: number;
 }): RealtimeSocketHandle {
   const SocketCtor = (globalThis as {
     WebSocket?: new (url: string) => {
@@ -100,10 +104,32 @@ export function openRealtimeSocket(options: {
     return { close: () => undefined };
   }
 
+  const offlineDebounceMs = options.offlineDebounceMs ?? REALTIME_OFFLINE_DEBOUNCE_MS;
   let closed = false;
   let socket: InstanceType<typeof SocketCtor> | null = null;
   let attempt = 0;
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+  let offlineTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const clearOfflineTimer = (): void => {
+    if (offlineTimer) {
+      clearTimeout(offlineTimer);
+      offlineTimer = undefined;
+    }
+  };
+
+  const reportOffline = (immediate: boolean): void => {
+    clearOfflineTimer();
+    if (immediate || offlineDebounceMs <= 0) {
+      options.onStatus(false);
+      return;
+    }
+    offlineTimer = setTimeout(() => {
+      if (!closed) {
+        options.onStatus(false);
+      }
+    }, offlineDebounceMs);
+  };
 
   const connect = (): void => {
     if (closed) {
@@ -114,6 +140,7 @@ export function openRealtimeSocket(options: {
     socket = new SocketCtor(url);
     socket.addEventListener('open', () => {
       attempt = 0;
+      clearOfflineTimer();
       options.onStatus(true);
     });
     socket.addEventListener('message', (event) => {
@@ -127,10 +154,10 @@ export function openRealtimeSocket(options: {
       }
     });
     socket.addEventListener('close', () => {
-      options.onStatus(false);
       if (closed) {
         return;
       }
+      reportOffline(false);
       const delay = Math.min(10_000, 400 * 2 ** attempt);
       attempt += 1;
       reconnectTimer = setTimeout(connect, delay);
@@ -148,6 +175,7 @@ export function openRealtimeSocket(options: {
       if (reconnectTimer) {
         clearTimeout(reconnectTimer);
       }
+      clearOfflineTimer();
       options.onStatus(false);
       socket?.close();
     },

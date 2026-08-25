@@ -1,6 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -14,8 +16,19 @@ import { AUDIT_ACTIONS } from '../audit/audit-actions';
 import { toPaginationArgs, toPaginationMeta } from '../common/dto/pagination-query.dto';
 import { throwUniqueConflict, normalizeOptionalText } from '../catalog/unique';
 import { toCategoryDetail } from '../catalog/catalog.mapper';
+import { OBJECT_STORAGE, type ObjectStorage } from '../storage/storage.types';
+import {
+  ALLOWED_IMAGE_MIME_TYPES,
+  extensionForMime,
+  IMAGE_MAX_BYTES,
+  sniffImageMime,
+} from '../storage/image-validation';
 import type { CreateCategoryDto, UpdateCategoryDto, CategoryQueryDto } from './dto/category-mutations.dto';
 import type { AuthPrincipal } from '../common/context/request-context';
+
+type UploadedFile = { buffer: Buffer; size: number; mimetype?: string };
+
+const MEDIA_PREFIX = '/api/v1/media/';
 
 const categoryInclude = {
   parent: true,
@@ -23,12 +36,38 @@ const categoryInclude = {
   _count: { select: { products: true } },
 } satisfies Prisma.CategoryInclude;
 
+function categoryStorageKeyFromUrl(url: string | null | undefined, tenantId: string): string | null {
+  if (!url) {
+    return null;
+  }
+  const idx = url.indexOf(MEDIA_PREFIX);
+  if (idx === -1) {
+    return null;
+  }
+  const encoded = url.slice(idx + MEDIA_PREFIX.length).split('?')[0] ?? '';
+  const key = encoded
+    .split('/')
+    .map((part) => {
+      try {
+        return decodeURIComponent(part);
+      } catch {
+        return part;
+      }
+    })
+    .join('/');
+  if (!key.startsWith(`${tenantId}/categories/`)) {
+    return null;
+  }
+  return key;
+}
+
 @Injectable()
 export class CategoriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantContext: TenantContextService,
     private readonly audit: AuditService,
+    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
   async create(dto: CreateCategoryDto, actor: AuthPrincipal): Promise<CategoryDetail> {
@@ -173,6 +212,74 @@ export class CategoriesService {
       entityId: updated.id,
     });
     return updated;
+  }
+
+  async uploadImage(
+    id: string,
+    file: UploadedFile | undefined,
+    actor: AuthPrincipal,
+  ): Promise<CategoryDetail> {
+    if (!file) {
+      throw new BadRequestException('Upload an image file.');
+    }
+    if (file.size > IMAGE_MAX_BYTES) {
+      throw new BadRequestException(`Image files must be ${IMAGE_MAX_BYTES / (1024 * 1024)}MB or smaller.`);
+    }
+    const sniffed = sniffImageMime(file.buffer);
+    if (!sniffed || !ALLOWED_IMAGE_MIME_TYPES.includes(sniffed)) {
+      throw new BadRequestException('Only JPEG, PNG, and WEBP images are allowed.');
+    }
+
+    const tenantId = this.tenantContext.currentTenantId;
+    const existing = await this.requireCategory(id);
+    const previousKey = categoryStorageKeyFromUrl(existing.image, tenantId);
+    const key = `${tenantId}/categories/${existing.id}/${randomUUID()}.${extensionForMime(sniffed)}`;
+    const stored = await this.storage.put({ tenantId, key, body: file.buffer, contentType: sniffed });
+
+    const updated = await this.prisma.category.update({
+      where: { id: existing.id },
+      data: { image: stored.url },
+      include: categoryInclude,
+    });
+
+    if (previousKey && previousKey !== stored.storageKey) {
+      await this.storage.delete(previousKey);
+    }
+
+    await this.audit.log({
+      action: AUDIT_ACTIONS.CATEGORY_IMAGE_UPLOADED,
+      tenantId,
+      userId: actor.userId,
+      entity: 'Category',
+      entityId: updated.id,
+      metadata: { url: stored.url },
+    });
+    return toCategoryDetail(updated);
+  }
+
+  async deleteImage(id: string, actor: AuthPrincipal): Promise<CategoryDetail> {
+    const tenantId = this.tenantContext.currentTenantId;
+    const existing = await this.requireCategory(id);
+    const storageKey = categoryStorageKeyFromUrl(existing.image, tenantId);
+
+    const updated = await this.prisma.category.update({
+      where: { id: existing.id },
+      data: { image: null },
+      include: categoryInclude,
+    });
+
+    if (storageKey) {
+      await this.storage.delete(storageKey);
+    }
+
+    await this.audit.log({
+      action: AUDIT_ACTIONS.CATEGORY_IMAGE_DELETED,
+      tenantId,
+      userId: actor.userId,
+      entity: 'Category',
+      entityId: updated.id,
+    });
+    return toCategoryDetail(updated);
   }
 
   private async requireCategory(id: string) {

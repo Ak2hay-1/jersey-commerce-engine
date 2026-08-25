@@ -6,10 +6,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { CategoryDetail } from '@jersey-commerce/types';
 import { apiRequest, queryString } from '@/lib/api';
+import { resolveMediaUrl } from '@/lib/env';
 import { statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+
+async function uploadCategoryImage(categoryId: string, file: File): Promise<CategoryDetail> {
+  const body = new FormData();
+  body.append('file', file);
+  return apiRequest<CategoryDetail>(`/categories/${categoryId}/image`, { method: 'POST', body });
+}
 
 export default function CategoryDetailPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
@@ -19,13 +26,23 @@ export default function CategoryDetailPage(): React.JSX.Element {
   const [parents, setParents] = useState<CategoryDetail[]>([]);
   const [category, setCategory] = useState<CategoryDetail | null>(null);
   const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
-  const [image, setImage] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [parentId, setParentId] = useState('');
   const [status, setStatus] = useState('ACTIVE');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview('');
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   useEffect(() => {
     void apiRequest<{ items: CategoryDetail[] } | CategoryDetail[]>(
@@ -39,9 +56,7 @@ export default function CategoryDetailPage(): React.JSX.Element {
         .then((row) => {
           setCategory(row);
           setName(row.name);
-          setSlug(row.slug);
           setDescription(row.description ?? '');
-          setImage(row.image ?? '');
           setParentId(row.parentId ?? '');
           setStatus(row.status);
         })
@@ -56,9 +71,7 @@ export default function CategoryDetailPage(): React.JSX.Element {
     try {
       const body = {
         name: name.trim(),
-        slug: slug.trim() || undefined,
         description: description.trim() || undefined,
-        image: image.trim() || undefined,
         parentId: parentId || null,
         status,
       };
@@ -67,16 +80,38 @@ export default function CategoryDetailPage(): React.JSX.Element {
           method: 'POST',
           body: JSON.stringify(body),
         });
+        if (imageFile) {
+          await uploadCategoryImage(created.id, imageFile);
+        }
         router.replace(`/categories/${created.id}`);
       } else {
-        const updated = await apiRequest<CategoryDetail>(`/categories/${params.id}`, {
+        let updated = await apiRequest<CategoryDetail>(`/categories/${params.id}`, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
+        if (imageFile) {
+          updated = await uploadCategoryImage(params.id, imageFile);
+          setImageFile(null);
+        }
         setCategory(updated);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save category');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onClearImage(): Promise<void> {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await apiRequest<CategoryDetail>(`/categories/${params.id}/image`, { method: 'DELETE' });
+      setCategory(updated);
+      setImageFile(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to remove image');
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -104,6 +139,7 @@ export default function CategoryDetailPage(): React.JSX.Element {
   }
 
   const canSave = (isNew && auth.can('categories.create')) || (!isNew && auth.can('categories.update'));
+  const previewUrl = imagePreview || (category?.image ? resolveMediaUrl(category.image) : '');
 
   return (
     <div className="space-y-4">
@@ -127,10 +163,6 @@ export default function CategoryDetailPage(): React.JSX.Element {
               <Input id="name" className="mt-1" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="slug">Slug (optional)</Label>
-              <Input id="slug" className="mt-1" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="auto-from-name" />
-            </div>
-            <div>
               <Label htmlFor="parent">Parent</Label>
               <select id="parent" className={selectClassName} value={parentId} onChange={(e) => setParentId(e.target.value)}>
                 <option value="">None (top level)</option>
@@ -150,8 +182,31 @@ export default function CategoryDetailPage(): React.JSX.Element {
               </select>
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="image">Image URL</Label>
-              <Input id="image" className="mt-1" value={image} onChange={(e) => setImage(e.target.value)} />
+              <Label htmlFor="image">Category image</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">JPEG, PNG, or WEBP up to 5MB. Stored on the shop API.</p>
+              <Input
+                id="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="mt-1 cursor-pointer"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              />
+              {previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt="Category preview" className="mt-3 h-40 w-full max-w-sm rounded object-cover" />
+              ) : null}
+              {!isNew && category?.image && auth.can('categories.update') ? (
+                <div className="mt-2">
+                  <ConfirmAction
+                    triggerLabel="Remove image"
+                    title="Remove this category image?"
+                    description="The file is deleted from shop storage when it was uploaded here."
+                    confirmLabel="Remove"
+                    disabled={saving}
+                    onConfirm={() => onClearImage()}
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="desc">Description</Label>

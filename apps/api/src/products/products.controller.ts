@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -26,6 +27,12 @@ import {
 } from './dto/product-mutations.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { IMAGE_MAX_BYTES } from '../storage/image-validation';
+
+function assertProductImageWrite(actor: AuthPrincipal): void {
+  if (!actor.permissions.includes('products.update') && !actor.permissions.includes('products.create')) {
+    throw new ForbiddenException('You do not have permission to perform this action.');
+  }
+}
 
 @ApiTags('products')
 @ApiBearerAuth('access-token')
@@ -107,7 +114,6 @@ export class ProductsController {
   }
 
   @Post(':id/images')
-  @RequirePermissions('products.update')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -123,6 +129,7 @@ export class ProductsController {
     @UploadedFile() file: { buffer: Buffer; size: number; mimetype?: string } | undefined,
     @CurrentUser() actor: AuthPrincipal,
   ) {
+    assertProductImageWrite(actor);
     return this.products.addImage(id, dto, file, actor);
   }
 

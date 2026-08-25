@@ -1,10 +1,31 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthPrincipal } from '../common/context/request-context';
+import { IMAGE_MAX_BYTES } from '../storage/image-validation';
 import { CategoriesService } from './categories.service';
 import { CategoryQueryDto, CreateCategoryDto, UpdateCategoryDto } from './dto/category-mutations.dto';
+
+function assertCategoryImagePermission(actor: AuthPrincipal): void {
+  if (!actor.permissions.includes('categories.update') && !actor.permissions.includes('categories.create')) {
+    throw new ForbiddenException('You do not have permission to perform this action.');
+  }
+}
 
 @ApiTags('categories')
 @ApiBearerAuth('access-token')
@@ -54,5 +75,37 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Archive a category without deleting historical product relationships' })
   archive(@Param('id') id: string, @CurrentUser() actor: AuthPrincipal) {
     return this.categories.archive(id, actor);
+  }
+
+  @Post(':id/image')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: IMAGE_MAX_BYTES },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({ summary: 'Upload a category image to VM storage. JPEG, PNG, and WEBP up to 5MB.' })
+  uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: { buffer: Buffer; size: number; mimetype?: string } | undefined,
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    assertCategoryImagePermission(actor);
+    return this.categories.uploadImage(id, file, actor);
+  }
+
+  @Delete(':id/image')
+  @RequirePermissions('categories.update')
+  @ApiOperation({ summary: 'Clear the category image and delete the local file when it is store media.' })
+  deleteImage(@Param('id') id: string, @CurrentUser() actor: AuthPrincipal) {
+    return this.categories.deleteImage(id, actor);
   }
 }
