@@ -10,6 +10,8 @@
     { "source": "/orders/:id/", "destination": "/orders/[id]/index.html" },
     { "source": "/products/:id", "destination": "/products/[id]/index.html" },
     { "source": "/products/:id/", "destination": "/products/[id]/index.html" },
+    { "source": "/categories/:id", "destination": "/categories/[id]/index.html" },
+    { "source": "/categories/:id/", "destination": "/categories/[id]/index.html" },
     { "source": "/purchases/:id", "destination": "/purchases/[id]/index.html" },
     { "source": "/purchases/:id/", "destination": "/purchases/[id]/index.html" },
     { "source": "/suppliers/:id", "destination": "/suppliers/[id]/index.html" },
