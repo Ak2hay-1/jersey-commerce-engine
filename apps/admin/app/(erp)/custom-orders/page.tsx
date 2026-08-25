@@ -1,10 +1,12 @@
 'use client';
 
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Badge } from '@jersey-commerce/ui';
+import { Badge, Button } from '@jersey-commerce/ui';
 import { ResourceList } from '@/components/resource-list';
 import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
+import { useAuth } from '@/lib/auth';
 
 interface CustomOrderRow {
   id: string;
@@ -18,6 +20,7 @@ interface CustomOrderRow {
 
 function CustomOrdersList(): React.JSX.Element {
   const params = useSearchParams();
+  const auth = useAuth();
   const status = params.get('status') ?? undefined;
   const title =
     status === 'INQUIRY' ? 'Enquiries' : status === 'QUOTATION' ? 'Quotes' : status === 'PRODUCTION' ? 'Production' : 'Custom orders';
@@ -27,6 +30,13 @@ function CustomOrdersList(): React.JSX.Element {
       path="/custom-orders"
       extraQuery={status ? { status } : undefined}
       rowHref={(row) => `/custom-orders/${row.id}`}
+      actions={
+        auth.can('customOrders.create') ? (
+          <Button asChild>
+            <Link href="/custom-orders/new">New enquiry</Link>
+          </Button>
+        ) : null
+      }
       columns={[
         { key: 'no', header: 'Order', render: (row) => row.orderNumber },
         { key: 'cust', header: 'Customer', render: (row) => row.customer.name },

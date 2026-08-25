@@ -158,7 +158,7 @@ export class ProductsService {
         const item = byId.get(id);
         return item ? [toProductListItem(item)] : [];
       });
-      return { success: true as const, data: items, meta: toPaginationMeta(page, pageSize, totalItems) };
+      return { items, meta: toPaginationMeta(page, pageSize, totalItems) };
     }
 
     const items = await this.prisma.product.findMany({
@@ -169,8 +169,7 @@ export class ProductsService {
       take,
     });
     return {
-      success: true as const,
-      data: items.map((item) => toProductListItem(item)),
+      items: items.map((item) => toProductListItem(item)),
       meta: toPaginationMeta(page, pageSize, totalItems),
     };
   }

@@ -1,8 +1,10 @@
 'use client';
 
-import { Badge } from '@jersey-commerce/ui';
+import Link from 'next/link';
+import { Badge, Button } from '@jersey-commerce/ui';
 import { ResourceList } from '@/components/resource-list';
 import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
+import { useAuth } from '@/lib/auth';
 
 interface OrderRow {
   id: string;
@@ -16,6 +18,7 @@ interface OrderRow {
 }
 
 export default function OrdersPage(): React.JSX.Element {
+  const auth = useAuth();
   return (
     <ResourceList<OrderRow>
       title="Orders"
@@ -23,6 +26,13 @@ export default function OrdersPage(): React.JSX.Element {
       path="/orders"
       searchKey="customer"
       rowHref={(row) => `/orders/${row.id}`}
+      actions={
+        auth.can('orders.create') ? (
+          <Button asChild>
+            <Link href="/orders/new">Create order</Link>
+          </Button>
+        ) : null
+      }
       columns={[
         { key: 'no', header: 'Order', render: (row) => row.orderNumber },
         { key: 'cust', header: 'Customer', render: (row) => row.customer?.name ?? '—' },

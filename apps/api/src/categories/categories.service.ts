@@ -87,8 +87,7 @@ export class CategoriesService {
       this.prisma.category.count({ where }),
     ]);
     return {
-      success: true as const,
-      data: items.map((item) => toCategoryDetail(item)),
+      items: items.map((item) => toCategoryDetail(item)),
       meta: toPaginationMeta(page, pageSize, totalItems),
     };
   }

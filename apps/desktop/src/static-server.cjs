@@ -25,11 +25,22 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
+/** Never serve index.html for missing webpack/Next assets — that crashes the client router. */
+function isStaticAssetRequest(relativePath) {
+  const normalized = relativePath.replace(/\\/g, '/');
+  if (normalized.startsWith('/_next/') || normalized.includes('/_next/')) {
+    return true;
+  }
+  const ext = path.extname(normalized.split('?')[0] ?? normalized).toLowerCase();
+  return ext !== '' && ext !== '.html';
+}
+
 /** @type {Array<{ prefix: string; shell: string }>} */
 const DYNAMIC_SHELLS = [
   { prefix: '/sales/', shell: path.join('sales', '[id]', 'index.html') },
   { prefix: '/orders/', shell: path.join('orders', '[id]', 'index.html') },
   { prefix: '/products/', shell: path.join('products', '[id]', 'index.html') },
+  { prefix: '/categories/', shell: path.join('categories', '[id]', 'index.html') },
   { prefix: '/purchases/', shell: path.join('purchases', '[id]', 'index.html') },
   { prefix: '/suppliers/', shell: path.join('suppliers', '[id]', 'index.html') },
   { prefix: '/customers/', shell: path.join('customers', '[id]', 'index.html') },
@@ -114,8 +125,9 @@ function startStaticServer(rendererRoot, getConfig) {
         return;
       }
 
-      let filePath = path.normalize(path.join(appRoot, relative));
-      if (!filePath.startsWith(appRoot)) {
+      const normalizedAppRoot = path.resolve(appRoot);
+      let filePath = path.resolve(appRoot, relative.replace(/^\//, ''));
+      if (!filePath.startsWith(normalizedAppRoot)) {
         res.writeHead(400).end('Bad request');
         return;
       }
@@ -128,6 +140,9 @@ function startStaticServer(rendererRoot, getConfig) {
         const dynamicShell = resolveDynamicShell(appRoot, relative);
         if (dynamicShell) {
           filePath = dynamicShell;
+        } else if (isStaticAssetRequest(relative)) {
+          res.writeHead(404).end('Not found');
+          return;
         } else {
           // SPA-style fallback for client routes under the base path.
           const fallback = path.join(appRoot, 'index.html');

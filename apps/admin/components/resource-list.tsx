@@ -44,6 +44,8 @@ export function ResourceList<T>({
     [extraKey, page, search, searchKey],
   );
   const { data, loading, error } = usePagedResource<T>(`${path}${qs}`);
+  const rows = Array.isArray(data) ? data : (data?.items ?? []);
+  const meta = Array.isArray(data) ? null : data?.meta;
 
   return (
     <div className="space-y-4">
@@ -61,12 +63,12 @@ export function ResourceList<T>({
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <DataTable
         columns={columns}
-        rows={data?.items ?? []}
+        rows={rows}
         loading={loading}
         empty={empty}
         rowHref={rowHref}
-        page={data?.meta.page ?? page}
-        totalPages={data?.meta.totalPages ?? 1}
+        page={meta?.page ?? page}
+        totalPages={meta?.totalPages ?? 1}
         onPageChange={setPage}
         caption={title}
       />

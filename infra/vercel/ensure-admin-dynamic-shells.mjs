@@ -13,6 +13,7 @@ const SHELLS = [
   { segment: 'sales', from: '__id__', to: '[id]' },
   { segment: 'orders', from: '__id__', to: '[id]' },
   { segment: 'products', from: '__id__', to: '[id]' },
+  { segment: 'categories', from: '__id__', to: '[id]' },
   { segment: 'purchases', from: '__id__', to: '[id]' },
   { segment: 'suppliers', from: '__id__', to: '[id]' },
   { segment: 'customers', from: '__id__', to: '[id]' },

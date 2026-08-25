@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
+import { Button } from '@jersey-commerce/ui';
 import { ResourceList } from '@/components/resource-list';
 import { formatDate, statusLabel } from '@/lib/format';
+import { useAuth } from '@/lib/auth';
 
 interface CustomerRow {
   id: string;
@@ -13,11 +16,19 @@ interface CustomerRow {
 }
 
 export default function CustomersPage(): React.JSX.Element {
+  const auth = useAuth();
   return (
     <ResourceList<CustomerRow>
       title="Customers"
       path="/customers"
       rowHref={(row) => `/customers/${row.id}`}
+      actions={
+        auth.can('customers.create') ? (
+          <Button asChild>
+            <Link href="/customers/new">Add customer</Link>
+          </Button>
+        ) : null
+      }
       columns={[
         { key: 'name', header: 'Customer', render: (row) => row.name },
         { key: 'phone', header: 'Phone', render: (row) => row.phone ?? '—' },
