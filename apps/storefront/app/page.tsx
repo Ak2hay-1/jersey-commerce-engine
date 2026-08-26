@@ -66,13 +66,18 @@ export default async function HomePage(): Promise<React.JSX.Element> {
 
   const currency = store.tenant.currency;
   const sections = store.website.homepage.sections.filter((section: HomepageSection) => section.enabled);
+  // Hero banner must lead the page regardless of CMS section order.
+  const orderedSections = [
+    ...sections.filter((section) => section.type === 'hero'),
+    ...sections.filter((section) => section.type !== 'hero'),
+  ];
   const products = featured.length ? featured : (catalog?.items ?? []);
   const catalogItems = catalog?.items ?? [];
   const street = categories.find((item) => item.slug === 'club-jerseys' || item.slug === 'football-jerseys');
   const pitch = categories.find((item) => item.slug === 'national-jerseys' || item.slug === 'custom-jerseys');
 
   const rendered = await Promise.all(
-    sections.map(async (section: HomepageSection, index: number) => {
+    orderedSections.map(async (section: HomepageSection, index: number) => {
       const key = `${section.type}-${index}`;
       if (section.type === 'hero') {
         return <CinematicHero key={key} section={section} fallbackImage={products[0]?.primaryImage} />;
@@ -118,7 +123,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
     }),
   );
 
-  const hasHero = sections.some((section) => section.type === 'hero');
+  const hasHero = orderedSections.some((section) => section.type === 'hero');
 
   return (
     <div>

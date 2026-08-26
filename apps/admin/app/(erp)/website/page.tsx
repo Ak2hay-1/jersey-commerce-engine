@@ -59,6 +59,13 @@ function upsertSection(sections: HomepageSection[], next: HomepageSection): Home
   return withoutMarquee.map((section, current) => (current === index ? { ...section, ...next } : section));
 }
 
+/** Keep the hero banner first in persisted homepage order. */
+function withHeroFirst(sections: HomepageSection[]): HomepageSection[] {
+  const heroes = sections.filter((section) => section.type === 'hero');
+  const rest = sections.filter((section) => section.type !== 'hero');
+  return [...heroes, ...rest];
+}
+
 async function loadRows<T>(path: string): Promise<T[]> {
   const result = await apiRequest<T[] | { items: T[] }>(path);
   if (Array.isArray(result)) {
@@ -210,7 +217,7 @@ export default function WebsitePage(): React.JSX.Element {
           seoDescription: settings?.seoDescription,
           logo: settings?.logo ?? null,
           favicon: settings?.favicon ?? null,
-          homepageConfig: { sections: nextSections.filter((section) => section.type !== 'marquee') },
+          homepageConfig: { sections: withHeroFirst(nextSections.filter((section) => section.type !== 'marquee')) },
           footerConfig: {
             ...footer,
             materials: footer.materials.map((item) => item.trim()).filter(Boolean),
