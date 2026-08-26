@@ -1,17 +1,23 @@
 # Vercel projects
 
-## Storefront
+## Storefront (`jerzyfy` → www.jerzyfy.in)
 
-- Root directory: `apps/storefront`
+- **Root Directory:** `apps/storefront` (required — do not leave as `.`)
 - Framework: Next.js (SSR)
+- **Install Command:** `npm install --prefix=../..`  
+  Do **not** use `cd ../.. && npm install` (causes `Tracker "idealTree" already exists`).
+- **Build Command:** `npm run build:packages --prefix=../.. && npm run build`
 - Env: `NEXT_PUBLIC_API_URL=https://API_HOST`
-- Optional: use [`storefront.vercel.json`](./storefront.vercel.json) as the project `vercel.json` when configuring from the monorepo root
+- Config in repo: [`apps/storefront/vercel.json`](../../apps/storefront/vercel.json)
+
+Monorepo-root alternative: [`storefront.vercel.json`](./storefront.vercel.json) with Root Directory `.` and `installCommand: npm install`.
 
 ## Staff portal (Admin + ERP + POS)
 
 - Root directory: `apps/admin` (uses [`apps/admin/vercel.json`](../../apps/admin/vercel.json))
 - Framework: none (static export via custom build)
-- Build: `node infra/vercel/build-admin.mjs` (from repo root via the app `vercel.json`)
+- Install: `npm install --prefix=../..` (same rule — never `cd ../.. && npm install`)
+- Build: `cd ../.. && node infra/vercel/build-admin.mjs`
 - Output: `apps/admin/out` (Admin/ERP at `/`, POS nested at `/pos`)
 - Env: `NEXT_PUBLIC_API_URL=https://API_HOST` (required)
 - Optional: `NEXT_PUBLIC_DEFAULT_TENANT_SLUG`
