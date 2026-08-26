@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { ProductListItem } from '@jersey-commerce/types';
 import { apiRequest, queryString } from '@/lib/api';
@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { DataTable } from '@/components/data-table';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface SupplierRow {
   id: string;
@@ -49,8 +50,8 @@ interface VariantOption {
 }
 
 export default function PurchaseDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
@@ -63,7 +64,7 @@ export default function PurchaseDetailPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
 
   async function load(): Promise<void> {
-    const next = await apiRequest<PurchaseDetail>(`/purchases/${params.id}`);
+    const next = await apiRequest<PurchaseDetail>(`/purchases/${id}`);
     setRow(next);
     setSupplierId(next.supplier?.id ?? '');
     setNotes(next.notes ?? '');
@@ -107,7 +108,7 @@ export default function PurchaseDetailPage(): React.JSX.Element {
     if (!isNew) {
       load().catch((err: Error) => setError(err.message));
     }
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   const draftable = isNew || row?.status === 'DRAFT';
 
@@ -133,7 +134,7 @@ export default function PurchaseDetailPage(): React.JSX.Element {
         const created = await apiRequest<PurchaseDetail>('/purchases', { method: 'POST', body: JSON.stringify(body) });
         router.replace(`/purchases/${created.id}`);
       } else {
-        await apiRequest(`/purchases/${params.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+        await apiRequest(`/purchases/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
         await load();
       }
     } catch (err) {
@@ -147,7 +148,7 @@ export default function PurchaseDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/purchases/${params.id}/order`, { method: 'POST' });
+      await apiRequest(`/purchases/${id}/order`, { method: 'POST' });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to mark ordered');
@@ -160,7 +161,7 @@ export default function PurchaseDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/purchases/${params.id}/receive`, {
+      await apiRequest(`/purchases/${id}/receive`, {
         method: 'POST',
         body: JSON.stringify({
           items: lines.map((line) => ({
@@ -181,7 +182,7 @@ export default function PurchaseDetailPage(): React.JSX.Element {
   async function cancel(reason: string): Promise<void> {
     setSaving(true);
     try {
-      await apiRequest(`/purchases/${params.id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+      await apiRequest(`/purchases/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to cancel');

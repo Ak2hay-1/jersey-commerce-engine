@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build and start the hybrid API stack (postgres + redis + api + Caddy TLS).
-# Storefront/Admin are on Vercel; POS/ERP use the Jersey Staff EXE.
+# Storefront and staff portal (Admin+ERP+POS) are on Vercel.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -30,7 +30,7 @@ if [[ -z "${API_HOST:-}" || "${API_HOST}" == "api.example.com" ]]; then
 fi
 
 if [[ -z "${CORS_ORIGINS:-}" ]]; then
-  echo "Set CORS_ORIGINS (storefront + admin Vercel URLs + http://127.0.0.1:39217)."
+  echo "Set CORS_ORIGINS (storefront + staff portal Vercel URLs)."
   exit 1
 fi
 

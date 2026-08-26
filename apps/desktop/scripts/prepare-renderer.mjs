@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ensureAdminDynamicShells, resolveAdminExportRoot } from '../../../infra/vercel/ensure-admin-dynamic-shells.mjs';
+import { ensureAdminDynamicShells, ensurePosDynamicShells, resolveAdminExportRoot } from '../../../infra/vercel/ensure-admin-dynamic-shells.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(__dirname, '..');
@@ -106,6 +106,7 @@ function copyExport(outDir, baseSegment, dest) {
 
 fs.mkdirSync(rendererRoot, { recursive: true });
 copyExport(posOut, 'pos', path.join(rendererRoot, 'pos'));
+ensurePosDynamicShells(path.join(rendererRoot, 'pos'));
 copyExport(erpOut, 'erp', path.join(rendererRoot, 'erp'));
 writeRuntimeConfig(path.join(rendererRoot, 'pos'), apiUrl, undefined);
 writeRuntimeConfig(path.join(rendererRoot, 'erp'), apiUrl, 'erp');

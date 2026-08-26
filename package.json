@@ -43,7 +43,8 @@
     "prisma:studio": "npm run prisma:studio -w apps/api",
     "desktop:prepare": "npm run prepare:renderer -w @jersey-commerce/desktop",
     "desktop:dev": "npm run dev -w @jersey-commerce/desktop",
-    "desktop:pack": "npm run pack -w @jersey-commerce/desktop"
+    "desktop:pack": "npm run pack -w @jersey-commerce/desktop",
+    "desktop:deprecated": "node -e \"console.error('Jersey Staff EXE is deprecated. Use the Vercel staff portal (Admin+ERP+POS).'); process.exit(1)\""
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

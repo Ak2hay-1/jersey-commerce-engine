@@ -8,10 +8,11 @@ Jersey Commerce Engine is a multi-application commerce platform. It includes a c
 
 ```text
 ┌─────────────────┐     ┌─────────────────┐
-│   Storefront    │     │   Admin panel   │
-│   Next.js SSR   │     │   Static SPA    │
-│   Vercel        │     │   Vercel        │
-└────────┬────────┘     └────────┬────────┘
+│   Storefront    │     │  Staff portal   │
+│   Next.js SSR   │     │  Static SPA     │
+│   Vercel        │     │  Vercel         │
+└────────┬────────┘     │  Admin+ERP+/pos │
+         │              └────────┬────────┘
          │                       │
          │    HTTPS REST + WSS   │
          └───────────┬───────────┘
@@ -19,18 +20,12 @@ Jersey Commerce Engine is a multi-application commerce platform. It includes a c
             ┌────────▼────────┐
             │  Caddy (TLS)    │  Vultr :443
             │  NestJS API     │  + Postgres + Redis
-            └────────┬────────┘
-                     ▲
-         ┌───────────┴───────────┐
-         │                       │
-┌────────┴────────┐     ┌────────┴────────┐
-│ Jersey Staff    │     │ Jersey Staff    │
-│ POS mode        │     │ ERP mode        │
-│ Local EXE       │     │ Local EXE       │
-└─────────────────┘     └─────────────────┘
+            └─────────────────┘
 ```
 
 All HTTP clients talk to one API. The API owns persistence, caching, validation, and realtime invalidation. Clients never connect to Postgres directly.
+
+The staff portal is one Vercel static site: Admin + ERP (`NEXT_PUBLIC_PORTAL=all`) at the root, with POS nested at `/pos`. The Jersey Staff Windows EXE is **deprecated**.
 
 Legacy all-in-one VM (storefront + admin/POS on the same host) remains in [`infra/docker/docker-compose.prod.yml`](../infra/docker/docker-compose.prod.yml) for reference; preferred path is [`docker-compose.api.yml`](../infra/docker/docker-compose.api.yml).
 
@@ -39,14 +34,14 @@ Legacy all-in-one VM (storefront + admin/POS on the same host) remains in [`infr
 | App | Host | Responsibility |
 | --- | --- | --- |
 | Storefront | Vercel | Tenant-aware catalog, cart, checkout, accounts, CMS homepage |
-| Admin panel (`portal=admin`) | Vercel | Website CMS, promo codes, users, settings |
-| ERP (`portal=erp`) | Jersey Staff EXE | Dashboard, sales, inventory, purchasing, CRM, expenses, reports |
-| POS | Jersey Staff EXE | Register sales, in-store payments, receipts, refunds |
+| Staff portal (`portal=all`) | Vercel | Website CMS, promo codes, users, settings, dashboard, sales, inventory, purchasing, CRM, expenses, reports; POS at `/pos` |
 | API | Vultr (+ Caddy TLS) | Versioned commerce APIs, Prisma, Redis, RBAC, WebSocket |
+
+`apps/admin` and `apps/pos` remain separate Next apps in the monorepo; the Vercel staff build nests the POS export under `/pos`. Local `dev:admin` with `portal=all` matches production; `dev:pos` is for isolated POS work.
 
 ## Realtime
 
-Staff and storefront clients open `wss://API_HOST/realtime?token=…`. The API publishes invalidate events over Redis so POS sales appear in ERP/Admin without a full page refresh.
+Staff and storefront clients open `wss://API_HOST/realtime?token=…`. The API publishes invalidate events over Redis so POS sales appear in the staff portal without a full page refresh.
 
 ## Multi-tenant rule
 

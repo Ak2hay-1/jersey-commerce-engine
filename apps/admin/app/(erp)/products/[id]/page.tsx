@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { CategoryDetail, ProductDetail, ProductVariantDto } from '@jersey-commerce/types';
 import { apiRequest, queryString } from '@/lib/api';
@@ -11,6 +11,7 @@ import { statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface VariantDraft {
   id?: string;
@@ -64,8 +65,8 @@ async function uploadProductImage(
 }
 
 export default function ProductDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [categories, setCategories] = useState<CategoryDetail[]>([]);
@@ -139,9 +140,9 @@ export default function ProductDetailPage(): React.JSX.Element {
       setCategories(Array.isArray(result) ? result : (result.items ?? []));
     });
     if (!isNew) {
-      loadProduct(params.id).catch((err: Error) => setError(err.message));
+      loadProduct(id).catch((err: Error) => setError(err.message));
     }
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   function updateVariant(index: number, patch: Partial<VariantDraft>): void {
     setVariants((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -232,7 +233,7 @@ export default function ProductDetailPage(): React.JSX.Element {
         return;
       }
 
-      await apiRequest<ProductDetail>(`/products/${params.id}`, {
+      await apiRequest<ProductDetail>(`/products/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           name: name.trim(),
@@ -247,20 +248,20 @@ export default function ProductDetailPage(): React.JSX.Element {
 
       for (const variant of variantPayload) {
         if (variant.id) {
-          await apiRequest(`/products/${params.id}/variants/${variant.id}`, {
+          await apiRequest(`/products/${id}/variants/${variant.id}`, {
             method: 'PATCH',
             body: JSON.stringify(variant),
           });
         } else {
-          await apiRequest(`/products/${params.id}/variants`, {
+          await apiRequest(`/products/${id}/variants`, {
             method: 'POST',
             body: JSON.stringify(variant),
           });
         }
       }
 
-      await uploadPending(params.id);
-      await loadProduct(params.id);
+      await uploadPending(id);
+      await loadProduct(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save product');
     } finally {
@@ -272,8 +273,8 @@ export default function ProductDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/products/${params.id}/variants/${variantId}`, { method: 'DELETE' });
-      await loadProduct(params.id);
+      await apiRequest(`/products/${id}/variants/${variantId}`, { method: 'DELETE' });
+      await loadProduct(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to archive variant');
       throw err;
@@ -286,7 +287,7 @@ export default function ProductDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/products/${params.id}`, { method: 'DELETE' });
+      await apiRequest(`/products/${id}`, { method: 'DELETE' });
       router.replace('/products');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to archive product');
@@ -299,11 +300,11 @@ export default function ProductDetailPage(): React.JSX.Element {
   async function setPrimaryImage(imageId: string): Promise<void> {
     setError('');
     try {
-      await apiRequest(`/products/${params.id}/images/${imageId}`, {
+      await apiRequest(`/products/${id}/images/${imageId}`, {
         method: 'PATCH',
         body: JSON.stringify({ isPrimary: true }),
       });
-      await loadProduct(params.id);
+      await loadProduct(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to set primary image');
     }
@@ -312,8 +313,8 @@ export default function ProductDetailPage(): React.JSX.Element {
   async function removeImage(imageId: string): Promise<void> {
     setError('');
     try {
-      await apiRequest(`/products/${params.id}/images/${imageId}`, { method: 'DELETE' });
-      await loadProduct(params.id);
+      await apiRequest(`/products/${id}/images/${imageId}`, { method: 'DELETE' });
+      await loadProduct(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to remove image');
     }

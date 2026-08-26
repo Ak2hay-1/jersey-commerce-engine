@@ -50,4 +50,4 @@ If the client wants a cashier who can see daily sales totals, that is a **scope 
 
 Use this sentence in kickoff and UAT:
 
-> The shop can take in-store POS sales (Jersey Staff EXE) and website orders (Vercel storefront) against the Vultr API. Online card capture, customer password-reset email, and physical receipt printers are listed as later work and are not part of this go-live.
+> The shop can take in-store POS sales (staff portal `/pos` on Vercel) and website orders (Vercel storefront) against the Vultr API. Online card capture, customer password-reset email, and physical receipt printers are listed as later work and are not part of this go-live.

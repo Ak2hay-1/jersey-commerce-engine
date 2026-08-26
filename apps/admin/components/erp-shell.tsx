@@ -41,7 +41,7 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
 
   const portal = getStaffPortal();
   const sections = useMemo(() => filterErpNav(auth.permissions, portal), [auth.permissions, portal]);
-  const portalLabel = portal === 'admin' ? 'Admin Panel' : portal === 'erp' ? 'ERP' : 'Admin & ERP';
+  const portalLabel = portal === 'admin' ? 'Admin Panel' : portal === 'erp' ? 'ERP' : 'Staff portal';
 
   if (auth.loading || !auth.user || !auth.tenant) {
     return (
@@ -74,17 +74,21 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
             <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const active = navActive(pathname, item.href);
+                const className = cn(
+                  'block rounded-md px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  active ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+                );
                 return (
                   <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        'block rounded-md px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                        active ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
-                      )}
-                    >
-                      {item.label}
-                    </Link>
+                    {item.external ? (
+                      <a href={item.href} className={className}>
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link href={item.href} className={className}>
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 );
               })}

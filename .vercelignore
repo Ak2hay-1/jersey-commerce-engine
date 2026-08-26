@@ -1,0 +1,13 @@
+# Keep Vercel uploads small for monorepo staff/storefront deploys
+**/node_modules
+**/.next
+**/out
+**/dist
+**/coverage
+**/.turbo
+apps/desktop/renderer
+apps/desktop/dist
+apps/api/dist
+**/*.pack
+**/*.pack.gz
+.git

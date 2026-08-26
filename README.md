@@ -10,10 +10,9 @@ This repository currently contains **Phases 1–12** plus the POS cashier app: m
 
 | Application | Role | Default URL |
 | --- | --- | --- |
-| `apps/storefront` | Customer storefront (VM) | http://localhost:3000 |
-| `apps/admin` | Admin panel + ERP (same app, `NEXT_PUBLIC_PORTAL`) | http://localhost:3001 |
-| `apps/admin` ERP mode | Inventory, sales, purchasing on a local PC | http://localhost:3003 |
-| `apps/pos` | Point of sale (local PC) | http://localhost:3002 |
+| `apps/storefront` | Customer storefront | http://localhost:3000 |
+| `apps/admin` | Staff portal: Admin + ERP (`NEXT_PUBLIC_PORTAL=all`) | http://localhost:3001 |
+| `apps/pos` | Point of sale (nested at `/pos` on Vercel staff portal) | http://localhost:3002 |
 | `apps/api` | NestJS backend | http://localhost:4000 |
 
 Shared contracts live in `packages/`. PostgreSQL and Redis run via Docker Compose. See [docs/architecture.md](docs/architecture.md) for the target platform design.
@@ -105,7 +104,7 @@ From Windows PowerShell, after the repo is public:
 .\infra\docker\deploy.ps1 -PublicIp YOUR_IP -SshUser root
 ```
 
-Shop: `http://YOUR_IP/` · Admin panel (static): `:3001` · POS (static): `:3002` · API: `:4000`. Run ERP on a staff PC against that API (`NEXT_PUBLIC_PORTAL=erp`, port 3003). See [docs/deployment.md](docs/deployment.md).
+Shop: Vercel storefront · Staff portal (Admin + ERP + POS at `/pos`): Vercel admin project · API: Vultr `https://API_HOST`. See [docs/deployment.md](docs/deployment.md). The Jersey Staff EXE is deprecated.
 
 ## Available commands
 
@@ -115,11 +114,11 @@ Shop: `http://YOUR_IP/` · Admin panel (static): `:3001` · POS (static): `:3002
 | `npm run dev` | Start all apps in parallel |
 | `npm run dev:api` | Start the NestJS API |
 | `npm run dev:storefront` | Start the storefront on port 3000 |
-| `npm run dev:admin` | Start admin on port 3001 (`NEXT_PUBLIC_PORTAL=all` locally) |
-| `npm run dev:erp` | Start the same admin app on port 3003 for a local ERP window |
-| `npm run dev:pos` | Start POS on port 3002 |
-| `npm run desktop:dev` | Build POS/ERP static UIs and open the Jersey Staff Electron shell |
-| `npm run desktop:pack` | Build Windows NSIS installer (`apps/desktop/dist/`) |
+| `npm run dev:admin` | Start staff Admin+ERP on port 3001 (`NEXT_PUBLIC_PORTAL=all`) |
+| `npm run dev:erp` | Legacy: same admin app on port 3003 with `portal=erp` |
+| `npm run dev:pos` | Start POS on port 3002 (isolated; production nests under staff `/pos`) |
+| `npm run desktop:dev` | **Deprecated** Electron shell (historical packs only) |
+| `npm run desktop:pack` | **Deprecated** Windows NSIS installer |
 | `npm run build` | Build all packages and applications |
 | `npm run typecheck` | TypeScript checks across the workspace |
 | `npm run lint` | ESLint across the workspace |

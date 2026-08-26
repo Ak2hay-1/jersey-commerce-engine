@@ -27,6 +27,8 @@
     { "source": "/promo-codes/:id", "destination": "/promo-codes/[id]/index.html" },
     { "source": "/promo-codes/:id/", "destination": "/promo-codes/[id]/index.html" },
     { "source": "/users/:id", "destination": "/users/[id]/index.html" },
-    { "source": "/users/:id/", "destination": "/users/[id]/index.html" }
+    { "source": "/users/:id/", "destination": "/users/[id]/index.html" },
+    { "source": "/pos/sales/:id", "destination": "/pos/sales/[id]/index.html" },
+    { "source": "/pos/sales/:id/", "destination": "/pos/sales/[id]/index.html" }
   ]
 }

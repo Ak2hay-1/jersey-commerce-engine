@@ -18,9 +18,9 @@ Known gaps that are **not** bugs: [known-limitations.md](./known-limitations.md)
 
 | # | Check | Pass | Fail | Notes |
 | --- | --- | --- | --- | --- |
-| A1 | Owner logs in at admin `:3001` | | | |
-| A2 | ERP opens on staff PC (`NEXT_PUBLIC_PORTAL=erp`) | | | |
-| A3 | POS opens on cashier PC and reaches the API | | | |
+| A1 | Owner logs in at the staff portal (Vercel) | | | |
+| A2 | ERP screens (dashboard, sales, inventory) are available in the same portal | | | |
+| A3 | POS opens via **Sales → Register** (`/pos/`) and reaches the API without a second login | | | |
 | A4 | Cashier **cannot** open reports or settings | | | |
 | A5 | Website manager can edit CMS, not financial reports | | | |
 | A6 | Logout works; a second device can be kicked by password change | | | |

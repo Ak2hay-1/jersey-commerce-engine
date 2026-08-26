@@ -1,8 +1,10 @@
-# Jersey Staff (desktop)
+# Jersey Staff (desktop) — **deprecated**
 
-Windows Electron shell that embeds **POS** and **ERP** and talks to the shop’s cloud API after login. Cloud **Admin** stays in the browser on the VM (`:3001`).
+> **Deprecated.** Production staff work (Admin + ERP + POS) runs in the **browser** on the unified Vercel staff portal (`portal=all`, POS at `/pos`). Do not pack or ship this EXE for new go-lives.
 
-## Dev
+This Electron shell remains in the monorepo for historical packs only. Prefer `https://admin.<shop>` (or the project’s staff URL) instead of Windows installers.
+
+## Legacy pack (not for go-live)
 
 ```powershell
 # From repo root — builds static UIs into renderer/ then opens Electron
@@ -10,8 +12,6 @@ npm run desktop:dev
 ```
 
 Default API URL comes from [`config.json`](./config.json) (`http://localhost:4000`).
-
-## Pack for a client
 
 ```powershell
 .\infra\desktop\pack-client.ps1 -ApiUrl "http://YOUR_IP:4000" -ClientName "ClientShop"
@@ -26,7 +26,7 @@ npm run desktop:pack
 
 Installer lands in `apps/desktop/dist/Jersey-Staff-Setup-<version>.exe`.
 
-## Runtime
+## Runtime (legacy)
 
 - Local UI origin: `http://127.0.0.1:39217` (`/pos/`, `/erp/`)
 - `runtime-config.js` injects the baked `apiUrl`

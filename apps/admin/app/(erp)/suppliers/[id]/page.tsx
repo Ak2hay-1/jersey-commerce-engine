@@ -1,13 +1,14 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import { apiRequest } from '@/lib/api';
 import { formatMoney, statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface SupplierDetail {
   id: string;
@@ -31,8 +32,8 @@ interface Balance {
 }
 
 export default function SupplierDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [supplier, setSupplier] = useState<SupplierDetail | null>(null);
@@ -54,8 +55,8 @@ export default function SupplierDetailPage(): React.JSX.Element {
   useEffect(() => {
     if (isNew) return;
     Promise.all([
-      apiRequest<SupplierDetail>(`/suppliers/${params.id}`),
-      apiRequest<Balance>(`/suppliers/${params.id}/balance`),
+      apiRequest<SupplierDetail>(`/suppliers/${id}`),
+      apiRequest<Balance>(`/suppliers/${id}/balance`),
     ])
       .then(([row, nextBalance]) => {
         setSupplier(row);
@@ -73,7 +74,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
         setStatus(row.status);
       })
       .catch((err: Error) => setError(err.message));
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -97,7 +98,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
         const created = await apiRequest<SupplierDetail>('/suppliers', { method: 'POST', body: JSON.stringify(body) });
         router.replace(`/suppliers/${created.id}`);
       } else {
-        const updated = await apiRequest<SupplierDetail>(`/suppliers/${params.id}`, {
+        const updated = await apiRequest<SupplierDetail>(`/suppliers/${id}`, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
@@ -113,7 +114,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
   async function onDelete(): Promise<void> {
     setSaving(true);
     try {
-      await apiRequest(`/suppliers/${params.id}`, { method: 'DELETE' });
+      await apiRequest(`/suppliers/${id}`, { method: 'DELETE' });
       router.replace('/suppliers');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to delete supplier');

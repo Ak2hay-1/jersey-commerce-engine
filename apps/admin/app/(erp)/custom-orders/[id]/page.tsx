@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import { apiRequest } from '@/lib/api';
 import { formatMoney, statusLabel } from '@/lib/format';
@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/page-header';
 import { DataTable } from '@/components/data-table';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface CustomOrderDetail {
   id: string;
@@ -38,8 +39,8 @@ const STATUSES = [
 ];
 
 export default function CustomOrderDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [row, setRow] = useState<CustomOrderDetail | null>(null);
@@ -59,7 +60,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
 
   async function load(): Promise<void> {
-    const next = await apiRequest<CustomOrderDetail>(`/custom-orders/${params.id}`);
+    const next = await apiRequest<CustomOrderDetail>(`/custom-orders/${id}`);
     setRow(next);
     setStatus(next.status);
   }
@@ -68,7 +69,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
     if (!isNew) {
       load().catch((err: Error) => setError(err.message));
     }
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   async function onCreate(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -99,7 +100,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/custom-orders/${params.id}/quote`, {
+      await apiRequest(`/custom-orders/${id}/quote`, {
         method: 'POST',
         body: JSON.stringify({ unitPrice, quantity: Number(quantity) || undefined }),
       });
@@ -115,7 +116,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/custom-orders/${params.id}/deposit`, {
+      await apiRequest(`/custom-orders/${id}/deposit`, {
         method: 'POST',
         body: JSON.stringify({ method: depositMethod, amount: depositAmount, confirmed: true }),
       });
@@ -131,7 +132,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/custom-orders/${params.id}/status`, {
+      await apiRequest(`/custom-orders/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       });
@@ -148,7 +149,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
     if (!noteBody.trim()) return;
     setSaving(true);
     try {
-      await apiRequest(`/custom-orders/${params.id}/notes`, {
+      await apiRequest(`/custom-orders/${id}/notes`, {
         method: 'POST',
         body: JSON.stringify({ body: noteBody.trim() }),
       });
@@ -163,7 +164,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
   async function cancel(reason: string): Promise<void> {
     setSaving(true);
     try {
-      await apiRequest(`/custom-orders/${params.id}/cancel`, {
+      await apiRequest(`/custom-orders/${id}/cancel`, {
         method: 'POST',
         body: JSON.stringify({ reason }),
       });

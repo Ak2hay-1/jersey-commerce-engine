@@ -1,13 +1,14 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { RoleCode } from '@jersey-commerce/types';
 import { apiRequest } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { useAuth } from '@/lib/auth';
 import { statusLabel } from '@/lib/format';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface RoleRow {
   id: string;
@@ -26,8 +27,8 @@ interface UserDetail {
 }
 
 export default function UserDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const canManage = auth.can('users.manage');
@@ -47,7 +48,7 @@ export default function UserDetailPage(): React.JSX.Element {
   useEffect(() => {
     void apiRequest<{ items: RoleRow[] }>('/roles?pageSize=50').then((result) => setRoles(result.items));
     if (!isNew) {
-      apiRequest<UserDetail>(`/users/${params.id}`)
+      apiRequest<UserDetail>(`/users/${id}`)
         .then((row) => {
           setUser(row);
           setName(row.name);
@@ -56,7 +57,7 @@ export default function UserDetailPage(): React.JSX.Element {
         })
         .catch((err: Error) => setError(err.message));
     }
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   const assignedCodes = useMemo(
     () => (user?.userRoles ?? []).map((item) => item.role.code),
@@ -69,7 +70,7 @@ export default function UserDetailPage(): React.JSX.Element {
   }
 
   async function reloadUser(): Promise<void> {
-    const row = await apiRequest<UserDetail>(`/users/${params.id}`);
+    const row = await apiRequest<UserDetail>(`/users/${id}`);
     setUser(row);
     setName(row.name);
     setEmail(row.email);
@@ -102,7 +103,7 @@ export default function UserDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/users/${params.id}`, {
+      await apiRequest(`/users/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ name, email, phone: phone || undefined }),
       });
@@ -121,7 +122,7 @@ export default function UserDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/users/${params.id}/roles`, { method: 'POST', body: JSON.stringify({ roleCode: assignCode }) });
+      await apiRequest(`/users/${id}/roles`, { method: 'POST', body: JSON.stringify({ roleCode: assignCode }) });
       setAssignCode('');
       await reloadUser();
     } catch (err) {
@@ -135,7 +136,7 @@ export default function UserDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/users/${params.id}/roles/${code}`, { method: 'DELETE' });
+      await apiRequest(`/users/${id}/roles/${code}`, { method: 'DELETE' });
       await reloadUser();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to remove role');
@@ -149,7 +150,7 @@ export default function UserDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/users/${params.id}/temporary-password`, {
+      await apiRequest(`/users/${id}/temporary-password`, {
         method: 'POST',
         body: JSON.stringify({ password: temporaryPassword }),
       });
@@ -166,7 +167,7 @@ export default function UserDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/users/${params.id}/${active ? 'activate' : 'deactivate'}`, { method: 'POST' });
+      await apiRequest(`/users/${id}/${active ? 'activate' : 'deactivate'}`, { method: 'POST' });
       await reloadUser();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update status');

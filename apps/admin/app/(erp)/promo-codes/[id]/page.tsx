@@ -1,12 +1,13 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { PromoCodeDto, PromoCodeStatus, PromoDiscountType } from '@jersey-commerce/types';
 import { apiRequest } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 function toDateInput(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : '';
@@ -17,8 +18,8 @@ function fromDateInput(value: string): string | null {
 }
 
 export default function PromoCodeDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const canManage = auth.can('promoCodes.manage');
@@ -42,7 +43,7 @@ export default function PromoCodeDetailPage(): React.JSX.Element {
     if (isNew) {
       return;
     }
-    apiRequest<PromoCodeDto>(`/promo-codes/${params.id}`)
+    apiRequest<PromoCodeDto>(`/promo-codes/${id}`)
       .then((row) => {
         setPromo(row);
         setCode(row.code);
@@ -58,7 +59,7 @@ export default function PromoCodeDetailPage(): React.JSX.Element {
         setStatus(row.status);
       })
       .catch((err: Error) => setError(err.message));
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   async function onGenerate(): Promise<void> {
     setGenerating(true);
@@ -97,7 +98,7 @@ export default function PromoCodeDetailPage(): React.JSX.Element {
         const created = await apiRequest<PromoCodeDto>('/promo-codes', { method: 'POST', body: JSON.stringify(body) });
         router.replace(`/promo-codes/${created.id}`);
       } else {
-        const updated = await apiRequest<PromoCodeDto>(`/promo-codes/${params.id}`, {
+        const updated = await apiRequest<PromoCodeDto>(`/promo-codes/${id}`, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });

@@ -7,6 +7,8 @@ export interface ErpNavItem {
   permission: PermissionCode;
   /** Defaults to both staff portals when omitted. */
   portal?: 'admin' | 'erp' | 'both';
+  /** Full page navigation (e.g. nested POS SPA under /pos). */
+  external?: boolean;
 }
 
 export interface ErpNavSection {
@@ -25,6 +27,7 @@ export const ERP_NAV: ErpNavSection[] = [
     id: 'sales',
     label: 'Sales',
     items: [
+      { href: '/pos/', label: 'Register', permission: 'pos.access', portal: 'erp', external: true },
       { href: '/sales', label: 'POS Sales', permission: 'sales.read', portal: 'erp' },
       { href: '/orders', label: 'Orders', permission: 'orders.read', portal: 'erp' },
       { href: '/payments', label: 'Payments', permission: 'payments.read', portal: 'erp' },

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@jersey-commerce/ui';
 import { apiRequest } from '@/lib/api';
 import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
@@ -10,6 +9,7 @@ import { DataTable } from '@/components/data-table';
 import { FormError } from '@/components/confirm-action';
 import { useRealtimeReload } from '@/lib/realtime';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface SaleDetail {
   id: string;
@@ -28,7 +28,7 @@ interface SaleDetail {
 }
 
 export default function SaleDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
+  const id = useRouteParam('id');
   const auth = useAuth();
   const [sale, setSale] = useState<SaleDetail | null>(null);
   const [error, setError] = useState('');
@@ -36,10 +36,10 @@ export default function SaleDetailPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
-    return apiRequest<SaleDetail>(`/sales/${params.id}`)
+    return apiRequest<SaleDetail>(`/sales/${id}`)
       .then(setSale)
       .catch((err: Error) => setError(err.message));
-  }, [params.id]);
+  }, [id]);
 
   useEffect(() => {
     void load();
@@ -48,7 +48,7 @@ export default function SaleDetailPage(): React.JSX.Element {
   useRealtimeReload(
     (event) =>
       (event.entity === 'Sale' || event.entity === 'Payment') &&
-      (event.entityId === params.id || event.entity === 'Payment'),
+      (event.entityId === id || event.entity === 'Payment'),
     () => load(),
   );
 
@@ -60,7 +60,7 @@ export default function SaleDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/pos/sales/${params.id}/refund`, {
+      await apiRequest(`/pos/sales/${id}/refund`, {
         method: 'POST',
         body: JSON.stringify({ reason: refundReason.trim(), confirmed: true }),
       });

@@ -68,7 +68,6 @@ $AcmeEmail = $AcmeEmail.Trim()
 $corsParts = @(
   $StorefrontOrigin,
   $AdminOrigin,
-  "http://127.0.0.1:39217",
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3002",

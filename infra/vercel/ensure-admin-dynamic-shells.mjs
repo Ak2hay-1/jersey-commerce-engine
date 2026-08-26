@@ -82,6 +82,37 @@ export function resolveAdminExportRoot(adminOut) {
   return adminOut;
 }
 
+/** POS only needs the sales/[id] shell for staff-portal nesting. */
+export function ensurePosDynamicShells(outDir) {
+  if (!fs.existsSync(outDir)) {
+    throw new Error(`POS out dir missing: ${outDir}`);
+  }
+  const src = path.join(outDir, 'sales', '__id__', 'index.html');
+  const destDir = path.join(outDir, 'sales', '[id]');
+  const dest = path.join(destDir, 'index.html');
+  if (!fs.existsSync(src)) {
+    throw new Error(
+      `Missing POS dynamic shell source ${path.relative(outDir, src)}. Check generateStaticParams for sales/[id].`,
+    );
+  }
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.copyFileSync(src, dest);
+  const srcDir = path.dirname(src);
+  for (const name of fs.readdirSync(srcDir)) {
+    if (name === 'index.html') {
+      continue;
+    }
+    const fromPath = path.join(srcDir, name);
+    const toPath = path.join(destDir, name);
+    if (fs.statSync(fromPath).isFile()) {
+      fs.copyFileSync(fromPath, toPath);
+    }
+  }
+  if (!fs.existsSync(dest)) {
+    throw new Error(`Missing POS dynamic shell destination: sales/[id]/index.html`);
+  }
+}
+
 const isMain =
   process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
 

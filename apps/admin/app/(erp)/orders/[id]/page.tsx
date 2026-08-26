@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { ProductListItem } from '@jersey-commerce/types';
 import { apiRequest, queryString } from '@/lib/api';
@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { DataTable } from '@/components/data-table';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface OrderDetail {
   id: string;
@@ -31,8 +32,8 @@ interface VariantOption {
 const STATUSES = ['PENDING', 'CONFIRMED', 'PROCESSING', 'READY', 'SHIPPED', 'COMPLETED', 'CANCELLED', 'RETURNED', 'REFUNDED'];
 
 export default function OrderDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [order, setOrder] = useState<OrderDetail | null>(null);
@@ -47,7 +48,7 @@ export default function OrderDetailPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
 
   async function load(): Promise<void> {
-    const next = await apiRequest<OrderDetail>(`/orders/${params.id}`);
+    const next = await apiRequest<OrderDetail>(`/orders/${id}`);
     setOrder(next);
     setStatus(next.status);
   }
@@ -79,7 +80,7 @@ export default function OrderDetailPage(): React.JSX.Element {
     if (!isNew) {
       load().catch((err: Error) => setError(err.message));
     }
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   async function onCreate(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -111,7 +112,7 @@ export default function OrderDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/orders/${params.id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+      await apiRequest(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update status');
@@ -123,7 +124,7 @@ export default function OrderDetailPage(): React.JSX.Element {
   async function onCancel(reason: string): Promise<void> {
     setSaving(true);
     try {
-      await apiRequest(`/orders/${params.id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+      await apiRequest(`/orders/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to cancel order');

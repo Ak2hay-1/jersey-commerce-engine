@@ -1,6 +1,6 @@
 # Products setup fill-in
 
-Use this sheet before go-live. Enter catalog in **Staff EXE → ERP → Categories** first, then **Products**. (Browser Admin is for website CMS, users, and settings — not the catalog.) Opening stock is a **separate** step after variants exist — see [go-live-runbook.md](../go-live-runbook.md) §5.
+Use this sheet before go-live. Enter catalog in **Staff portal → Categories** first, then **Products**. Opening stock is a **separate** step after variants exist — see [go-live-runbook.md](../go-live-runbook.md) §5.
 
 Prepare local files under `docs/delivery/setup-assets/products/<slug>/` as `front.png`, `side.png`, `back.png`, then **upload** them in ERP (Front / Side / Back). Files are stored on the API VM (`MEDIA_LOCAL_ROOT` / `/api/v1/media/...`), not as external URLs. Front is primary (sort 0). There is no front/side/back field in the DB — upload order matters.
 

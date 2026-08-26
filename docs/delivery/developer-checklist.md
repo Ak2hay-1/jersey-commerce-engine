@@ -97,38 +97,25 @@ Not the seeded demo shop.
 - [ ] Human copy for 404, empty cart, sold out, failed checkout.
 - [ ] `NEXT_PUBLIC_API_URL` correct. Storefront **bakes this at image build**. IP change = rebuild storefront.
 
-### Admin (`NEXT_PUBLIC_PORTAL=admin`)
+### Staff portal (`NEXT_PUBLIC_PORTAL=all` on Vercel)
 
 - [ ] Login, refresh, logout, password change.
 - [ ] Homepage / footer / branding save.
 - [ ] Promo codes and users within role rules.
 - [ ] Website manager cannot open ERP finance screens.
-
-### ERP (`NEXT_PUBLIC_PORTAL=erp`)
-
 - [ ] Dashboard equals a sale you just made.
 - [ ] Sales, refunds, stock, PO, receive, suppliers, customers, expenses, reports, CSV.
 - [ ] Missing `[id]` routes do not 500.
-- [ ] Nav matches role (`erp-nav` tests stay true).
-
-### POS
-
-- [ ] Search, qty, hold, recall, pay, receipt HTML, refund.
-- [ ] Register open/close.
-- [ ] ERP updates live after a POS sale.
-- [ ] `runtime-config.js` points at the live API without rebuilding Admin/POS.
-
-### Staff EXE (desktop)
-
-- [ ] `.\infra\desktop\pack-client.ps1 -ApiUrl "https://API_HOST" -ClientName "…"` produces `Jersey-Staff-Setup-*.exe`.
-- [ ] Installer opens; login hits the HTTPS API; **POS | ERP** switch keeps the session.
-- [ ] VM `CORS_ORIGINS` includes `http://127.0.0.1:39217` plus Vercel shop/admin origins.
+- [ ] Nav matches role (`erp-nav` tests stay true); **Sales → Register** opens `/pos/`.
+- [ ] POS: search, qty, hold, recall, pay, receipt HTML, refund; register open/close.
+- [ ] ERP updates live after a POS sale (same origin SSO).
+- [ ] `runtime-config.js` points at the live API (`portal:"all"`).
 
 ### Vercel frontends
 
 - [ ] Storefront project: `NEXT_PUBLIC_API_URL=https://API_HOST`.
-- [ ] Admin project: portal admin + API URL (build-admin.mjs).
-- [ ] Both origins listed in VM `CORS_ORIGINS`.
+- [ ] Staff (admin) project: build-admin.mjs nests POS at `/pos` with `portal=all`.
+- [ ] Both origins listed in VM `CORS_ORIGINS` (no desktop `127.0.0.1:39217` required).
 
 ---
 
@@ -136,7 +123,7 @@ Not the seeded demo shop.
 
 - [ ] `.env.production` not in git. JWT secrets ≥ 32 characters.
 - [ ] `API_HOST` DNS points at the VM; Caddy serves HTTPS.
-- [ ] `CORS_ORIGINS` lists Vercel shop, Vercel admin, and `http://127.0.0.1:39217`.
+- [ ] `CORS_ORIGINS` lists Vercel shop and Vercel staff portal.
 - [ ] `COOKIE_SECURE=true` on the hybrid API.
 - [ ] Postgres and Redis not published.
 - [ ] Firewall: 22, 80, 443.

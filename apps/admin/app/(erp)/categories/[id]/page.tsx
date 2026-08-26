@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { CategoryDetail } from '@jersey-commerce/types';
 import { apiRequest, queryString } from '@/lib/api';
@@ -11,6 +11,7 @@ import { statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 async function uploadCategoryImage(categoryId: string, file: File): Promise<CategoryDetail> {
   const body = new FormData();
@@ -19,8 +20,8 @@ async function uploadCategoryImage(categoryId: string, file: File): Promise<Cate
 }
 
 export default function CategoryDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [parents, setParents] = useState<CategoryDetail[]>([]);
@@ -49,10 +50,10 @@ export default function CategoryDetailPage(): React.JSX.Element {
       `/categories${queryString({ page: 1, pageSize: 100 })}`,
     ).then((result) => {
       const items = Array.isArray(result) ? result : (result.items ?? []);
-      setParents(items.filter((item) => item.id !== params.id));
+      setParents(items.filter((item) => item.id !== id));
     });
-    if (!isNew) {
-      apiRequest<CategoryDetail>(`/categories/${params.id}`)
+    if (!isNew && id) {
+      apiRequest<CategoryDetail>(`/categories/${id}`)
         .then((row) => {
           setCategory(row);
           setName(row.name);
@@ -62,7 +63,7 @@ export default function CategoryDetailPage(): React.JSX.Element {
         })
         .catch((err: Error) => setError(err.message));
     }
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -85,12 +86,12 @@ export default function CategoryDetailPage(): React.JSX.Element {
         }
         router.replace(`/categories/${created.id}`);
       } else {
-        let updated = await apiRequest<CategoryDetail>(`/categories/${params.id}`, {
+        let updated = await apiRequest<CategoryDetail>(`/categories/${id}`, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
         if (imageFile) {
-          updated = await uploadCategoryImage(params.id, imageFile);
+          updated = await uploadCategoryImage(id, imageFile);
           setImageFile(null);
         }
         setCategory(updated);
@@ -106,7 +107,7 @@ export default function CategoryDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      const updated = await apiRequest<CategoryDetail>(`/categories/${params.id}/image`, { method: 'DELETE' });
+      const updated = await apiRequest<CategoryDetail>(`/categories/${id}/image`, { method: 'DELETE' });
       setCategory(updated);
       setImageFile(null);
     } catch (err) {
@@ -122,11 +123,11 @@ export default function CategoryDetailPage(): React.JSX.Element {
     setError('');
     try {
       try {
-        await apiRequest(`/categories/${params.id}`, { method: 'DELETE' });
+        await apiRequest(`/categories/${id}`, { method: 'DELETE' });
         router.replace('/categories');
       } catch {
-        await apiRequest(`/categories/${params.id}/archive`, { method: 'POST' });
-        const updated = await apiRequest<CategoryDetail>(`/categories/${params.id}`);
+        await apiRequest(`/categories/${id}/archive`, { method: 'POST' });
+        const updated = await apiRequest<CategoryDetail>(`/categories/${id}`);
         setCategory(updated);
         setStatus(updated.status);
       }

@@ -1,7 +1,6 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@jersey-commerce/ui';
 import type { PosSaleDto, RestockDisposition } from '@jersey-commerce/types';
 import { DataTable } from '@/components/data-table';
@@ -11,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
 import { cancelSale, getSale, refundSale } from '@/lib/pos-api';
 import { useRealtimeReload } from '@/lib/realtime';
+import { useRouteParam } from '@/lib/use-route-param';
 
 function remainingQuantity(sale: PosSaleDto, itemId: string, sold: number): number {
   const refunded = sale.refunds
@@ -22,7 +22,7 @@ function remainingQuantity(sale: PosSaleDto, itemId: string, sold: number): numb
 }
 
 export default function SaleDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
+  const id = useRouteParam('id');
   const auth = useAuth();
   const [sale, setSale] = useState<PosSaleDto | null>(null);
   const [error, setError] = useState('');
@@ -34,7 +34,7 @@ export default function SaleDetailPage(): React.JSX.Element {
   const [receiptOpen, setReceiptOpen] = useState(false);
 
   useEffect(() => {
-    void getSale(params.id)
+    void getSale(id)
       .then((next) => {
         setSale(next);
         setQuantities(
@@ -43,15 +43,15 @@ export default function SaleDetailPage(): React.JSX.Element {
         setRestock(Object.fromEntries(next.items.map((item) => [item.id, 'RESTOCK' as RestockDisposition])));
       })
       .catch((err: Error) => setError(err.message));
-  }, [params.id]);
+  }, [id]);
 
   useRealtimeReload(
-    (event) => event.entity === 'Sale' && event.entityId === params.id,
+    (event) => event.entity === 'Sale' && event.entityId === id,
     () => {
       if (busy) {
         return;
       }
-      void getSale(params.id)
+      void getSale(id)
         .then(setSale)
         .catch((err: Error) => setError(err.message));
     },
@@ -71,7 +71,7 @@ export default function SaleDetailPage(): React.JSX.Element {
   }, [sale]);
 
   async function reload(): Promise<void> {
-    const next = await getSale(params.id);
+    const next = await getSale(id);
     setSale(next);
   }
 

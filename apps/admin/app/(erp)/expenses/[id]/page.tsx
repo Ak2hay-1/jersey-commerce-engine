@@ -1,17 +1,18 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { ExpenseCategoryDto, ExpenseDto } from '@jersey-commerce/types';
 import { apiRequest } from '@/lib/api';
 import { formatMoney, statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 export default function ExpenseDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [categories, setCategories] = useState<ExpenseCategoryDto[]>([]);
@@ -29,7 +30,7 @@ export default function ExpenseDetailPage(): React.JSX.Element {
   useEffect(() => {
     void apiRequest<ExpenseCategoryDto[]>('/expenses/categories').then(setCategories);
     if (!isNew) {
-      apiRequest<ExpenseDto>(`/expenses/${params.id}`)
+      apiRequest<ExpenseDto>(`/expenses/${id}`)
         .then((row) => {
           setExpense(row);
           setCategoryId(row.categoryId);
@@ -41,7 +42,7 @@ export default function ExpenseDetailPage(): React.JSX.Element {
         })
         .catch((err: Error) => setError(err.message));
     }
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -53,7 +54,7 @@ export default function ExpenseDetailPage(): React.JSX.Element {
         const created = await apiRequest<ExpenseDto>('/expenses', { method: 'POST', body: JSON.stringify(body) });
         router.replace(`/expenses/${created.id}`);
       } else {
-        const updated = await apiRequest<ExpenseDto>(`/expenses/${params.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+        const updated = await apiRequest<ExpenseDto>(`/expenses/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
         setExpense(updated);
       }
     } catch (err) {
@@ -70,7 +71,7 @@ export default function ExpenseDetailPage(): React.JSX.Element {
     }
     setSaving(true);
     try {
-      const updated = await apiRequest<ExpenseDto>(`/expenses/${params.id}`, {
+      const updated = await apiRequest<ExpenseDto>(`/expenses/${id}`, {
         method: 'DELETE',
         body: JSON.stringify({ reason: voidReason }),
       });

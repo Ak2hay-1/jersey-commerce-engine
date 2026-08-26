@@ -1,7 +1,6 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import { apiRequest, queryString } from '@/lib/api';
 import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
@@ -10,6 +9,7 @@ import { DataTable } from '@/components/data-table';
 import { FormError, selectClassName } from '@/components/confirm-action';
 import { usePagedResource } from '@/lib/use-paged-resource';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface InventoryDetail {
   productVariantId: string;
@@ -35,7 +35,7 @@ interface MovementRow {
 }
 
 export default function InventoryDetailPage(): React.JSX.Element {
-  const params = useParams<{ variantId: string }>();
+  const variantId = useRouteParam('variantId');
   const auth = useAuth();
   const [detail, setDetail] = useState<InventoryDetail | null>(null);
   const [error, setError] = useState('');
@@ -47,18 +47,18 @@ export default function InventoryDetailPage(): React.JSX.Element {
   const [reorderLevel, setReorderLevel] = useState('0');
   const [saving, setSaving] = useState(false);
   const movements = usePagedResource<MovementRow>(
-    `/inventory/${params.variantId}/movements${queryString({ pageSize: 20 })}`,
+    `/inventory/${variantId}/movements${queryString({ pageSize: 20 })}`,
   );
 
   async function reload(): Promise<void> {
-    const next = await apiRequest<InventoryDetail>(`/inventory/${params.variantId}`);
+    const next = await apiRequest<InventoryDetail>(`/inventory/${variantId}`);
     setDetail(next);
     setReorderLevel(String(next.reorderLevel ?? 0));
   }
 
   useEffect(() => {
     reload().catch((err: Error) => setError(err.message));
-  }, [params.variantId]);
+  }, [variantId]);
 
   async function onOpening(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -68,7 +68,7 @@ export default function InventoryDetailPage(): React.JSX.Element {
       await apiRequest('/inventory/opening-stock', {
         method: 'POST',
         body: JSON.stringify({
-          productVariantId: params.variantId,
+          productVariantId: variantId,
           quantity: Number(openingQty),
           reason: openingReason.trim(),
           reorderLevel: Number(reorderLevel) || undefined,
@@ -95,7 +95,7 @@ export default function InventoryDetailPage(): React.JSX.Element {
       await apiRequest('/inventory/adjust', {
         method: 'POST',
         body: JSON.stringify({
-          productVariantId: params.variantId,
+          productVariantId: variantId,
           quantity: Number(adjustQty),
           reason: adjustReason.trim(),
           type: adjustType,
@@ -115,7 +115,7 @@ export default function InventoryDetailPage(): React.JSX.Element {
     setSaving(true);
     setError('');
     try {
-      await apiRequest(`/inventory/${params.variantId}`, {
+      await apiRequest(`/inventory/${variantId}`, {
         method: 'PATCH',
         body: JSON.stringify({ reorderLevel: Number(reorderLevel) }),
       });

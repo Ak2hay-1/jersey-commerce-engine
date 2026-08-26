@@ -32,8 +32,8 @@ Use this with the shop owner. Tick in order. Do not start coding until **Before 
 - [ ] In-store tender types (cash, UPI, card). Live online gateways are a later phase.
 - [ ] Receipts, refunds, discounts, held carts.
 - [ ] Day-1 reports vs later.
-- [ ] Hardware: printer, scanner, cash drawer; which PCs get the **Jersey Staff** EXE (POS + ERP).
-- [ ] Staff installer packed with shop API URL (`pack-client.ps1`).
+- [ ] Hardware: printer, scanner, cash drawer; which browsers/PCs use the **staff portal** (Admin + ERP + POS).
+- [ ] Staff know the staff portal URL (Vercel).
 
 ### Technical pre-work
 
@@ -59,7 +59,7 @@ Use this with the shop owner. Tick in order. Do not start coding until **Before 
 - [ ] Bootstrap used once, then stored offline or cleared.
 - [ ] Strong owner password (upper, lower, number, special).
 - [ ] Roles least-privilege; SUPER_ADMIN only for you and the client superior admin.
-- [ ] CORS locked to Vercel storefront/admin origins and `http://127.0.0.1:39217` (staff EXE). Not `*`.
+- [ ] CORS locked to Vercel storefront and staff portal origins. Not `*`.
 - [ ] Postgres and Redis not public. Firewall limited to 22 / 80 / 443.
 - [ ] If a domain exists: HTTPS, `COOKIE_SECURE=true`, storefront rebuilt with `https://` API URLs.
 
@@ -81,16 +81,16 @@ Use this with the shop owner. Tick in order. Do not start coding until **Before 
 - [ ] CMS edits on admin `:3001` show on the storefront.
 - [ ] Payment path is honest (COD / pay in store / manual until gateways).
 
-### ERP UAT (staff PC — Jersey Staff EXE, ERP mode)
+### Staff portal UAT (browser — Admin + ERP + POS)
 
-- [ ] Installer opens; login against the VM API.
+- [ ] Login against the VM API on the Vercel staff URL.
 - [ ] Dashboard matches a sample sale.
 - [ ] Sales, refunds, stock adjust, purchasing, receiving.
 - [ ] Customers, expenses, reports.
 - [ ] Cashier cannot open reports/settings they must not see.
-- [ ] POS sale appears in ERP without a full refresh (use **POS | ERP** switch).
+- [ ] **Sales → Register** opens `/pos/` without a second login; POS sale appears in ERP without a full refresh.
 
-### POS UAT (same EXE, POS mode)
+### POS UAT (staff portal `/pos`)
 
 - [ ] Open/close register; cash matches.
 - [ ] Lookup, hold, sale, receipt, refund, discount (permission-gated).

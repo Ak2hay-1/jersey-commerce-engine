@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Badge, Button, cn } from '@jersey-commerce/ui';
-import { DesktopModeSwitch } from '@/components/desktop-mode-switch';
+import { DesktopModeSwitch, isDesktopApp } from '@/components/desktop-mode-switch';
 import { useAuth } from '@/lib/auth';
 import { formatMoney } from '@/lib/format';
 import { usePosSession } from '@/lib/session';
@@ -26,6 +26,11 @@ export function PosShell({ children }: { children: ReactNode }): React.JSX.Eleme
   const pathname = usePathname();
   const { loading: sessionLoading, session, refresh } = usePosSession();
   const realtime = useRealtime();
+  const [desktop, setDesktop] = useState(false);
+
+  useEffect(() => {
+    setDesktop(isDesktopApp());
+  }, []);
 
   useEffect(() => {
     if (!auth.loading && !auth.user) {
@@ -115,6 +120,11 @@ export function PosShell({ children }: { children: ReactNode }): React.JSX.Eleme
             </div>
           </div>
           <DesktopModeSwitch active="pos" />
+          {!desktop ? (
+            <Button type="button" variant="outline" size="sm" className="h-10 rounded-full" asChild>
+              <a href="/dashboard">Back to staff</a>
+            </Button>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <Badge
               variant={session ? 'default' : 'secondary'}

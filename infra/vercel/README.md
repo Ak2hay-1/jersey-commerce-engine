@@ -1,70 +1,22 @@
-# Vercel deploy (hybrid production)
+# Vercel projects
 
-Storefront and Admin are separate Vercel projects. The API stays on Vultr (`https://API_HOST`).
+## Storefront
 
-## Why the first deploy failed
+- Root directory: `apps/storefront`
+- Framework: Next.js (SSR)
+- Env: `NEXT_PUBLIC_API_URL=https://API_HOST`
+- Optional: use [`storefront.vercel.json`](./storefront.vercel.json) as the project `vercel.json` when configuring from the monorepo root
 
-Running `npx vercel` **inside** `apps/storefront` only uploads that folder (~183 files). Then `cd ../.. && npm install` hits npm’s `idealTree already exists` / missing workspaces error.
+## Staff portal (Admin + ERP + POS)
 
-**Fix:** always deploy the **full monorepo** from the repo root with `--archive=tgz`.
+- Root directory: `apps/admin` (uses [`apps/admin/vercel.json`](../../apps/admin/vercel.json))
+- Framework: none (static export via custom build)
+- Build: `node infra/vercel/build-admin.mjs` (from repo root via the app `vercel.json`)
+- Output: `apps/admin/out` (Admin/ERP at `/`, POS nested at `/pos`)
+- Env: `NEXT_PUBLIC_API_URL=https://API_HOST` (required)
+- Optional: `NEXT_PUBLIC_DEFAULT_TENANT_SLUG`
+- Runtime injects `window.__JCE_PUBLIC__ = { apiUrl, portal: "all" }`
 
-## Storefront (project `jerzyfy`)
+Monorepo-root alternative config: [`admin.vercel.json`](./admin.vercel.json) (`outputDirectory: apps/admin/out`).
 
-Production alias: **https://www.jerzyfy.in** (also `https://jerzyfy.vercel.app`)
-
-```powershell
-cd a:\jerzyfy
-
-# Env (once)
-"https://45-76-61-16.sslip.io" | npx vercel env add NEXT_PUBLIC_API_URL production --cwd apps/storefront --force
-"jerzyfy" | npx vercel env add NEXT_PUBLIC_DEFAULT_TENANT_SLUG production --cwd apps/storefront --force
-
-# Deploy (from repo root — uploads whole workspace)
-npx vercel --prod --archive=tgz --force --yes --local-config infra/vercel/storefront.vercel.json
-```
-
-Config: [`infra/vercel/storefront.vercel.json`](./storefront.vercel.json)  
-(`outputDirectory` = `apps/storefront/.next`)
-
-## Admin (project `jerzyfy-admin`)
-
-Production alias: **https://admin.jerzyfy.in** (also `https://jerzyfy-admin.vercel.app`)
-
-```powershell
-cd a:\jerzyfy
-
-# Link root .vercel to the admin project (storefront uses project `jerzyfy` — switch back after)
-npx vercel link --yes --project jerzyfy-admin --scope frndswork-7090s-projects
-
-"https://45-76-61-16.sslip.io" | npx vercel env add NEXT_PUBLIC_API_URL production --force
-"jerzyfy" | npx vercel env add NEXT_PUBLIC_DEFAULT_TENANT_SLUG production --force
-"admin" | npx vercel env add NEXT_PUBLIC_PORTAL production --force
-
-npx vercel --prod --archive=tgz --force --yes --local-config infra/vercel/admin.vercel.json
-
-# Switch link back to storefront project
-npx vercel link --yes --project jerzyfy --scope frndswork-7090s-projects
-```
-
-Config: [`infra/vercel/admin.vercel.json`](./admin.vercel.json)  
-Build script: [`build-admin.mjs`](./build-admin.mjs).
-
-## CORS
-
-After both URLs exist:
-
-```powershell
-.\infra\docker\deploy.ps1 `
-  -PublicIp 45.76.61.16 `
-  -ApiHost 45-76-61-16.sslip.io `
-  -AcmeEmail frndswork@gmail.com `
-  -StorefrontOrigin https://www.jerzyfy.in `
-  -AdminOrigin https://admin.jerzyfy.in `
-  -UpdateCorsOnly
-```
-
-(API VM must be on the slim hybrid stack first.)
-
-## Dashboard override
-
-If builds still run `cd ../.. && npm install`, clear **Install Command** in the Vercel project settings (set to empty / default). Project overrides beat `vercel.json`.
+After deploy, put the production staff origin into the API VM `CORS_ORIGINS` together with the storefront origin.

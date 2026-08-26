@@ -1,14 +1,13 @@
 # Production deploy (hybrid)
 
-**Preferred shape:** Storefront + Admin on **Vercel**, API + Postgres + Redis on a **Vultr** VM behind **Caddy HTTPS**, POS + ERP on the **Jersey Staff** Windows EXE.
+**Preferred shape:** Storefront + **unified staff portal** (Admin + ERP + POS) on **Vercel**, API + Postgres + Redis on a **Vultr** VM behind **Caddy HTTPS**. The Jersey Staff Windows EXE is deprecated.
 
 Public repo: https://github.com/Ak2hay-1/jersey-commerce-engine.git
 
 | App | URL | Notes |
 | --- | --- | --- |
 | Storefront | Vercel project URL / custom domain | Next.js SSR; bake `NEXT_PUBLIC_API_URL=https://API_HOST` |
-| Admin panel | Vercel project URL / custom domain | Static export; `portal=admin` |
-| POS + ERP | Jersey Staff EXE | Pack with `-ApiUrl https://API_HOST` |
+| Staff portal | Vercel project URL / custom domain | Static export; `portal=all` + POS nested at `/pos` |
 | API | `https://API_HOST/` | Caddy → Nest on the VM |
 | Realtime | `wss://API_HOST/realtime` | WebSocket (JWT query `token`) |
 | Health | `https://API_HOST/health` | Liveness |
@@ -89,28 +88,18 @@ Invoke-RestMethod "https://API_HOST/ready"
 
 ---
 
-## 4. Deploy Storefront and Admin on Vercel
+## 4. Deploy Storefront and Staff portal on Vercel
 
 1. Create two Vercel projects from this monorepo.
 2. Storefront: root `apps/storefront`, env `NEXT_PUBLIC_API_URL=https://API_HOST`.
-3. Admin: root `apps/admin`, env `NEXT_PUBLIC_API_URL=https://API_HOST` (build writes `runtime-config.js` with `portal:"admin"`).
-4. Deploy both; put their production origins into `CORS_ORIGINS` (`-UpdateCorsOnly` if needed).
+3. Staff (Admin app root): root `apps/admin`, env `NEXT_PUBLIC_API_URL=https://API_HOST`. The build (`infra/vercel/build-admin.mjs`) writes `runtime-config.js` with `portal:"all"` and nests the POS static export under `/pos`.
+4. Deploy both; put their production origins into `CORS_ORIGINS` (`-UpdateCorsOnly` if needed). Do **not** require `http://127.0.0.1:39217`.
 
 See [infra/vercel/README.md](../infra/vercel/README.md).
 
 ---
 
-## 5. Staff EXE
-
-```powershell
-.\infra\desktop\pack-client.ps1 -ApiUrl "https://API_HOST" -ClientName "ClientShop"
-```
-
-Share `apps/desktop/dist/Jersey-Staff-Setup-*.exe`. Staff log in with users created in Admin.
-
----
-
-## 6. Bootstrap the shop
+## 5. Bootstrap the shop
 
 ```powershell
 $api = "https://API_HOST"
@@ -132,14 +121,18 @@ Invoke-RestMethod -Method Post `
 
 Never run `npm run prisma:seed` on the VM.
 
+Staff sign in at the Vercel staff URL (CMS, ERP, and **Sales → Register** for POS).
+
 ---
 
 ## Legacy all-in-one VM
 
 [`docker-compose.prod.yml`](../infra/docker/docker-compose.prod.yml) still builds storefront + nginx admin/POS on the same host (HTTP IP). Prefer the hybrid path above for new shops. Local npm scripts: `npm run prod:full:up` / `prod:full:down`.
 
+The Jersey Staff EXE under `apps/desktop` is **deprecated** and is not part of go-live.
+
 ---
 
 ## Cookies and CORS
 
-Hybrid API defaults: `COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` (cross-site staff refresh cookie if used). Staff UIs also send refresh tokens in the JSON body / `localStorage`. `CORS_ORIGINS` must list every browser origin (Vercel shop, Vercel admin, `http://127.0.0.1:39217` for the EXE).
+Hybrid API defaults: `COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` (cross-site staff refresh cookie if used). Staff UIs also send refresh tokens in the JSON body / `localStorage`. `CORS_ORIGINS` must list every browser origin (Vercel shop and Vercel staff portal).

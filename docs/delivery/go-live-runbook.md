@@ -35,10 +35,11 @@ The script clones or pulls the public repo, installs Docker if needed, writes `.
 - [ ] DNS for `API_HOST` resolves to this IP.
 - [ ] Copy bootstrap secret and DB password to a password manager. Delete the terminal scrollback later.
 
-Later API updates:
+Later API updates (and every bug fix / hotfix after launch): follow **[RELEASE-OPS-PLAYBOOK.md](./RELEASE-OPS-PLAYBOOK.md)** — deploy only changed layers. Quick API path:
 
 ```powershell
 .\infra\docker\deploy.ps1 ... -SkipSetup
+# or per-client: .\infra\docker\run-production-deploy.ps1
 ```
 
 ---
@@ -111,25 +112,15 @@ Do not use `*@demo.local` or `DevPassword123!` in production.
 
 ---
 
-## 4. Staff PCs (ERP and POS)
+## 4. Staff portal (browser)
 
-```powershell
-.\infra\desktop\pack-client.ps1 -ApiUrl "https://API_HOST" -ClientName "ClientShop"
-```
+Open the Vercel staff URL (Admin + ERP + POS). Staff log in once; **Sales → Register** opens `/pos/` with the same session (`jersey-staff-*` tokens).
 
-On each staff machine:
-
-1. Install `Jersey-Staff-Setup-*.exe` from `apps/desktop/dist/`.
-2. Open **Jersey Staff**.
-3. Log in with a user created in Vercel Admin.
-4. Use the **POS | ERP** switch in the top menu to change mode (same login).
-
-CORS on the VM must include `http://127.0.0.1:39217` (set by `deploy.ps1`).
-
-- [ ] Staff EXE installs and opens.
+- [ ] Staff portal loads on Vercel.
 - [ ] Login succeeds against `https://API_HOST`.
-- [ ] POS | ERP switch works without a second login.
-- [ ] Admin remains on Vercel; storefront remains on Vercel.
+- [ ] ERP dashboard and Website CMS are both available (`portal=all`).
+- [ ] Register (`/pos/`) opens without a second login; **Back to staff** returns to `/dashboard`.
+- [ ] Storefront remains on Vercel.
 
 ---
 
@@ -180,7 +171,7 @@ Order matters. Stock last, after catalog exists.
 | --- | --- |
 | Storefront empty / API errors | `https://API_HOST/ready`, CORS includes the Vercel origin, `NEXT_PUBLIC_API_URL` on Vercel |
 | Admin cannot login | API health, CORS origins, clock skew, rate limit |
-| EXE cannot login | Pack URL is `https://API_HOST`, CORS includes `http://127.0.0.1:39217` |
+| Staff portal cannot login | API health, CORS includes staff Vercel origin, clock skew, rate limit |
 | ERP stale after POS sale | WebSocket `wss://API_HOST/realtime?token=...`, Redis up |
 | Wrong shop branding | Tenant website settings, not a code redeploy |
 | Seed users exist | Recreate tenant; never “fix” by seeding |

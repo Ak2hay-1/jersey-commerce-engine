@@ -1,13 +1,14 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import { apiRequest } from '@/lib/api';
 import { formatMoney, statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
+import { useRouteParam } from '@/lib/use-route-param';
 
 interface CustomerProfile {
   id: string;
@@ -25,8 +26,8 @@ interface CustomerProfile {
 }
 
 export default function CustomerDetailPage(): React.JSX.Element {
-  const params = useParams<{ id: string }>();
-  const isNew = params.id === 'new';
+  const id = useRouteParam('id');
+  const isNew = id === 'new';
   const router = useRouter();
   const auth = useAuth();
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
@@ -44,7 +45,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
 
   async function load(): Promise<void> {
-    const row = await apiRequest<CustomerProfile>(`/customers/${params.id}`);
+    const row = await apiRequest<CustomerProfile>(`/customers/${id}`);
     setCustomer(row);
     setName(row.name);
     setPhone(row.phone ?? '');
@@ -60,7 +61,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
   useEffect(() => {
     if (isNew) return;
     load().catch((err: Error) => setError(err.message));
-  }, [isNew, params.id]);
+  }, [isNew, id]);
 
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -82,7 +83,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
         const created = await apiRequest<CustomerProfile>('/customers', { method: 'POST', body: JSON.stringify(body) });
         router.replace(`/customers/${created.id}`);
       } else {
-        await apiRequest(`/customers/${params.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+        await apiRequest(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
         await load();
       }
     } catch (err) {
@@ -95,7 +96,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
   async function onArchive(): Promise<void> {
     setSaving(true);
     try {
-      await apiRequest(`/customers/${params.id}`, { method: 'DELETE' });
+      await apiRequest(`/customers/${id}`, { method: 'DELETE' });
       router.replace('/customers');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to archive customer');
@@ -110,7 +111,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
     if (!noteBody.trim()) return;
     setSaving(true);
     try {
-      await apiRequest(`/customers/${params.id}/notes`, { method: 'POST', body: JSON.stringify({ body: noteBody.trim() }) });
+      await apiRequest(`/customers/${id}/notes`, { method: 'POST', body: JSON.stringify({ body: noteBody.trim() }) });
       setNoteBody('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to add note');
