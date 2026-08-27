@@ -13,23 +13,33 @@ export function PriceDisplay({
   size?: 'sm' | 'md' | 'lg';
 }): React.JSX.Element {
   const formatted = formatMoney(price, currency);
-  const save = price ? discountPercent(price, compareAt) : null;
+  const onSale = Boolean(price && discountPercent(price, compareAt));
+  const compareFormatted = onSale && compareAt ? formatMoney(compareAt, currency) : null;
+
   return (
-    <div className="flex flex-wrap items-baseline gap-2">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      {compareFormatted ? (
+        <span
+          className={cn('text-muted-foreground line-through', {
+            'text-xs': size === 'sm',
+            'text-sm': size === 'md',
+            'text-base': size === 'lg',
+          })}
+        >
+          {compareFormatted}
+        </span>
+      ) : null}
       <span
-        className={cn('font-heading font-semibold tracking-wide', {
+        className={cn('font-heading font-semibold tracking-wide text-foreground', {
           'text-sm': size === 'sm',
           'text-lg': size === 'md',
-          'text-3xl': size === 'lg',
+          'text-2xl': size === 'lg',
         })}
       >
         {formatted || 'Price unavailable'}
       </span>
-      {save && compareAt ? (
-        <>
-          <span className="text-sm text-muted-foreground line-through">{formatMoney(compareAt, currency)}</span>
-          <span className="text-xs font-semibold uppercase tracking-wider text-accent">{save}% off</span>
-        </>
+      {onSale ? (
+        <span className="rounded-full bg-foreground px-2.5 py-0.5 text-xs font-medium leading-none text-background">Sale</span>
       ) : null}
     </div>
   );

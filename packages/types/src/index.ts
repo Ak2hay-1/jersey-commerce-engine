@@ -158,6 +158,7 @@ export { type TenantSummary } from './tenant';
 export {
   CHECKOUT_ISSUE_CODES,
   COLLECTION_TILE_SPEC,
+  DEFAULT_STOREFRONT_CHROME,
   DEFAULT_STOREFRONT_FOOTER,
   HERO_BANNER_SPEC,
   HOMEPAGE_SECTION_TYPES,
@@ -174,7 +175,9 @@ export {
   type StorefrontAvailability,
   type StorefrontBootstrap,
   type StorefrontCatalogFacets,
+  type StorefrontChromeConfig,
   type StorefrontCustomer,
+  type StorefrontHeaderNavItem,
   type StorefrontProductDetail,
   type StorefrontProductListItem,
   type StorefrontProductListResult,

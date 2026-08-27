@@ -40,6 +40,7 @@ export const publicEnvSchema = z.object({
   NEXT_PUBLIC_DEFAULT_TENANT_SLUG: z.string().min(1).max(64).optional(),
   NEXT_PUBLIC_PLATFORM_DOMAIN: z.string().min(1).max(180).optional(),
   NEXT_PUBLIC_PORTAL: z.enum(['admin', 'erp', 'all']).default('all'),
+  NEXT_PUBLIC_STOREFRONT_URL: z.string().url().optional(),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;

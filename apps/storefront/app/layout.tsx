@@ -9,7 +9,7 @@ import { fallbackStore } from '../lib/fallback-store';
 import { themeStyleVars } from '../lib/theme';
 import { loadStoreChrome } from '../lib/store-chrome';
 import { DEFAULT_STORE_CHROME } from '../lib/swatch';
-import { StoreProvider } from '../components/providers/store-provider';
+import { StoreProvider, CustomizerBridge } from '../components/providers/store-provider';
 import { CartProvider } from '../components/providers/cart-provider';
 import { AuthProvider } from '../components/providers/auth-provider';
 import { StoreHeader } from '../components/layout/store-header';
@@ -82,6 +82,7 @@ export default async function RootLayout({
           Skip to content
         </a>
         <StoreProvider value={store} chrome={chrome}>
+          <CustomizerBridge />
           <SmoothScroll>
             <AuthProvider>
               <CartProvider>

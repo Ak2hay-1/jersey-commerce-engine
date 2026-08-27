@@ -6,19 +6,13 @@ import { Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button, cn } from '@jersey-commerce/ui';
+import { DEFAULT_STOREFRONT_CHROME } from '@jersey-commerce/types';
 import { useStore } from '../providers/store-provider';
 import { useCart } from '../providers/cart-provider';
 import { useAuth } from '../providers/auth-provider';
 import { SearchBar } from './search-bar';
 import { MobileMenu } from './mobile-menu';
 import { MOTION_TRANSITION } from '../motion/presence';
-
-const NAV = [
-  { href: '/products', label: 'Shop' },
-  { href: '/products?sort=newest', label: 'Latest' },
-  { href: '/category/football-jerseys', label: 'Jerseys' },
-  { href: '/about', label: 'About' },
-];
 
 export function StoreHeader(): React.JSX.Element {
   const store = useStore();
@@ -29,6 +23,10 @@ export function StoreHeader(): React.JSX.Element {
   const [scrolled, setScrolled] = useState(false);
   const reduced = useReducedMotion();
   const count = cart?.itemCount ?? 0;
+  const nav =
+    store.website.chrome?.headerNav?.length
+      ? store.website.chrome.headerNav
+      : DEFAULT_STOREFRONT_CHROME.headerNav;
 
   useEffect(() => {
     function onScroll() {
@@ -72,7 +70,7 @@ export function StoreHeader(): React.JSX.Element {
             {menuOpen ? <X /> : <Menu />}
           </Button>
           <nav className="hidden min-w-0 items-center gap-5 lg:flex" aria-label="Primary">
-            {NAV.map((item) => (
+            {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -158,7 +156,7 @@ export function StoreHeader(): React.JSX.Element {
           </motion.div>
         ) : null}
       </AnimatePresence>
-      <MobileMenu open={menuOpen} navigation={store.navigation} onClose={() => setMenuOpen(false)} />
+      <MobileMenu open={menuOpen} navigation={store.navigation} headerNav={nav} onClose={() => setMenuOpen(false)} />
     </header>
   );
 }

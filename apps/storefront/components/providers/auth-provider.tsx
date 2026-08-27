@@ -12,10 +12,10 @@ type AuthContextValue = {
   loading: boolean;
   login: (input: { email?: string; phone?: string; password: string }) => Promise<void>;
   register: (input: { name: string; email: string; password: string; phone?: string }) => Promise<void>;
-  requestOtp: (input: OtpInput) => Promise<void>;
+  requestOtp: (input: OtpInput) => Promise<{ expiresIn: number }>;
   verifyOtp: (input: OtpInput & { code: string }) => Promise<void>;
   startGoogle: () => Promise<void>;
-  completeGoogle: (ticket: string) => Promise<void>;
+  completeGoogle: (ticket: string) => Promise<StorefrontCustomer>;
   logout: () => void;
   setCustomer: (customer: StorefrontCustomer | null) => void;
 };
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   );
 
   const requestOtp = useCallback(async (input: OtpInput) => {
-    await storeApi.requestOtp(input);
+    return storeApi.requestOtp(input);
   }, []);
 
   const verifyOtp = useCallback(
@@ -80,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     async (ticket: string) => {
       const result = await storeApi.exchangeGoogle(ticket);
       persist(result.accessToken, result.customer);
+      return result.customer;
     },
     [persist],
   );

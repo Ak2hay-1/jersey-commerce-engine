@@ -82,15 +82,12 @@ export function ProductDetailActions({
   }
 
   const addLabel = needsVariant && !selected ? 'Select a variant' : added ? 'Added' : 'Add to cart';
+  const displayPrice = selected?.sellingPrice ?? product.lowestPrice ?? product.variants[0]?.sellingPrice;
+  const displayCompareAt = selected?.compareAtPrice ?? product.compareAtPrice ?? product.variants[0]?.compareAtPrice;
 
   return (
     <div className="space-y-6">
-      <PriceDisplay
-        price={selected?.sellingPrice ?? product.variants[0]?.sellingPrice}
-        compareAt={selected?.compareAtPrice ?? product.variants[0]?.compareAtPrice}
-        currency={currency}
-        size="lg"
-      />
+      <PriceDisplay price={displayPrice} compareAt={displayCompareAt} currency={currency} size="lg" />
       <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Free delivery on orders above ₹2,000. Shipping calculated at checkout.</p>
       <ProductVariantSelector variants={product.variants} selectedId={selected?.id} onSelect={setSelected} />
       <div>

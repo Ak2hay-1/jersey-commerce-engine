@@ -20,6 +20,7 @@ interface VariantDraft {
   sku: string;
   costPrice: string;
   sellingPrice: string;
+  compareAtPrice: string;
   status: string;
 }
 
@@ -32,8 +33,21 @@ interface PendingImage {
   sortOrder: number;
 }
 
+const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const;
+
+/** Matches a single size token (adult/kids/extended). Used to detect multi-size fields. */
+const SIZE_TOKEN = /^(?:XXL|XL|2XL|3XL|4XL|5XL|XS|S|M|L|[0-9]+)$/i;
+
 function emptyVariant(): VariantDraft {
-  return { size: '', colour: '', sku: '', costPrice: '', sellingPrice: '', status: 'ACTIVE' };
+  return {
+    size: '',
+    colour: '',
+    sku: '',
+    costPrice: '',
+    sellingPrice: '',
+    compareAtPrice: '',
+    status: 'ACTIVE',
+  };
 }
 
 function fromApi(variant: ProductVariantDto): VariantDraft {
@@ -44,8 +58,28 @@ function fromApi(variant: ProductVariantDto): VariantDraft {
     sku: variant.sku,
     costPrice: variant.costPrice,
     sellingPrice: variant.sellingPrice,
+    compareAtPrice: variant.compareAtPrice ?? '',
     status: variant.status,
   };
+}
+
+type PriceFields = Pick<VariantDraft, 'costPrice' | 'sellingPrice' | 'compareAtPrice'>;
+
+function priceFields(variant: VariantDraft): PriceFields {
+  return {
+    costPrice: variant.costPrice,
+    sellingPrice: variant.sellingPrice,
+    compareAtPrice: variant.compareAtPrice,
+  };
+}
+
+/** True when Size looks like several sizes typed into one field (e.g. "S M L XL XXL"). */
+function looksLikeCompoundSize(size: string): boolean {
+  const parts = size
+    .trim()
+    .split(/[\s,·/|]+/)
+    .filter(Boolean);
+  return parts.length >= 2 && parts.every((part) => SIZE_TOKEN.test(part));
 }
 
 async function uploadProductImage(
@@ -82,6 +116,7 @@ export default function ProductDetailPage(): React.JSX.Element {
   const [anglePreviews, setAnglePreviews] = useState<Partial<Record<AngleSlot, string>>>({});
   const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [variants, setVariants] = useState<VariantDraft[]>([emptyVariant()]);
+  const [samePriceForAllVariants, setSamePriceForAllVariants] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -145,7 +180,42 @@ export default function ProductDetailPage(): React.JSX.Element {
   }, [isNew, id]);
 
   function updateVariant(index: number, patch: Partial<VariantDraft>): void {
-    setVariants((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+    setVariants((current) => {
+      const next = current.map((row, i) => (i === index ? { ...row, ...patch } : row));
+      if (
+        samePriceForAllVariants &&
+        ('costPrice' in patch || 'sellingPrice' in patch || 'compareAtPrice' in patch)
+      ) {
+        const prices = priceFields(next[index]!);
+        return next.map((row) => ({ ...row, ...prices }));
+      }
+      return next;
+    });
+  }
+
+  function updateSharedPrices(patch: Partial<PriceFields>): void {
+    setVariants((rows) => rows.map((row) => ({ ...row, ...patch })));
+  }
+
+  function addAdultSizes(): void {
+    setVariants((rows) => {
+      const template = rows[rows.length - 1] ?? emptyVariant();
+      const existing = new Set(rows.map((row) => row.size.trim().toUpperCase()));
+      const additions = ADULT_SIZES.filter((size) => !existing.has(size)).map((size) => ({
+        ...emptyVariant(),
+        size,
+        colour: template.colour,
+        costPrice: template.costPrice,
+        sellingPrice: template.sellingPrice,
+        compareAtPrice: template.compareAtPrice,
+        status: template.status || 'ACTIVE',
+      }));
+      if (additions.length === 0) {
+        return rows;
+      }
+      const singleBlank = rows.length === 1 && !rows[0]!.id && !rows[0]!.size.trim();
+      return singleBlank ? additions : [...rows, ...additions];
+    });
   }
 
   function collectPendingImages(): PendingImage[] {
@@ -202,6 +272,24 @@ export default function ProductDetailPage(): React.JSX.Element {
       setError('Add at least one variant (size/colour and prices).');
       return;
     }
+    const compound = variants.find((variant) => looksLikeCompoundSize(variant.size));
+    if (compound) {
+      setError(
+        `Size "${compound.size.trim()}" looks like multiple sizes in one field. Use one size per variant (e.g. S), or click Add adult sizes.`,
+      );
+      return;
+    }
+    const invalidCompareAt = variants.find((variant) => {
+      const compareAt = variant.compareAtPrice.trim();
+      if (!compareAt) {
+        return false;
+      }
+      return Number(compareAt) <= Number(variant.sellingPrice.trim() || '0');
+    });
+    if (invalidCompareAt) {
+      setError('Compare-at (MRP) must be higher than selling price on every variant.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -211,6 +299,7 @@ export default function ProductDetailPage(): React.JSX.Element {
         colour: variant.colour.trim() || null,
         costPrice: variant.costPrice.trim() || '0',
         sellingPrice: variant.sellingPrice.trim() || '0',
+        compareAtPrice: variant.compareAtPrice.trim() || null,
         status: variant.status,
       }));
 
@@ -248,14 +337,16 @@ export default function ProductDetailPage(): React.JSX.Element {
 
       for (const variant of variantPayload) {
         if (variant.id) {
-          await apiRequest(`/products/${id}/variants/${variant.id}`, {
+          const { id: variantId, ...body } = variant;
+          await apiRequest(`/products/${id}/variants/${variantId}`, {
             method: 'PATCH',
-            body: JSON.stringify(variant),
+            body: JSON.stringify(body),
           });
         } else {
+          const { id: _id, ...body } = variant;
           await apiRequest(`/products/${id}/variants`, {
             method: 'POST',
-            body: JSON.stringify(variant),
+            body: JSON.stringify(body),
           });
         }
       }
@@ -461,18 +552,79 @@ export default function ProductDetailPage(): React.JSX.Element {
             </div>
 
             <div className="md:col-span-2 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-medium">Variants</p>
-                  <p className="text-xs text-muted-foreground">SKU is generated automatically from name, size, and colour.</p>
+                  <p className="text-xs text-muted-foreground">
+                    One size per variant (e.g. S, not S M L XL XXL). SKU is generated from name, size, and colour. Compare-at
+                    (MRP) shows a strikethrough price and Sale badge on the storefront when higher than selling.
+                  </p>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => setVariants((rows) => [...rows, emptyVariant()])}>
-                  Add variant
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => addAdultSizes()}>
+                    Add adult sizes
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setVariants((rows) => [...rows, emptyVariant()])}>
+                    Add variant
+                  </Button>
+                </div>
               </div>
+              <div className="flex items-center gap-2 rounded-md border p-3">
+                <input
+                  id="same-price-all"
+                  type="checkbox"
+                  checked={samePriceForAllVariants}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setSamePriceForAllVariants(checked);
+                    if (checked && variants[0]) {
+                      updateSharedPrices(priceFields(variants[0]));
+                    }
+                  }}
+                />
+                <Label htmlFor="same-price-all">Keep same price for all variants</Label>
+              </div>
+              {samePriceForAllVariants ? (
+                <div className="grid gap-3 rounded-md border p-3 sm:grid-cols-3">
+                  <div>
+                    <Label htmlFor="shared-cost">Cost</Label>
+                    <Input
+                      id="shared-cost"
+                      className="mt-1"
+                      inputMode="decimal"
+                      value={variants[0]?.costPrice ?? ''}
+                      onChange={(e) => updateSharedPrices({ costPrice: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="shared-selling">Selling</Label>
+                    <Input
+                      id="shared-selling"
+                      className="mt-1"
+                      inputMode="decimal"
+                      value={variants[0]?.sellingPrice ?? ''}
+                      onChange={(e) => updateSharedPrices({ sellingPrice: e.target.value })}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="shared-compare">Compare-at (MRP)</Label>
+                    <Input
+                      id="shared-compare"
+                      className="mt-1"
+                      inputMode="decimal"
+                      value={variants[0]?.compareAtPrice ?? ''}
+                      onChange={(e) => updateSharedPrices({ compareAtPrice: e.target.value })}
+                      placeholder="Optional, must be higher than selling"
+                    />
+                  </div>
+                </div>
+              ) : null}
               {variants.map((variant, index) => (
                 <div key={variant.id ?? `new-${index}`} className="space-y-3 rounded-md border p-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className={`grid gap-3 sm:grid-cols-2 ${samePriceForAllVariants ? '' : 'lg:grid-cols-3'}`}>
                     <div>
                       <Label htmlFor={`size-${index}`}>Size</Label>
                       <Input
@@ -482,6 +634,7 @@ export default function ProductDetailPage(): React.JSX.Element {
                         onChange={(e) => updateVariant(index, { size: e.target.value })}
                         placeholder="e.g. L"
                       />
+                      <p className="mt-1 text-xs text-muted-foreground">One size only per row.</p>
                     </div>
                     <div>
                       <Label htmlFor={`colour-${index}`}>Colour</Label>
@@ -493,29 +646,44 @@ export default function ProductDetailPage(): React.JSX.Element {
                         placeholder="e.g. Navy"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor={`cost-${index}`}>Cost</Label>
-                      <Input
-                        id={`cost-${index}`}
-                        className="mt-1"
-                        inputMode="decimal"
-                        value={variant.costPrice}
-                        onChange={(e) => updateVariant(index, { costPrice: e.target.value })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`selling-${index}`}>Selling</Label>
-                      <Input
-                        id={`selling-${index}`}
-                        className="mt-1"
-                        inputMode="decimal"
-                        value={variant.sellingPrice}
-                        onChange={(e) => updateVariant(index, { sellingPrice: e.target.value })}
-                        placeholder="0.00"
-                        required
-                      />
-                    </div>
+                    {samePriceForAllVariants ? null : (
+                      <>
+                        <div>
+                          <Label htmlFor={`cost-${index}`}>Cost</Label>
+                          <Input
+                            id={`cost-${index}`}
+                            className="mt-1"
+                            inputMode="decimal"
+                            value={variant.costPrice}
+                            onChange={(e) => updateVariant(index, { costPrice: e.target.value })}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`selling-${index}`}>Selling</Label>
+                          <Input
+                            id={`selling-${index}`}
+                            className="mt-1"
+                            inputMode="decimal"
+                            value={variant.sellingPrice}
+                            onChange={(e) => updateVariant(index, { sellingPrice: e.target.value })}
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`compare-${index}`}>Compare-at (MRP)</Label>
+                          <Input
+                            id={`compare-${index}`}
+                            className="mt-1"
+                            inputMode="decimal"
+                            value={variant.compareAtPrice}
+                            onChange={(e) => updateVariant(index, { compareAtPrice: e.target.value })}
+                            placeholder="Optional, must be higher than selling"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-xs text-muted-foreground">

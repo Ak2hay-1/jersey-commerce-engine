@@ -2,7 +2,7 @@
 
 Phase 10 of the Jersey Commerce Engine. One Next.js app (`apps/storefront`) renders every tenant. Shop names, colors, logos, catalog, and homepage sections come from the API. There is no per-tenant frontend codebase.
 
-This phase includes homepage and footer CMS editing plus promo codes in the admin Website screen. Live payment capture, reviews, and wishlists belong to later phases.
+This phase includes the staff **Storefront → Customize** screen (live iframe preview + editors), homepage/footer/chrome CMS, and promo codes. Live payment capture, reviews, and wishlists belong to later phases.
 
 ## Architecture
 
@@ -36,7 +36,13 @@ Open http://localhost:3000/?tenant=demo-jersey-store to pin the demo shop.
 
 `StoreBootstrap.theme` maps to CSS variables (`--primary`, `--accent`, `--background`, fonts, logo, favicon). Changing tenant branding does not require a code change. Defaults are generic sportswear tokens, not a specific shop.
 
-Homepage sections are stored on `WebsiteSettings.homepageConfig.sections`. Footer copy is stored on `WebsiteSettings.footerConfig`. Disabled sections are omitted. Missing config falls back to a default section list. Edit the homepage and footer from Admin → Website: sliding hero banners (1920×720, 8:3), brand line, latest drop products, featured products, premium collection tiles (1080×1350, 4:5), and footer text. Promo codes are generated under Admin → Promo codes and applied on cart/checkout (`POST/DELETE /api/v1/store/cart/promo`).
+Homepage sections are stored on `WebsiteSettings.homepageConfig.sections`. Footer copy is stored on `WebsiteSettings.footerConfig`. Announcement messages and header nav live in `WebsiteSettings.chromeConfig`. Theme colors, logo, SEO, and contact fields are columns on `WebsiteSettings`. Disabled sections are omitted. Missing config falls back to defaults.
+
+Edit everything from **Staff portal → Storefront → Customize** (`/website`): branding, theme, SEO/contact, announcement bar, header nav, hero slides (1920×720, 8:3), homepage section toggles and product picks, collection tiles (1080×1350, 4:5), footer/socials, and about copy. The right pane loads the live storefront in an iframe (`?customizer=1`) and applies unsaved drafts via `postMessage` (`jce:storefront-draft`). Save still uses `PATCH /api/v1/website/settings`.
+
+Staff builds need `NEXT_PUBLIC_STOREFRONT_URL` (e.g. `https://www.jerzyfy.in`) so the preview iframe and “Open live site” point at the correct origin; it is baked into `runtime-config.js` as `storefrontUrl`.
+
+Promo codes are generated under Admin → Promo codes and applied on cart/checkout (`POST/DELETE /api/v1/store/cart/promo`).
 
 ## Routes
 

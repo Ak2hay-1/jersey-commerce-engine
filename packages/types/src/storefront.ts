@@ -160,6 +160,30 @@ export const DEFAULT_STOREFRONT_FOOTER: StorefrontFooter = {
   copyright: '',
 };
 
+export interface StorefrontHeaderNavItem {
+  href: string;
+  label: string;
+}
+
+export interface StorefrontChromeConfig {
+  announcementMessages: string[];
+  headerNav: StorefrontHeaderNavItem[];
+}
+
+export const DEFAULT_STOREFRONT_CHROME: StorefrontChromeConfig = {
+  announcementMessages: [
+    'Free delivery on orders above ₹2,000',
+    'Secure checkout with Razorpay',
+    'Replica-inspired football jerseys',
+  ],
+  headerNav: [
+    { href: '/products', label: 'Shop' },
+    { href: '/products?sort=newest', label: 'Latest' },
+    { href: '/category/football-jerseys', label: 'Jerseys' },
+    { href: '/about', label: 'About' },
+  ],
+};
+
 export interface StorefrontWebsiteSettings {
   contactPhone: string | null;
   contactEmail: string | null;
@@ -170,6 +194,7 @@ export interface StorefrontWebsiteSettings {
   seoDescription: string | null;
   homepage: HomepageConfig;
   footer: StorefrontFooter;
+  chrome: StorefrontChromeConfig;
 }
 
 export interface StorefrontBootstrap {
@@ -231,6 +256,9 @@ export interface StorefrontProductDetail {
   variants: StorefrontVariant[];
   sizes: string[];
   colours: string[];
+  lowestPrice: MoneyString | null;
+  highestPrice: MoneyString | null;
+  compareAtPrice: MoneyString | null;
   related: StorefrontProductListItem[];
   createdAt: string;
   updatedAt: string;

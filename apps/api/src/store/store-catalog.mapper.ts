@@ -6,6 +6,7 @@ import type {
   StorefrontAvailability,
   StorefrontBootstrap,
   StorefrontCatalogFacets,
+  StorefrontChromeConfig,
   StorefrontCustomer,
   StorefrontFooter,
   StorefrontProductDetail,
@@ -16,7 +17,7 @@ import type {
   StorefrontAuthMethods,
   StorefrontPaymentMethods,
 } from '@jersey-commerce/types';
-import { DEFAULT_STOREFRONT_FOOTER, HOMEPAGE_SECTION_TYPES } from '@jersey-commerce/types';
+import { DEFAULT_STOREFRONT_CHROME, DEFAULT_STOREFRONT_FOOTER, HOMEPAGE_SECTION_TYPES } from '@jersey-commerce/types';
 import { availableQuantity } from '../inventory/inventory-math';
 import { toCategorySummary, toImageDto } from '../catalog/catalog.mapper';
 import { moneyString } from '../catalog/money';
@@ -168,6 +169,9 @@ export function toStorefrontProductDetail(
   related: StorefrontProductListItem[],
 ): StorefrontProductDetail {
   const active = product.variants.filter((variant) => variant.status === 'ACTIVE');
+  const priced = [...active].sort((a, b) => a.sellingPrice.toFixed(2).localeCompare(b.sellingPrice.toFixed(2), 'en'));
+  const lowest = priced[0];
+  const highest = priced[priced.length - 1];
   const sizes = [...new Set(active.map((variant) => variant.size).filter((value): value is string => Boolean(value)))];
   const colours = [...new Set(active.map((variant) => variant.color).filter((value): value is string => Boolean(value)))];
   return {
@@ -187,6 +191,9 @@ export function toStorefrontProductDetail(
     variants: active.map(toStorefrontVariant),
     sizes,
     colours,
+    lowestPrice: lowest ? lowest.sellingPrice.toFixed(2) : null,
+    highestPrice: highest ? highest.sellingPrice.toFixed(2) : null,
+    compareAtPrice: lowest?.compareAtPrice ? lowest.compareAtPrice.toFixed(2) : null,
     related,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
@@ -391,6 +398,41 @@ export function toFooterConfig(value: unknown): StorefrontFooter {
   };
 }
 
+export function toChromeConfig(value: unknown): StorefrontChromeConfig {
+  if (!value || typeof value !== 'object') {
+    return { ...DEFAULT_STOREFRONT_CHROME, headerNav: [...DEFAULT_STOREFRONT_CHROME.headerNav] };
+  }
+  const record = value as Record<string, unknown>;
+  const messages = Array.isArray(record.announcementMessages)
+    ? record.announcementMessages
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim().slice(0, 160))
+        .filter(Boolean)
+        .slice(0, 8)
+    : [];
+  const headerNav = Array.isArray(record.headerNav)
+    ? record.headerNav
+        .map((item) => {
+          if (!item || typeof item !== 'object') {
+            return null;
+          }
+          const row = item as Record<string, unknown>;
+          const href = typeof row.href === 'string' ? row.href.trim().slice(0, 2048) : '';
+          const label = typeof row.label === 'string' ? row.label.trim().slice(0, 40) : '';
+          if (!href || !label) {
+            return null;
+          }
+          return { href, label };
+        })
+        .filter((item): item is { href: string; label: string } => Boolean(item))
+        .slice(0, 12)
+    : [];
+  return {
+    announcementMessages: messages.length ? messages : [...DEFAULT_STOREFRONT_CHROME.announcementMessages],
+    headerNav: headerNav.length ? headerNav : [...DEFAULT_STOREFRONT_CHROME.headerNav],
+  };
+}
+
 export function mergeTheme(input: {
   logo?: string | null;
   favicon?: string | null;
@@ -425,6 +467,7 @@ export function toWebsiteSettings(settings: {
   seoDescription: string | null;
   homepageConfig: unknown;
   footerConfig?: unknown;
+  chromeConfig?: unknown;
 }): StorefrontWebsiteSettings {
   const social = asRecord(settings.socialLinks);
   const socialLinks = Object.fromEntries(
@@ -442,6 +485,7 @@ export function toWebsiteSettings(settings: {
     seoDescription: settings.seoDescription,
     homepage: toHomepageConfig(settings.homepageConfig),
     footer: toFooterConfig(settings.footerConfig),
+    chrome: toChromeConfig(settings.chromeConfig),
   };
 }
 
@@ -484,6 +528,7 @@ export function toBootstrap(input: {
     seoDescription: string | null;
     homepageConfig: unknown;
     footerConfig?: unknown;
+    chromeConfig?: unknown;
   } | null;
   navigation: CategorySummary[];
   auth?: StorefrontAuthMethods;
@@ -527,6 +572,7 @@ export function toBootstrap(input: {
         seoDescription: null,
         homepageConfig: null,
         footerConfig: null,
+        chromeConfig: null,
       },
     ),
     navigation: input.navigation,

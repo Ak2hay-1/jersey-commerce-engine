@@ -19,18 +19,24 @@ const PRIMARY = [
 export function MobileMenu({
   open,
   navigation,
+  headerNav,
   onClose,
 }: {
   open: boolean;
   navigation: CategorySummary[];
+  headerNav?: Array<{ href: string; label: string }>;
   onClose: () => void;
 }): React.JSX.Element {
   const reduced = useReducedMotion();
+  const primary =
+    headerNav?.length
+      ? headerNav.map((item, index) => ({ ...item, id: `nav-${index}` }))
+      : PRIMARY;
   const extras = navigation
     .filter((item) => !item.parentId)
     .map((item) => ({ href: `/category/${item.slug}`, label: item.name, id: item.id }));
-  const seen = new Set(PRIMARY.map((item) => item.href));
-  const links = [...PRIMARY, ...extras.filter((item) => !seen.has(item.href))];
+  const seen = new Set(primary.map((item) => item.href));
+  const links = [...primary, ...extras.filter((item) => !seen.has(item.href))];
 
   useEffect(() => {
     if (!open) {

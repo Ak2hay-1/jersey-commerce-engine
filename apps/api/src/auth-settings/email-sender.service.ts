@@ -10,6 +10,7 @@ export class EmailSenderService {
     to: string;
     subject: string;
     text: string;
+    html?: string;
   }): Promise<void> {
     const fromName = settings.emailFromName?.trim() || 'Store';
     const fromAddress = settings.emailFromAddress?.trim() || 'noreply@localhost';
@@ -35,6 +36,7 @@ export class EmailSenderService {
           to: [input.to],
           subject: input.subject,
           text: input.text,
+          ...(input.html ? { html: input.html } : {}),
         }),
       });
       if (!response.ok) {
@@ -50,7 +52,7 @@ export class EmailSenderService {
 
   private async sendSmtp(
     settings: AuthSettingsRecord & { smtpPassword?: string },
-    input: { fromAddress: string; fromName: string; to: string; subject: string; text: string },
+    input: { fromAddress: string; fromName: string; to: string; subject: string; text: string; html?: string },
   ): Promise<void> {
     if (!settings.smtpHost || !settings.smtpUser || !settings.smtpPassword) {
       throw new ServiceUnavailableException('SMTP is not configured.');
@@ -66,6 +68,7 @@ export class EmailSenderService {
       to: input.to,
       subject: input.subject,
       text: input.text,
+      ...(input.html ? { html: input.html } : {}),
     });
   }
 }

@@ -250,6 +250,36 @@ export class SocialLinksDto {
   whatsapp?: string;
 }
 
+export class HeaderNavItemDto {
+  @ApiProperty({ example: '/products' })
+  @IsString()
+  @MaxLength(2048)
+  href!: string;
+
+  @ApiProperty({ example: 'Shop' })
+  @IsString()
+  @MaxLength(40)
+  label!: string;
+}
+
+export class ChromeConfigDto {
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsString({ each: true })
+  @MaxLength(160, { each: true })
+  announcementMessages?: string[];
+
+  @ApiPropertyOptional({ type: [HeaderNavItemDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => HeaderNavItemDto)
+  headerNav?: HeaderNavItemDto[];
+}
+
 export class UpdateWebsiteSettingsDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -283,6 +313,13 @@ export class UpdateWebsiteSettingsDto {
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   @IsString()
+  @MaxLength(400)
+  contactAddress?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
   @MaxLength(2048)
   logo?: string | null;
 
@@ -292,6 +329,41 @@ export class UpdateWebsiteSettingsDto {
   @IsString()
   @MaxLength(2048)
   favicon?: string | null;
+
+  @ApiPropertyOptional({ example: '#111111' })
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(32)
+  primaryColor?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(32)
+  secondaryColor?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(32)
+  accentColor?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(32)
+  backgroundColor?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(32)
+  foregroundColor?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -310,4 +382,10 @@ export class UpdateWebsiteSettingsDto {
   @ValidateNested()
   @Type(() => SocialLinksDto)
   socialLinks?: SocialLinksDto;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ChromeConfigDto)
+  chromeConfig?: ChromeConfigDto;
 }

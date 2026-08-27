@@ -13,7 +13,7 @@ import {
   IMAGE_MAX_BYTES,
   sniffImageMime,
 } from '../storage/image-validation';
-import { toHomepageConfig, toFooterConfig } from '../store/store-catalog.mapper';
+import { toChromeConfig, toHomepageConfig, toFooterConfig } from '../store/store-catalog.mapper';
 import type { UpdateWebsiteSettingsDto } from './dto/website-mutations.dto';
 
 type UploadedFile = { buffer: Buffer; size: number; mimetype?: string };
@@ -34,6 +34,7 @@ export class WebsiteService {
     return {
       ...settings,
       footerConfig: toFooterConfig(settings.footerConfig),
+      chromeConfig: toChromeConfig(settings.chromeConfig),
     };
   }
 
@@ -44,6 +45,9 @@ export class WebsiteService {
       : undefined;
     const footerConfig = dto.footerConfig
       ? (toFooterConfig(dto.footerConfig) as unknown as Prisma.InputJsonValue)
+      : undefined;
+    const chromeConfig = dto.chromeConfig
+      ? (toChromeConfig(dto.chromeConfig) as unknown as Prisma.InputJsonValue)
       : undefined;
     const socialLinks = dto.socialLinks
       ? (Object.fromEntries(
@@ -57,10 +61,17 @@ export class WebsiteService {
         seoDescription: dto.seoDescription === undefined ? undefined : dto.seoDescription,
         contactPhone: dto.contactPhone === undefined ? undefined : dto.contactPhone,
         contactEmail: dto.contactEmail === undefined ? undefined : dto.contactEmail,
+        contactAddress: dto.contactAddress === undefined ? undefined : dto.contactAddress,
         logo: dto.logo === undefined ? undefined : dto.logo,
         favicon: dto.favicon === undefined ? undefined : dto.favicon,
+        primaryColor: dto.primaryColor === undefined ? undefined : dto.primaryColor,
+        secondaryColor: dto.secondaryColor === undefined ? undefined : dto.secondaryColor,
+        accentColor: dto.accentColor === undefined ? undefined : dto.accentColor,
+        backgroundColor: dto.backgroundColor === undefined ? undefined : dto.backgroundColor,
+        foregroundColor: dto.foregroundColor === undefined ? undefined : dto.foregroundColor,
         homepageConfig,
         footerConfig,
+        chromeConfig,
         socialLinks,
       },
     });
@@ -86,6 +97,7 @@ export class WebsiteService {
     return {
       ...updated,
       footerConfig: toFooterConfig(updated.footerConfig),
+      chromeConfig: toChromeConfig(updated.chromeConfig),
     };
   }
 

@@ -98,9 +98,9 @@ export const ERP_NAV: ErpNavSection[] = [
   },
   {
     id: 'website',
-    label: 'Website',
+    label: 'Storefront',
     items: [
-      { href: '/website', label: 'Homepage', permission: 'website.read', portal: 'admin' },
+      { href: '/website', label: 'Customize', permission: 'website.read', portal: 'admin' },
       { href: '/promo-codes', label: 'Promo codes', permission: 'promoCodes.read', portal: 'admin' },
     ],
   },

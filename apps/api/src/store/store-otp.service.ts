@@ -9,7 +9,9 @@ import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
 import { AuthSettingsService } from '../auth-settings/auth-settings.service';
 import { EmailSenderService } from '../auth-settings/email-sender.service';
+import { buildOtpEmail, buildOtpSmsText } from '../auth-settings/otp-email.template';
 import { SmsSenderService } from '../auth-settings/sms-sender.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { normalizeEmail, normalizePhone } from '../customers/customer-phone';
 import { StoreAuthService } from './store-auth.service';
 import type { StoreOtpRequestDto, StoreOtpVerifyDto } from './dto/store-auth.dto';
@@ -23,6 +25,7 @@ type StoredOtp = { hash: string; attempts: number };
 @Injectable()
 export class StoreOtpService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly rateLimit: AuthRateLimiterService,
     private readonly authSettings: AuthSettingsService,
@@ -50,11 +53,17 @@ export class StoreOtpService {
     const ttl = settings.otpTtlSeconds || 300;
     const payload: StoredOtp = { hash: hashOpaqueToken(code), attempts: 0 };
     await this.redis.getClient().set(`store-otp:${tenantId}:${dto.channel}:${identifier}`, JSON.stringify(payload), 'EX', ttl);
-    const text = `Your sign-in code is ${code}. It expires in ${Math.round(ttl / 60)} minutes.`;
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    });
+    const storeName = settings.emailFromName?.trim() || tenant?.name?.trim() || 'Your store';
+    const expiresInMinutes = Math.max(1, Math.round(ttl / 60));
     if (dto.channel === 'email') {
-      await this.email.send(settings, { to: identifier, subject: 'Your sign-in code', text });
+      const message = buildOtpEmail({ storeName, code, expiresInMinutes });
+      await this.email.send(settings, { to: identifier, ...message });
     } else {
-      await this.sms.send(settings, { to: identifier, text });
+      await this.sms.send(settings, { to: identifier, text: buildOtpSmsText({ storeName, code, expiresInMinutes }) });
     }
     await this.audit.log({
       action: AUDIT_ACTIONS.AUTH_OTP_REQUESTED,

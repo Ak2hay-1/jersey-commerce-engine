@@ -8,6 +8,7 @@
  *   NEXT_PUBLIC_API_URL  e.g. https://api.yourshop.com
  * Optional:
  *   NEXT_PUBLIC_DEFAULT_TENANT_SLUG
+ *   NEXT_PUBLIC_STOREFRONT_URL  e.g. https://www.jerzyfy.in
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -27,6 +28,8 @@ if (!apiUrl) {
   console.error('NEXT_PUBLIC_API_URL is required (e.g. https://api.yourshop.com)');
   process.exit(1);
 }
+
+const storefrontUrl = (process.env.NEXT_PUBLIC_STOREFRONT_URL || '').trim().replace(/\/$/, '');
 
 function run(command, args, env = {}) {
   const result = spawnSync(command, args, {
@@ -65,7 +68,10 @@ function copyExport(exportOutDir, baseSegment, dest) {
   process.exit(1);
 }
 
-const runtimeBody = `window.__JCE_PUBLIC__={apiUrl:"${apiUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}",portal:"all"};\n`;
+const storefrontPart = storefrontUrl
+  ? `,storefrontUrl:"${storefrontUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  : '';
+const runtimeBody = `window.__JCE_PUBLIC__={apiUrl:"${apiUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}",portal:"all"${storefrontPart}};\n`;
 fs.writeFileSync(publicRuntime, runtimeBody, 'utf8');
 console.log('[vercel-staff] Wrote', publicRuntime);
 
@@ -76,6 +82,7 @@ run('npm', ['run', 'build', '-w', '@jersey-commerce/admin'], {
   NEXT_PUBLIC_API_URL: apiUrl,
   NEXT_PUBLIC_PORTAL: 'all',
   NEXT_PUBLIC_BASE_PATH: '',
+  ...(storefrontUrl ? { NEXT_PUBLIC_STOREFRONT_URL: storefrontUrl } : {}),
 });
 
 if (!fs.existsSync(path.join(outDir, 'index.html'))) {

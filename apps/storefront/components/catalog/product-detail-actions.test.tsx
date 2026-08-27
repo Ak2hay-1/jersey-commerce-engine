@@ -50,12 +50,22 @@ const product: StorefrontProductDetail = {
   ],
   sizes: ['S', 'M'],
   colours: ['Red'],
+  lowestPrice: '2499.00',
+  highestPrice: '2499.00',
+  compareAtPrice: '2999.00',
   related: [],
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 };
 
 describe('product detail', () => {
+  it('shows sale pricing before a variant is selected', () => {
+    render(<ProductDetailActions product={product} currency="INR" />);
+    expect(screen.getByText(/2,499/)).toBeInTheDocument();
+    expect(screen.getByText(/2,999/)).toBeInTheDocument();
+    expect(screen.getByText('Sale')).toBeInTheDocument();
+  });
+
   it('requires a variant before adding to cart', async () => {
     const user = userEvent.setup();
     addItem.mockReset();

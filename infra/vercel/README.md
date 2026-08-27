@@ -21,7 +21,8 @@ Monorepo-root alternative: [`storefront.vercel.json`](./storefront.vercel.json) 
 - Output: `apps/admin/out` (Admin/ERP at `/`, POS nested at `/pos`)
 - Env: `NEXT_PUBLIC_API_URL=https://API_HOST` (required)
 - Optional: `NEXT_PUBLIC_DEFAULT_TENANT_SLUG`
-- Runtime injects `window.__JCE_PUBLIC__ = { apiUrl, portal: "all" }`
+- Optional: `NEXT_PUBLIC_STOREFRONT_URL=https://www.jerzyfy.in` (Storefront Customizer iframe + “Open live site”)
+- Runtime injects `window.__JCE_PUBLIC__ = { apiUrl, portal: "all", storefrontUrl? }`
 
 Monorepo-root alternative config: [`admin.vercel.json`](./admin.vercel.json) (`outputDirectory: apps/admin/out`).
 

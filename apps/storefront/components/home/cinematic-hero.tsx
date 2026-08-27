@@ -9,6 +9,7 @@ import { Magnetic } from '../motion/magnetic';
 import { ProductImage } from '../catalog/product-image';
 import { resolveDemoMediaUrl } from '../../lib/demo-media';
 import { MOTION_EASE } from '../motion/presence';
+import { useStore } from '../providers/store-provider';
 
 const AUTOPLAY_MS = 5500;
 const SLIDE_MS = 0.7;
@@ -36,17 +37,24 @@ function slidesFromSection(
 }
 
 export function CinematicHero({
-  section,
+  section: sectionProp,
   fallbackImage,
 }: {
   section?: HomepageSection;
   fallbackImage?: StorefrontProductListItem['primaryImage'];
 }): React.JSX.Element {
+  const store = useStore();
+  const section =
+    store.website.homepage.sections.find((item) => item.type === 'hero') ?? sectionProp;
   const reduced = useReducedMotion();
   const slides = useMemo(() => slidesFromSection(section, fallbackImage), [section, fallbackImage]);
   const [active, setActive] = useState(0);
   const [direction, setDirection] = useState(1);
   const count = slides.length;
+
+  useEffect(() => {
+    setActive(0);
+  }, [slides]);
 
   const go = useCallback(
     (nextDirection: number) => {

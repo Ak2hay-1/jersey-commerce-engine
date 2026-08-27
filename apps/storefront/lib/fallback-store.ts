@@ -1,5 +1,5 @@
 import { DEMO_CTA_IMAGE, DEMO_HERO_IMAGE, DEMO_KITS_IMAGE } from './demo-media';
-import { DEFAULT_STOREFRONT_FOOTER, type StorefrontBootstrap } from '@jersey-commerce/types';
+import { DEFAULT_STOREFRONT_CHROME, DEFAULT_STOREFRONT_FOOTER, type StorefrontBootstrap } from '@jersey-commerce/types';
 
 export const fallbackStore: StorefrontBootstrap = {
   tenant: {
@@ -123,6 +123,7 @@ export const fallbackStore: StorefrontBootstrap = {
       ],
     },
     footer: DEFAULT_STOREFRONT_FOOTER,
+    chrome: DEFAULT_STOREFRONT_CHROME,
   },
   navigation: [
     { id: 'nav-football', name: 'Football Jerseys', slug: 'football-jerseys', parentId: null, status: 'ACTIVE', sortOrder: 1 },

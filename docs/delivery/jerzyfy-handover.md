@@ -31,7 +31,7 @@ Create all staff in **Staff portal → Users** with temporary passwords. Each us
 
 ## Logo
 
-Logo and favicon are set in production `website_settings`. To change later: **Website → Branding** → upload → Save.
+Logo and favicon are set in production `website_settings`. To change later: **Storefront → Customize** → Branding → upload → Save.
 
 Current production logo URL is served from the API media path (`/api/v1/media/...`).
 

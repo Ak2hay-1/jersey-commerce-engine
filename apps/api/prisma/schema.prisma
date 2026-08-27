@@ -1663,6 +1663,7 @@ model WebsiteSettings {
   seoTitle         String?  @map("seo_title")
   seoDescription   String?  @map("seo_description")
   footerConfig     Json?    @map("footer_config")
+  chromeConfig     Json?    @map("chrome_config")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

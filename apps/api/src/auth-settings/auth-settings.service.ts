@@ -10,6 +10,7 @@ import { decryptSecret, isSecretsKeyConfigured } from '../common/crypto/secret-c
 import type { AuthPrincipal } from '../common/context/request-context';
 import type { RequestMeta } from '../auth/auth-session.service';
 import { EmailSenderService } from './email-sender.service';
+import { buildOtpEmail } from './otp-email.template';
 import { SmsSenderService } from './sms-sender.service';
 import {
   assertAtLeastOneLoginMethod,
@@ -199,10 +200,21 @@ export class AuthSettingsService {
 
   async sendTestEmail(tenantId: string, dto: TestEmailDto, actor: AuthPrincipal): Promise<{ sent: true }> {
     const settings = await this.getResolved(tenantId);
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    });
+    const storeName = settings.emailFromName?.trim() || tenant?.name?.trim() || 'Your store';
+    const expiresInMinutes = Math.max(1, Math.round((settings.otpTtlSeconds || 300) / 60));
+    const message = buildOtpEmail({
+      storeName,
+      code: '123456',
+      expiresInMinutes,
+      preview: true,
+    });
     await this.email.send(settings, {
       to: dto.to,
-      subject: 'Test email from your store',
-      text: 'This is a test message from Authentication settings. Email delivery is working.',
+      ...message,
     });
     await this.audit.log({
       action: AUDIT_ACTIONS.AUTH_TEST_EMAIL_SENT,
