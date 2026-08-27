@@ -22,7 +22,7 @@ function maskIdentifier(value: string, channel: 'email' | 'sms'): string {
     return `${digits.slice(0, 2)}••••${digits.slice(-2)}`;
   }
   const [local, domain] = value.split('@');
-  if (!domain) {
+  if (!domain || !local) {
     return value;
   }
   const visible = local.slice(0, Math.min(2, local.length));
