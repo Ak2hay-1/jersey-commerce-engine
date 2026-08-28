@@ -121,16 +121,14 @@ function GoogleButton({ pending }: { pending: boolean }): React.JSX.Element | nu
   );
 }
 
-type AuthMethod = 'password' | 'email' | 'sms';
-
-function AuthMethodTabs({
+function AuthMethodTabs<T extends string>({
   methods,
   active,
   onChange,
 }: {
-  methods: { id: AuthMethod; label: string }[];
-  active: AuthMethod;
-  onChange: (method: AuthMethod) => void;
+  methods: { id: T; label: string }[];
+  active: T;
+  onChange: (method: T) => void;
 }): React.JSX.Element | null {
   if (methods.length <= 1) {
     return null;
