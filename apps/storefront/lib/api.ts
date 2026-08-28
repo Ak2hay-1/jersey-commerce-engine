@@ -159,7 +159,7 @@ export const storeApi = {
   product(slug: string, options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductDetail>(`/store/products/${encodeURIComponent(slug)}`, {
       ...options,
-      next: options?.next ?? { revalidate: 30, tags: ['store-products'] },
+      cache: options?.cache ?? 'no-store',
     });
   },
 

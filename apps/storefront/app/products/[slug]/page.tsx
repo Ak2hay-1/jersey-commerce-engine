@@ -13,6 +13,8 @@ import { headers } from 'next/headers';
 
 type Params = { slug: string };
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   try {
