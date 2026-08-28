@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { availabilityLabel, discountPercent, formatMoney } from './format';
 
 describe('storefront formatting', () => {
-  it('formats INR without trusting a frontend total', () => {
-    expect(formatMoney('2499.00', 'INR')).toContain('2,499');
+  it('formats INR as Rs. with two decimals', () => {
+    expect(formatMoney('2499.00', 'INR')).toBe('Rs. 2,499.00');
   });
 
   it('computes discount only when compare-at is higher', () => {
