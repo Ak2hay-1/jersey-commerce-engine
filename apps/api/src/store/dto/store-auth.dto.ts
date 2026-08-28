@@ -111,6 +111,11 @@ export class StoreOtpRequestDto {
   @IsIn(OTP_CHANNELS)
   channel!: OtpChannel;
 
+  @ApiPropertyOptional({ enum: ['login', 'register'] })
+  @IsOptional()
+  @IsIn(['login', 'register'])
+  intent?: 'login' | 'register';
+
   @ApiPropertyOptional()
   @IsOptional()
   @Transform(emptyToUndefined)

@@ -1,5 +1,11 @@
 import { randomInt } from 'node:crypto';
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ServerEnv } from '@jersey-commerce/config';
 import { AuthRateLimiterService } from '../auth/rate-limit/auth-rate-limiter.service';
@@ -14,6 +20,7 @@ import { SmsSenderService } from '../auth-settings/sms-sender.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeEmail, normalizePhone } from '../customers/customer-phone';
 import { StoreAuthService } from './store-auth.service';
+import { isStorefrontProfileComplete } from './store-profile.util';
 import type { StoreOtpRequestDto, StoreOtpVerifyDto } from './dto/store-auth.dto';
 import type { RequestMeta } from '../auth/auth-session.service';
 
@@ -114,6 +121,23 @@ export class StoreOtpService {
       throw new UnauthorizedException(INVALID);
     }
     await this.redis.getClient().del(key);
+    if (dto.intent === 'register') {
+      const existing = await this.prisma.customer.findFirst({
+        where: {
+          tenantId,
+          OR: [
+            ...(dto.channel === 'email' && identifier ? [{ email: identifier }] : []),
+            ...(dto.channel === 'sms' && identifier ? [{ phone: identifier }] : []),
+          ],
+        },
+      });
+      if (existing?.passwordHash) {
+        throw new ConflictException('An account already exists with this contact. Sign in instead.');
+      }
+      if (existing && isStorefrontProfileComplete(existing)) {
+        throw new ConflictException('An account already exists with this contact. Sign in instead.');
+      }
+    }
     const customer = await this.storeAuth.findOrCreateOtpCustomer({
       tenantId,
       email: dto.channel === 'email' ? identifier : undefined,

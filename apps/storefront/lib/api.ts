@@ -315,7 +315,7 @@ export const storeApi = {
   },
 
   requestOtp(
-    input: { channel: 'email' | 'sms'; email?: string; phone?: string },
+    input: { channel: 'email' | 'sms'; email?: string; phone?: string; intent?: 'login' | 'register' },
     options?: StoreRequestOptions,
   ) {
     return storeFetch<{ sent: true; expiresIn: number; debugCode?: string }>('/store/auth/otp/request', {
@@ -327,7 +327,13 @@ export const storeApi = {
   },
 
   verifyOtp(
-    input: { channel: 'email' | 'sms'; email?: string; phone?: string; code: string; name?: string },
+    input: {
+      channel: 'email' | 'sms';
+      email?: string;
+      phone?: string;
+      code: string;
+      intent?: 'login' | 'register';
+    },
     options?: StoreRequestOptions,
   ) {
     return storeFetch<StorefrontAuthResponse>('/store/auth/otp/verify', {

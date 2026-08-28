@@ -10,6 +10,7 @@ import { Alert } from '../ui/alert';
 import { useAuth } from '../providers/auth-provider';
 import { useStore } from '../providers/store-provider';
 import { publicErrorMessage } from '../../lib/errors';
+import { COMPLETE_PROFILE_PATH, isProfileComplete } from '../../lib/profile';
 
 type LoginMethod = 'password' | 'email' | 'sms';
 
@@ -120,14 +121,16 @@ function GoogleButton({ pending }: { pending: boolean }): React.JSX.Element | nu
   );
 }
 
+type AuthMethod = 'password' | 'email' | 'sms';
+
 function AuthMethodTabs({
   methods,
   active,
   onChange,
 }: {
-  methods: { id: LoginMethod; label: string }[];
-  active: LoginMethod;
-  onChange: (method: LoginMethod) => void;
+  methods: { id: AuthMethod; label: string }[];
+  active: AuthMethod;
+  onChange: (method: AuthMethod) => void;
 }): React.JSX.Element | null {
   if (methods.length <= 1) {
     return null;
@@ -152,17 +155,23 @@ function AuthMethodTabs({
   );
 }
 
-function OtpForm({ channel }: { channel: 'email' | 'sms' }): React.JSX.Element {
+function OtpForm({
+  channel,
+  intent = 'login',
+}: {
+  channel: 'email' | 'sms';
+  intent?: 'login' | 'register';
+}): React.JSX.Element {
   const router = useRouter();
   const { requestOtp, verifyOtp } = useAuth();
   const [step, setStep] = useState<'request' | 'verify'>('request');
   const [identifier, setIdentifier] = useState('');
-  const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [expiresIn, setExpiresIn] = useState(0);
   const [resendIn, setResendIn] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const registering = intent === 'register';
 
   useEffect(() => {
     if (resendIn <= 0) {
@@ -181,6 +190,7 @@ function OtpForm({ channel }: { channel: 'email' | 'sms' }): React.JSX.Element {
     try {
       const result = await requestOtp({
         channel,
+        intent,
         email: channel === 'email' ? identifier : undefined,
         phone: channel === 'sms' ? identifier : undefined,
       });
@@ -200,14 +210,16 @@ function OtpForm({ channel }: { channel: 'email' | 'sms' }): React.JSX.Element {
     setPending(true);
     setError(null);
     try {
-      await verifyOtp({
+      const customer = await verifyOtp({
         channel,
+        intent,
         email: channel === 'email' ? identifier : undefined,
         phone: channel === 'sms' ? identifier : undefined,
         code,
-        name: name || undefined,
       });
-      router.push('/account');
+      const destination =
+        registering || !isProfileComplete(customer) ? COMPLETE_PROFILE_PATH : '/account';
+      router.push(destination);
       router.refresh();
     } catch (caught) {
       setError(publicErrorMessage(caught, 'Could not verify this code.'));
@@ -228,10 +240,6 @@ function OtpForm({ channel }: { channel: 'email' | 'sms' }): React.JSX.Element {
           <p className="mt-1 text-xs text-muted-foreground">Expires in about {expiryMinutes} minute{expiryMinutes === 1 ? '' : 's'}.</p>
         </div>
         <label className="grid gap-1.5 text-sm">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Name (optional)</span>
-          <Input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="For new accounts" />
-        </label>
-        <label className="grid gap-1.5 text-sm">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">6-digit code</span>
           <Input
             value={code}
@@ -245,7 +253,7 @@ function OtpForm({ channel }: { channel: 'email' | 'sms' }): React.JSX.Element {
           />
         </label>
         <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending || code.length !== 6}>
-          {pending ? 'Verifying…' : 'Verify and sign in'}
+          {pending ? 'Verifying…' : registering ? 'Verify and continue' : 'Verify and sign in'}
         </Button>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {resendIn > 0 ? (
@@ -267,9 +275,13 @@ function OtpForm({ channel }: { channel: 'email' | 'sms' }): React.JSX.Element {
     <form onSubmit={(event) => void sendCode(event)} className="space-y-4">
       {error ? <Alert tone="danger">{error}</Alert> : null}
       <p className="text-sm text-muted-foreground">
-        {channel === 'email'
-          ? 'We will email you a one-time code. No password needed.'
-          : 'We will text you a one-time code. No password needed.'}
+        {registering
+          ? channel === 'email'
+            ? 'Verify your email to create an account. We will ask for a few profile details next.'
+            : 'Verify your phone to create an account. We will ask for a few profile details next.'
+          : channel === 'email'
+            ? 'We will email you a one-time code. No password needed.'
+            : 'We will text you a one-time code. No password needed.'}
       </p>
       <label className="grid gap-1.5 text-sm">
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -284,7 +296,7 @@ function OtpForm({ channel }: { channel: 'email' | 'sms' }): React.JSX.Element {
         />
       </label>
       <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending}>
-        {pending ? 'Sending…' : 'Send sign-in code'}
+        {pending ? 'Sending…' : registering ? 'Send verification code' : 'Send sign-in code'}
       </Button>
     </form>
   );
@@ -372,7 +384,7 @@ export function LoginForm(): React.JSX.Element {
       title="Sign in"
       subtitle="Welcome back. Pick the sign-in option that works for you."
       footer={
-        methods.passwordLogin ? (
+        methods.passwordLogin || methods.emailOtp || methods.smsOtp ? (
           <>
             New here?{' '}
             <Link href="/auth/register" className="font-medium text-foreground underline underline-offset-4">
@@ -380,7 +392,7 @@ export function LoginForm(): React.JSX.Element {
             </Link>
           </>
         ) : (
-          'A new account is created automatically the first time you verify a code or use Google.'
+          'A new account is created automatically the first time you use Google sign-in.'
         )
       }
     >
@@ -411,9 +423,31 @@ export function RegisterForm(): React.JSX.Element {
   const { register } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const methods = store.auth ?? { passwordLogin: true, emailOtp: false, smsOtp: false, googleSignIn: false };
   const shopName = store.tenant.name.trim() || 'Jerzyfy';
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  const registerMethods = useMemo(
+    () =>
+      [
+        methods.emailOtp ? { id: 'email' as const, label: 'Email code' } : null,
+        methods.smsOtp ? { id: 'sms' as const, label: 'SMS code' } : null,
+      ].filter(Boolean) as { id: 'email' | 'sms'; label: string }[],
+    [methods.emailOtp, methods.smsOtp],
+  );
+
+  const [activeMethod, setActiveMethod] = useState<'email' | 'sms'>(() => registerMethods[0]?.id ?? 'email');
+
+  useEffect(() => {
+    if (!registerMethods.some((method) => method.id === activeMethod)) {
+      setActiveMethod(registerMethods[0]?.id ?? 'email');
+    }
+  }, [activeMethod, registerMethods]);
+
+  const hasOtpRegister = registerMethods.length > 0;
+  const hasGoogle = methods.googleSignIn;
+  const hasPasswordRegister = methods.passwordLogin && !hasOtpRegister;
+
+  async function onPasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setPending(true);
@@ -434,12 +468,32 @@ export function RegisterForm(): React.JSX.Element {
     }
   }
 
-  if (!store.auth?.passwordLogin) {
+  if (!hasOtpRegister && !hasPasswordRegister && !hasGoogle) {
     return (
       <AuthShell
         shopName={shopName}
         title="Create account"
-        subtitle="Password registration is off for this store."
+        subtitle="Registration is not available for this store right now."
+        footer={
+          <>
+            Already have an account?{' '}
+            <Link href="/auth/login" className="font-medium text-foreground underline underline-offset-4">
+              Sign in
+            </Link>
+          </>
+        }
+      >
+        <Alert tone="danger">No sign-up methods are enabled.</Alert>
+      </AuthShell>
+    );
+  }
+
+  if (!hasOtpRegister && !hasPasswordRegister) {
+    return (
+      <AuthShell
+        shopName={shopName}
+        title="Create account"
+        subtitle="Continue with Google to join the squad."
         footer={
           <>
             Already have an account?{' '}
@@ -458,7 +512,11 @@ export function RegisterForm(): React.JSX.Element {
     <AuthShell
       shopName={shopName}
       title="Create account"
-      subtitle="Join the squad — checkout faster and track orders."
+      subtitle={
+        hasOtpRegister
+          ? 'Verify your contact details first, then complete your profile.'
+          : 'Join the squad — checkout faster and track orders.'
+      }
       footer={
         <>
           Already have an account?{' '}
@@ -468,32 +526,45 @@ export function RegisterForm(): React.JSX.Element {
         </>
       }
     >
-      <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
-        {error ? <Alert tone="danger">{error}</Alert> : null}
-        <label className="grid gap-1.5 text-sm">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Name</span>
-          <Input name="name" autoComplete="name" required />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Email</span>
-          <Input name="email" type="email" autoComplete="email" required />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Phone (optional)</span>
-          <Input name="phone" autoComplete="tel" />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Password</span>
-          <Input name="password" type="password" autoComplete="new-password" required />
-        </label>
-        <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending}>
-          {pending ? 'Creating…' : 'Create account'}
-        </Button>
-      </form>
-      {store.auth?.googleSignIn ? (
+      {hasGoogle ? <GoogleButton pending={pending} /> : null}
+      {hasGoogle && (hasOtpRegister || hasPasswordRegister) ? <AuthDivider /> : null}
+
+      {hasOtpRegister ? (
         <>
-          <AuthDivider />
-          <GoogleButton pending={pending} />
+          <AuthMethodTabs
+            methods={registerMethods}
+            active={activeMethod}
+            onChange={setActiveMethod}
+          />
+          <OtpForm channel={activeMethod} intent="register" />
+        </>
+      ) : null}
+
+      {hasPasswordRegister ? (
+        <>
+          {hasOtpRegister ? <AuthDivider label="or use password" /> : null}
+          <form onSubmit={(event) => void onPasswordSubmit(event)} className="space-y-4">
+            {error ? <Alert tone="danger">{error}</Alert> : null}
+            <label className="grid gap-1.5 text-sm">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Name</span>
+              <Input name="name" autoComplete="name" required />
+            </label>
+            <label className="grid gap-1.5 text-sm">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Email</span>
+              <Input name="email" type="email" autoComplete="email" required />
+            </label>
+            <label className="grid gap-1.5 text-sm">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Phone (optional)</span>
+              <Input name="phone" autoComplete="tel" />
+            </label>
+            <label className="grid gap-1.5 text-sm">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Password</span>
+              <Input name="password" type="password" autoComplete="new-password" required />
+            </label>
+            <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending}>
+              {pending ? 'Creating…' : 'Create account'}
+            </Button>
+          </form>
         </>
       ) : null}
     </AuthShell>

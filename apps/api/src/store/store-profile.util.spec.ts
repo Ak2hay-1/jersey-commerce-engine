@@ -1,10 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { isProfileComplete } from './profile';
+import { isStorefrontProfileComplete } from './store-profile.util';
 
-describe('isProfileComplete', () => {
-  it('returns false when delivery fields are missing', () => {
+describe('isStorefrontProfileComplete', () => {
+  it('returns false when required fields are missing', () => {
     expect(
-      isProfileComplete({
+      isStorefrontProfileComplete({
         name: 'Alex',
         phone: null,
         address: null,
@@ -15,9 +14,9 @@ describe('isProfileComplete', () => {
     ).toBe(false);
   });
 
-  it('returns true when name, phone and address fields are set', () => {
+  it('returns true when name, phone, and address fields are set', () => {
     expect(
-      isProfileComplete({
+      isStorefrontProfileComplete({
         name: 'Alex',
         phone: '+919876543210',
         address: '12 MG Road',

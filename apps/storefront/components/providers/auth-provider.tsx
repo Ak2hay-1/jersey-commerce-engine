@@ -5,7 +5,12 @@ import type { StorefrontCustomer } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
 import { STORE_COOKIES, clearBrowserCookie, writeBrowserCookie } from '../../lib/cookies';
 
-type OtpInput = { channel: 'email' | 'sms'; email?: string; phone?: string; name?: string };
+type OtpInput = {
+  channel: 'email' | 'sms';
+  email?: string;
+  phone?: string;
+  intent?: 'login' | 'register';
+};
 
 type AuthContextValue = {
   customer: StorefrontCustomer | null;
@@ -13,7 +18,7 @@ type AuthContextValue = {
   login: (input: { email?: string; phone?: string; password: string }) => Promise<void>;
   register: (input: { name: string; email: string; password: string; phone?: string }) => Promise<void>;
   requestOtp: (input: OtpInput) => Promise<{ expiresIn: number }>;
-  verifyOtp: (input: OtpInput & { code: string }) => Promise<void>;
+  verifyOtp: (input: OtpInput & { code: string }) => Promise<StorefrontCustomer>;
   startGoogle: () => Promise<void>;
   completeGoogle: (ticket: string) => Promise<StorefrontCustomer>;
   logout: () => void;
@@ -67,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     async (input: OtpInput & { code: string }) => {
       const result = await storeApi.verifyOtp(input);
       persist(result.accessToken, result.customer);
+      return result.customer;
     },
     [persist],
   );

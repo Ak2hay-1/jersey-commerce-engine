@@ -72,7 +72,7 @@ export function ProfileForm({ mode = 'edit' }: { mode?: ProfileFormMode }): Reac
         </h1>
         {completing ? (
           <p className="pt-2 text-sm text-muted-foreground">
-            Add your phone and delivery details so checkout is faster next time.
+            Add your name, phone, and delivery details to finish creating your account.
           </p>
         ) : null}
       </div>
