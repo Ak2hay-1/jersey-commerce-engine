@@ -11,7 +11,6 @@ import {
 } from '../lib/cached-store';
 import {
   CtaSection,
-  DualMarquee,
   FeaturedCategories,
   FeaturedProducts,
   LatestDrop,
@@ -91,7 +90,6 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       section.type === 'new-arrivals' ||
       section.type === 'best-sellers',
   );
-  const hasMarquee = sections.some((section) => section.type === 'marquee');
   const sectionsWithCatalog =
     catalogRailsConfigured || products.length === 0
       ? sections
@@ -102,7 +100,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         ];
   const orderedSections = [
     ...sectionsWithCatalog.filter((section) => section.type === 'hero'),
-    ...sectionsWithCatalog.filter((section) => section.type !== 'hero'),
+    ...sectionsWithCatalog.filter((section) => section.type !== 'hero' && section.type !== 'marquee'),
   ];
 
   const firstCollectionIndex = orderedSections.findIndex(
@@ -136,13 +134,6 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       continue;
     }
     if (section.type === 'marquee') {
-      rendered.push(
-        <DualMarquee
-          key={key}
-          heading={section.heading || 'Club · National · Custom · Kids'}
-          subheading={section.subheading || 'Wear the game'}
-        />,
-      );
       continue;
     }
     if (section.type === 'statement') {
@@ -225,9 +216,6 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           currency={currency}
         />
       )}
-      {hasHero && !hasMarquee ? (
-        <DualMarquee heading="Club · National · Custom · Kids" subheading="Wear the game · Match day ready" />
-      ) : null}
       {rendered}
       {!injectedTrending ? <TrendingSection categories={categoriesWithCovers} /> : null}
       {!injectedLimited ? <LimitedEditionBand products={newestForLimited} brand={brand} /> : null}

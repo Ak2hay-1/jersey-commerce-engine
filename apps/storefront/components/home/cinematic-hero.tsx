@@ -7,12 +7,13 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { HomepageBannerSlide, HomepageSection, StorefrontProductListItem } from '@jersey-commerce/types';
 import { Magnetic } from '../motion/magnetic';
 import { ProductImage } from '../catalog/product-image';
-import { resolveDemoMediaUrl } from '../../lib/demo-media';
+import { DEMO_HERO_IMAGE, resolveDemoMediaUrl } from '../../lib/demo-media';
 import { formatMoney } from '../../lib/format';
-import { MOTION_EASE, MOTION_HERO } from '../motion/presence';
+import { MOTION_EASE } from '../motion/presence';
 import { useStore } from '../providers/store-provider';
 
 const AUTOPLAY_MS = 5500;
+const HERO_VIDEO_SRC = '/media/hero-loop.mp4';
 
 const FLOAT_POSES = [
   { className: 'hero-float-card hero-float-card--left', rotate: -8, y: [0, -10, 0] as number[] },
@@ -27,13 +28,9 @@ function slidesFromSection(
   if (section?.slides?.length) {
     return section.slides.filter((slide) => slide.image || slide.heading || slide.subheading);
   }
-  const image = section?.image || fallbackImage?.url;
-  if (!image && !section?.heading && !section?.subheading) {
-    return [];
-  }
   return [
     {
-      image: image ?? '',
+      image: section?.image || fallbackImage?.url || '',
       heading: section?.heading?.trim() || 'Rule the pitch',
       subheading: section?.subheading ?? 'Match-day kits for the stands, the street, and every kick-off.',
       ctaLabel: section?.ctaLabel || 'Shop jerseys',
@@ -60,6 +57,7 @@ export function CinematicHero({
   const slides = useMemo(() => slidesFromSection(section, fallbackImage), [section, fallbackImage]);
   const [active, setActive] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [videoFailed, setVideoFailed] = useState(false);
   const count = slides.length;
   const brand = store.tenant.name?.trim() || 'Jerzyfy';
   const floatProducts = featuredProducts.slice(0, 3);
@@ -99,24 +97,15 @@ export function CinematicHero({
   }, [reduced, count, go]);
 
   const slide = slides[active] ?? slides[0];
-  const image = resolveDemoMediaUrl(slide?.image);
+  const poster =
+    resolveDemoMediaUrl(slide?.image) ||
+    resolveDemoMediaUrl(fallbackImage?.url) ||
+    DEMO_HERO_IMAGE;
   const heading = slide?.heading?.trim() || 'Rule the pitch';
   const subheading = slide?.subheading?.trim();
   const href = slide?.ctaHref || '/products';
   const label = slide?.ctaLabel || 'Shop jerseys';
   const slideKey = slide?.id ?? `${slide?.image ?? 'empty'}-${active}`;
-
-  const imageVariants = reduced
-    ? {
-        enter: { opacity: 1 },
-        center: { opacity: 1 },
-        exit: { opacity: 1 },
-      }
-    : {
-        enter: { opacity: 0, scale: 1.04, x: direction > 0 ? '5%' : '-5%' },
-        center: { opacity: 1, scale: 1, x: '0%' },
-        exit: { opacity: 0, scale: 1.02, x: direction > 0 ? '-4%' : '4%' },
-      };
 
   const copyContainer = reduced
     ? undefined
@@ -145,34 +134,34 @@ export function CinematicHero({
   return (
     <section
       className="home-pitch relative flex min-h-[85dvh] flex-col overflow-hidden bg-[hsl(var(--hero-plane))] text-foreground sm:min-h-[90dvh] lg:min-h-[92dvh]"
-      aria-roledescription="carousel"
-      aria-label="Homepage banners"
+      aria-roledescription={count > 1 ? 'carousel' : undefined}
+      aria-label="Homepage hero"
     >
-      <AnimatePresence initial={false} custom={direction}>
-        <motion.div
-          key={slideKey}
-          className="absolute inset-0"
-          custom={direction}
-          variants={imageVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ duration: reduced ? 0.2 : MOTION_HERO, ease: MOTION_EASE }}
-        >
-          {image ? (
-            <ProductImage
-              src={image}
-              alt={heading}
-              className={`object-cover ${reduced ? '' : 'animate-ken-burns'}`}
-              sizes="100vw"
-              priority={active === 0}
-              fill
-            />
-          ) : (
-            <div className="absolute inset-0 bg-[hsl(var(--hero-plane))]" />
-          )}
-        </motion.div>
-      </AnimatePresence>
+      <div className="absolute inset-0">
+        {!videoFailed ? (
+          <video
+            className="absolute inset-0 h-full w-full object-cover"
+            src={HERO_VIDEO_SRC}
+            poster={poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden
+            onError={() => setVideoFailed(true)}
+          />
+        ) : (
+          <ProductImage
+            src={poster}
+            alt={heading}
+            className="object-cover"
+            sizes="100vw"
+            priority
+            fill
+          />
+        )}
+      </div>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_60%_20%,rgba(122,31,31,0.28),transparent_55%)]" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/25" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent" />
@@ -236,6 +225,7 @@ export function CinematicHero({
             initial="enter"
             animate="center"
             exit="exit"
+            custom={direction}
           >
             <motion.p
               variants={copyItem}

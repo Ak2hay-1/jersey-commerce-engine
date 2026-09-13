@@ -5,7 +5,7 @@ import { motion, useMotionValue, useReducedMotion, useSpring } from 'motion/reac
 
 const CURSOR_SIZE = 12;
 const HOVER_SCALE = 44 / CURSOR_SIZE;
-const SPRING = { stiffness: 700, damping: 38, mass: 0.2 };
+const SPRING = { stiffness: 2000, damping: 45, mass: 0.15 };
 
 export function CustomCursor(): React.JSX.Element | null {
   const reduced = useReducedMotion();
