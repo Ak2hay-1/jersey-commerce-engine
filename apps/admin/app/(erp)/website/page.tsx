@@ -181,21 +181,24 @@ export default function WebsitePage(): React.JSX.Element {
           whatsapp: nextSettings.socialLinks?.whatsapp ?? '',
         });
         const loaded = nextSettings.homepageConfig?.sections ?? [];
-        const withCatalogDefaults = [
+        const withCatalogDefaults: HomepageSection[] = [
           ...loaded,
           ...(['featured-products', 'new-arrivals'] as const)
             .filter((type) => !loaded.some((section) => section.type === type))
-            .map((type) => ({
-              type,
-              enabled: true,
-              heading: type === 'featured-products' ? 'Featured products' : 'Latest drop',
-            })),
+            .map(
+              (type): HomepageSection => ({
+                type,
+                enabled: true,
+                heading: type === 'featured-products' ? 'Featured products' : 'Latest drop',
+              }),
+            ),
         ];
         setSections(withCatalogDefaults);
         const featuredSection = withCatalogDefaults.find((section) => section.type === 'featured-categories');
-        const selected = featuredSection?.categorySlugs?.length
-          ? featuredSection.categorySlugs
-          : nextCategories.filter((item) => !item.parentId).slice(0, 3).map((item) => item.slug);
+        const selected =
+          featuredSection?.type === 'featured-categories' && featuredSection.categorySlugs?.length
+            ? featuredSection.categorySlugs
+            : nextCategories.filter((item) => !item.parentId).slice(0, 3).map((item) => item.slug);
         setTiles(
           selected.map((slug) => {
             const category = nextCategories.find((item) => item.slug === slug);
