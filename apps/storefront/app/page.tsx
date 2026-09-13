@@ -186,7 +186,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       }
 
       if (!injectedLimited) {
-        rendered.push(<LimitedEditionBand key="limited" products={newest} brand={brand} />);
+        rendered.push(
+          <LimitedEditionBand key="limited" products={newest} brand={brand} currency={currency} />,
+        );
         injectedLimited = true;
       }
 
@@ -218,7 +220,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       )}
       {rendered}
       {!injectedTrending ? <TrendingSection categories={categoriesWithCovers} /> : null}
-      {!injectedLimited ? <LimitedEditionBand products={newestForLimited} brand={brand} /> : null}
+      {!injectedLimited ? (
+        <LimitedEditionBand products={newestForLimited} brand={brand} currency={currency} />
+      ) : null}
     </div>
   );
 }
