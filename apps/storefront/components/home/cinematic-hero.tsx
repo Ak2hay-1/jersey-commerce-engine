@@ -8,18 +8,17 @@ import type { HomepageBannerSlide, HomepageSection, StorefrontProductListItem } 
 import { Magnetic } from '../motion/magnetic';
 import { ProductImage } from '../catalog/product-image';
 import { resolveDemoMediaUrl } from '../../lib/demo-media';
-import { MOTION_EASE } from '../motion/presence';
+import { MOTION_EASE, MOTION_HERO } from '../motion/presence';
 import { useStore } from '../providers/store-provider';
 
 const AUTOPLAY_MS = 5500;
-const SLIDE_MS = 0.7;
 
 function slidesFromSection(
   section?: HomepageSection,
   fallbackImage?: StorefrontProductListItem['primaryImage'],
 ): HomepageBannerSlide[] {
   if (section?.slides?.length) {
-    return section.slides.filter((slide) => slide.image);
+    return section.slides.filter((slide) => slide.image || slide.heading || slide.subheading);
   }
   const image = section?.image || fallbackImage?.url;
   if (!image && !section?.heading && !section?.subheading) {
@@ -28,9 +27,9 @@ function slidesFromSection(
   return [
     {
       image: image ?? '',
-      heading: section?.heading?.trim() || 'New collection launched',
+      heading: section?.heading?.trim() || 'Football jerseys for match day',
       subheading: section?.subheading,
-      ctaLabel: section?.ctaLabel || 'Shop the drop',
+      ctaLabel: section?.ctaLabel || 'Shop jerseys',
       ctaHref: section?.ctaHref || '/products',
     },
   ];
@@ -51,6 +50,7 @@ export function CinematicHero({
   const [active, setActive] = useState(0);
   const [direction, setDirection] = useState(1);
   const count = slides.length;
+  const brand = store.tenant.name?.trim() || 'Jerzyfy';
 
   useEffect(() => {
     setActive(0);
@@ -88,10 +88,10 @@ export function CinematicHero({
 
   const slide = slides[active] ?? slides[0];
   const image = resolveDemoMediaUrl(slide?.image);
-  const heading = slide?.heading?.trim() || 'New collection launched';
-  const subheading = slide?.subheading;
+  const heading = slide?.heading?.trim() || 'Football jerseys for match day';
+  const subheading = slide?.subheading?.trim();
   const href = slide?.ctaHref || '/products';
-  const label = slide?.ctaLabel || 'Shop the drop';
+  const label = slide?.ctaLabel || 'Shop jerseys';
   const slideKey = slide?.id ?? `${slide?.image ?? 'empty'}-${active}`;
 
   const imageVariants = reduced
@@ -101,26 +101,38 @@ export function CinematicHero({
         exit: { opacity: 1 },
       }
     : {
-        enter: { opacity: 0, scale: 1.04, x: direction > 0 ? '6%' : '-6%' },
+        enter: { opacity: 0, scale: 1.03, x: direction > 0 ? '4%' : '-4%' },
         center: { opacity: 1, scale: 1, x: '0%' },
-        exit: { opacity: 0, scale: 1.02, x: direction > 0 ? '-4%' : '4%' },
+        exit: { opacity: 0, scale: 1.01, x: direction > 0 ? '-3%' : '3%' },
       };
 
-  const copyVariants = reduced
+  const copyContainer = reduced
+    ? undefined
+    : {
+        enter: {},
+        center: {
+          transition: { staggerChildren: 0.08, delayChildren: 0.06 },
+        },
+        exit: {
+          transition: { staggerChildren: 0.04, staggerDirection: -1 },
+        },
+      };
+
+  const copyItem = reduced
     ? {
         enter: { opacity: 1 },
         center: { opacity: 1 },
         exit: { opacity: 0 },
       }
     : {
-        enter: { opacity: 0, y: 18 },
+        enter: { opacity: 0, y: 16 },
         center: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -12 },
+        exit: { opacity: 0, y: -10 },
       };
 
   return (
     <section
-      className="relative flex min-h-[20rem] flex-col overflow-hidden bg-[#111] text-white sm:min-h-[26rem] lg:min-h-[32rem]"
+      className="relative flex min-h-[78dvh] flex-col overflow-hidden bg-[hsl(var(--hero-plane))] text-white sm:min-h-[82dvh] lg:min-h-[88dvh]"
       aria-roledescription="carousel"
       aria-label="Homepage banners"
     >
@@ -133,7 +145,7 @@ export function CinematicHero({
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ duration: SLIDE_MS, ease: MOTION_EASE }}
+          transition={{ duration: reduced ? 0.2 : MOTION_HERO, ease: MOTION_EASE }}
         >
           {image ? (
             <ProductImage
@@ -145,34 +157,58 @@ export function CinematicHero({
               fill
             />
           ) : (
-            <div className="absolute inset-0 bg-[#111]" />
+            <div className="absolute inset-0 bg-[hsl(var(--hero-plane))]" />
           )}
         </motion.div>
       </AnimatePresence>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
-      <div className="relative z-10 mx-auto mt-auto flex w-full max-w-store flex-col justify-end store-gutter pb-12 pt-16 sm:pb-10 md:pb-12">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/20" />
+      <div className="relative z-10 mx-auto mt-auto flex w-full max-w-store flex-col justify-end store-gutter pb-16 pt-24 sm:pb-20 md:pb-24">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={`${slideKey}-copy`}
-            variants={copyVariants}
+            className="max-w-3xl"
+            variants={copyContainer}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: reduced ? 0.15 : 0.45, ease: MOTION_EASE }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/80">{heading}</p>
+            <motion.p
+              variants={copyItem}
+              transition={{ duration: reduced ? 0.12 : 0.45, ease: MOTION_EASE }}
+              className="font-heading text-[clamp(2.75rem,12vw,6.5rem)] leading-[0.88] tracking-tight text-white"
+            >
+              {brand}
+            </motion.p>
+            <motion.h1
+              variants={copyItem}
+              transition={{ duration: reduced ? 0.12 : 0.45, ease: MOTION_EASE }}
+              className="mt-5 max-w-2xl text-[clamp(1.15rem,3.2vw,1.65rem)] font-semibold uppercase leading-snug tracking-[0.08em] text-white/95"
+            >
+              {heading}
+            </motion.h1>
             {subheading ? (
-              <h1 className="mt-3 max-w-4xl break-words font-heading text-[clamp(1.85rem,8vw,4.5rem)] uppercase leading-[0.92] tracking-tight md:text-6xl lg:text-7xl">
+              <motion.p
+                variants={copyItem}
+                transition={{ duration: reduced ? 0.12 : 0.45, ease: MOTION_EASE }}
+                className="mt-4 max-w-md text-sm leading-relaxed text-white/75 sm:text-base"
+              >
                 {subheading}
-              </h1>
-            ) : (
-              <h1 className="mt-3 font-heading text-[clamp(2rem,10vw,3.75rem)] uppercase leading-[0.9] md:text-6xl">Jerzyfy</h1>
-            )}
-            <Magnetic className="mt-6 inline-block w-fit">
-              <Link href={href} className="store-pill border border-white/40 bg-white px-6 py-3 text-foreground sm:px-8">
-                {label}
-              </Link>
-            </Magnetic>
+              </motion.p>
+            ) : null}
+            <motion.div
+              variants={copyItem}
+              transition={{ duration: reduced ? 0.12 : 0.45, ease: MOTION_EASE }}
+              className="mt-8"
+            >
+              <Magnetic className="inline-block w-fit">
+                <Link
+                  href={href}
+                  className="store-pill cursor-pointer border border-white/35 bg-white px-7 py-3.5 text-foreground sm:px-9"
+                >
+                  {label}
+                </Link>
+              </Magnetic>
+            </motion.div>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -180,7 +216,7 @@ export function CinematicHero({
         <>
           <button
             type="button"
-            className="absolute left-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white sm:left-3"
+            className="absolute left-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-black/25 text-white transition-colors hover:bg-black/45 sm:left-4"
             aria-label="Previous banner"
             onClick={() => go(-1)}
           >
@@ -188,23 +224,27 @@ export function CinematicHero({
           </button>
           <button
             type="button"
-            className="absolute right-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white sm:right-3"
+            className="absolute right-2 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-black/25 text-white transition-colors hover:bg-black/45 sm:right-4"
             aria-label="Next banner"
             onClick={() => go(1)}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
-          <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1 sm:bottom-4 sm:gap-2">
+          <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 gap-1 sm:bottom-6 sm:gap-1.5">
             {slides.map((item, index) => (
               <button
                 key={item.id ?? `${item.image}-${index}`}
                 type="button"
                 aria-label={`Show banner ${index + 1}`}
                 aria-current={index === active}
-                className={`h-11 w-11 rounded-full p-3 ${index === active ? 'text-white' : 'text-white/40'}`}
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full p-3"
                 onClick={() => goTo(index)}
               >
-                <span className={`block h-2 w-2 rounded-full ${index === active ? 'bg-white' : 'bg-white/40'}`} />
+                <span
+                  className={`block h-1.5 rounded-full transition-all duration-300 ${
+                    index === active ? 'w-6 bg-white' : 'w-1.5 bg-white/40'
+                  }`}
+                />
               </button>
             ))}
           </div>

@@ -16,7 +16,7 @@ export function LatestDrop({
     return null;
   }
   return (
-    <section className="py-12 md:py-24">
+    <section className="py-[var(--space-section)]">
       <div className="mx-auto flex max-w-store flex-wrap items-end justify-between gap-3 store-gutter">
         {section.heading ? <ScrollHeading kicker="Drop">{section.heading}</ScrollHeading> : null}
         <Link href="/products?sort=newest" className="nav-link shrink-0 pb-1 text-[11px] font-semibold uppercase tracking-[0.2em]">

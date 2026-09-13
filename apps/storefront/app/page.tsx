@@ -34,6 +34,19 @@ function pickBySlugs(items: StorefrontProductListItem[], slugs?: string[]): Stor
   });
 }
 
+function withCatalogCover(
+  categories: Awaited<ReturnType<typeof cachedCategories>>,
+  catalogItems: StorefrontProductListItem[],
+): Awaited<ReturnType<typeof cachedCategories>> {
+  return categories.map((category) => {
+    if (category.image) {
+      return category;
+    }
+    const cover = catalogItems.find((item) => item.category?.id === category.id || item.category?.slug === category.slug);
+    return cover?.primaryImage?.url ? { ...category, image: cover.primaryImage.url } : category;
+  });
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const options = await serverStoreOptions();
@@ -65,16 +78,38 @@ export default async function HomePage(): Promise<React.JSX.Element> {
   ]);
 
   const currency = store.tenant.currency;
-  const sections = store.website.homepage.sections.filter((section: HomepageSection) => section.enabled);
-  // Hero banner must lead the page regardless of CMS section order.
-  const orderedSections = [
-    ...sections.filter((section) => section.type === 'hero'),
-    ...sections.filter((section) => section.type !== 'hero'),
-  ];
   const products = featured.length ? featured : (catalog?.items ?? []);
   const catalogItems = catalog?.items ?? [];
-  const street = categories.find((item) => item.slug === 'club-jerseys' || item.slug === 'football-jerseys');
-  const pitch = categories.find((item) => item.slug === 'national-jerseys' || item.slug === 'custom-jerseys');
+  const categoriesWithCovers = withCatalogCover(categories, catalogItems);
+  const configured = store.website.homepage.sections;
+  const sections = configured.filter((section: HomepageSection) => section.enabled);
+  const catalogRailsConfigured = configured.some(
+    (section) =>
+      section.type === 'featured-products' ||
+      section.type === 'new-arrivals' ||
+      section.type === 'best-sellers',
+  );
+  // Partial CMS configs (hero/statement only) still surface the catalog on the home page.
+  // Do not override rails that were explicitly saved as disabled.
+  const sectionsWithCatalog =
+    catalogRailsConfigured || products.length === 0
+      ? sections
+      : [
+          ...sections,
+          { type: 'featured-products' as const, enabled: true, heading: 'Featured jerseys' },
+          { type: 'new-arrivals' as const, enabled: true, heading: 'Latest kits' },
+        ];
+  // Hero banner must lead the page regardless of CMS section order.
+  const orderedSections = [
+    ...sectionsWithCatalog.filter((section) => section.type === 'hero'),
+    ...sectionsWithCatalog.filter((section) => section.type !== 'hero'),
+  ];
+  const street =
+    categoriesWithCovers.find((item) => item.slug === 'club-jerseys' || item.slug === 'football-jerseys') ??
+    categoriesWithCovers.find((item) => !item.parentId);
+  const pitch =
+    categoriesWithCovers.find((item) => item.slug === 'national-jerseys' || item.slug === 'custom-jerseys') ??
+    categoriesWithCovers.filter((item) => !item.parentId && item.id !== street?.id)[0];
 
   const rendered = await Promise.all(
     orderedSections.map(async (section: HomepageSection, index: number) => {
@@ -90,8 +125,8 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       }
       if (section.type === 'featured-categories') {
         const listed = section.categorySlugs?.length
-          ? categories.filter((item) => section.categorySlugs?.includes(item.slug))
-          : categories.filter((item) => !item.parentId).slice(0, 3);
+          ? categoriesWithCovers.filter((item) => section.categorySlugs?.includes(item.slug))
+          : categoriesWithCovers.filter((item) => !item.parentId).slice(0, 3);
         return <FeaturedCategories key={key} section={section} categories={listed} />;
       }
       if (section.type === 'featured-products') {

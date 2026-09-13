@@ -180,9 +180,19 @@ export default function WebsitePage(): React.JSX.Element {
           youtube: nextSettings.socialLinks?.youtube ?? '',
           whatsapp: nextSettings.socialLinks?.whatsapp ?? '',
         });
-        const nextSections = nextSettings.homepageConfig?.sections ?? [];
-        setSections(nextSections);
-        const featuredSection = nextSections.find((section) => section.type === 'featured-categories');
+        const loaded = nextSettings.homepageConfig?.sections ?? [];
+        const withCatalogDefaults = [
+          ...loaded,
+          ...(['featured-products', 'new-arrivals'] as const)
+            .filter((type) => !loaded.some((section) => section.type === type))
+            .map((type) => ({
+              type,
+              enabled: true,
+              heading: type === 'featured-products' ? 'Featured products' : 'Latest drop',
+            })),
+        ];
+        setSections(withCatalogDefaults);
+        const featuredSection = withCatalogDefaults.find((section) => section.type === 'featured-categories');
         const selected = featuredSection?.categorySlugs?.length
           ? featuredSection.categorySlugs
           : nextCategories.filter((item) => !item.parentId).slice(0, 3).map((item) => item.slug);

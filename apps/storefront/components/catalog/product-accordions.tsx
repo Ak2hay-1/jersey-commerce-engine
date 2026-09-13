@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
 
 const ITEMS = [
   {
@@ -23,6 +25,8 @@ const ITEMS = [
 
 export function ProductAccordions(): React.JSX.Element {
   const [open, setOpen] = useState<string | null>(ITEMS[0]?.title ?? null);
+  const reduced = useReducedMotion();
+
   return (
     <div className="border-t border-foreground/10 pt-6">
       {ITEMS.map((item) => {
@@ -31,14 +35,27 @@ export function ProductAccordions(): React.JSX.Element {
           <div key={item.title} className="border-b border-foreground/10">
             <button
               type="button"
-              className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold uppercase tracking-[0.14em]"
+              className="flex w-full cursor-pointer items-center justify-between py-4 text-left text-sm font-semibold uppercase tracking-[0.14em]"
               aria-expanded={expanded}
               onClick={() => setOpen(expanded ? null : item.title)}
             >
               {item.title}
               <span aria-hidden="true">{expanded ? '–' : '+'}</span>
             </button>
-            {expanded ? <p className="pb-4 text-sm leading-relaxed text-muted-foreground">{item.body}</p> : null}
+            <AnimatePresence initial={false}>
+              {expanded ? (
+                <motion.div
+                  key={`${item.title}-body`}
+                  initial={reduced ? { opacity: 1 } : { height: 0, opacity: 0 }}
+                  animate={reduced ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
+                  exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
+                  className="overflow-hidden"
+                >
+                  <p className="pb-4 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         );
       })}

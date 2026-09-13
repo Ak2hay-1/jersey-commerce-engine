@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "mockupStyle": "floating-3d",
+  "aspectRatio": "3:4",
+  "outputBase": "docs/delivery/setup-assets/products",
+  "jerseys": [
+    {
+      "slug": "arsenal-home-jersey",
+      "displayName": "Arsenal Home Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.34 AM.jpeg",
+      "description": "Arsenal home kit: red body, white raglan sleeves, maroon Adidas shoulder stripes, Emirates FLY BETTER sponsor, Arsenal crest, maroon collar trim"
+    },
+    {
+      "slug": "manchester-city-home-jersey",
+      "displayName": "Manchester City Home Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.35 AM.jpeg",
+      "description": "Manchester City home kit: sky blue gradient to light blue at hem, white crew neck, Puma logos, Etihad Airways sponsor, OKX sleeve logo, white side panels"
+    },
+    {
+      "slug": "ac-milan-away-jersey",
+      "displayName": "AC Milan Away Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.35 1AM.jpeg",
+      "description": "AC Milan away kit: white with subtle grey wavy tonal pattern, gold Puma logo, Emirates FLY BETTER sponsor, ACM crest with gold laurel wreath, black-red collar trim"
+    },
+    {
+      "slug": "barcelona-kobe-jersey",
+      "displayName": "Barcelona Kobe Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.351 AM.jpeg",
+      "description": "FC Barcelona x Kobe Bryant kit: black to purple vertical gradient body, yellow Spotify circle sponsor, holographic Barça crest, Kobe sheath logo, black snakeskin-pattern sleeves with AMBILI text"
+    },
+    {
+      "slug": "chelsea-home-jersey",
+      "displayName": "Chelsea Home Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.35q AM.jpeg",
+      "description": "Chelsea home kit: black body, yellow Nike swoosh, yellow Chelsea lion crest, yellow flame-pattern V-neck collar and sleeve cuffs, yellow curved side piping"
+    },
+    {
+      "slug": "barcelona-barsa-special-jersey",
+      "displayName": "Barcelona Barça Special Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.36 AM.jpeg",
+      "description": "FC Barcelona special kit: navy base with maroon abstract floral pattern, yellow Barça script text, Barça crest, yellow-tipped navy cuffs, MÉS QUE UN CLUB collar detail"
+    },
+    {
+      "slug": "real-madrid-lv-jersey",
+      "displayName": "Real Madrid LV Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.37 1AM.jpeg",
+      "description": "Real Madrid x Louis Vuitton kit: dark teal with LV monogram jacquard pattern, white Adidas stripes, Emirates sponsor, Real Madrid crest, ornate white sleeve cuff borders, number 4 circle patch"
+    },
+    {
+      "slug": "manchester-city-away-jersey",
+      "displayName": "Manchester City Away Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.37 A1M.jpeg",
+      "description": "Manchester City away kit: white base, central vertical blue gradient stripe, Puma logos, Etihad Airways sponsor, OKX sleeve logo, blue diamond side inserts"
+    },
+    {
+      "slug": "barcelona-home-jersey",
+      "displayName": "Barcelona Home Jersey",
+      "sourceFile": "11WhatsApp Image 2026-08-29 at 12.30.41 AM.jpeg",
+      "description": "FC Barcelona home kit: vertical navy, royal blue and burgundy stripes, yellow Nike swoosh, yellow Spotify circle sponsor, Barça crest, navy V-neck and side panels"
+    },
+    {
+      "slug": "barcelona-jordan-jersey",
+      "displayName": "Barcelona Jordan Jersey",
+      "sourceFile": "111WhatsApp Image 2026-08-29 at 12.30.40 AM.jpeg",
+      "description": "FC Barcelona x Jordan kit: charcoal grey with ornate baroque mandala pattern, white Jumpman logo, stylized Barça crest in black/white/gold, red side panels and shoulder piping"
+    },
+    {
+      "slug": "argentina-home-jersey",
+      "displayName": "Argentina Home Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.39 AM.jpeg",
+      "description": "Argentina home kit: vertical light blue and white stripes, gold Adidas logo, AFA crest with three gold stars, FIFA World Champions 2022 patch, white sleeves with three black stripes"
+    },
+    {
+      "slug": "portugal-home-jersey",
+      "displayName": "Portugal Home Jersey",
+      "sourceFile": "1WhatsApp Image 2026-08-29 at 12.30.39 AM.jpeg",
+      "description": "Portugal home kit: red with tonal wavy horizontal line pattern, white Puma logo, Portugal crest, teal V-neck and cuff trim, red mesh side panels"
+    },
+    {
+      "slug": "portugal-away-jersey",
+      "displayName": "Portugal Away Jersey",
+      "sourceFile": "11WhatsApp Image 2026-08-29 at 12.30.39 AM.jpeg",
+      "description": "Portugal away kit: mint green and white abstract brushstroke pattern, burgundy Puma logos, Portugal crest centered, dark teal side panels, white mesh inserts"
+    },
+    {
+      "slug": "real-madrid-home-jersey",
+      "displayName": "Real Madrid Home Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.341 AM.jpeg",
+      "description": "Real Madrid home kit: white base, navy/teal V-neck collar and cuffs, hot pink Adidas shoulder stripes, Emirates FLY BETTER sponsor, Real Madrid crest, HP logo on left sleeve"
+    },
+    {
+      "slug": "manchester-united-home-jersey",
+      "displayName": "Manchester United Home Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.38 1AM.jpeg",
+      "description": "Manchester United home kit: bright red, white Adidas shoulder stripes, polo collar with black-white trim, Snapdragon sponsor, Man United crest, DXC sleeve logo"
+    },
+    {
+      "slug": "liverpool-home-jersey",
+      "displayName": "Liverpool Home Jersey",
+      "sourceFile": "WhatsApp Image 2026-08-29 at 12.30.41 AM.jpeg",
+      "description": "Liverpool home kit: deep red/maroon with white diagonal line and stipple pattern, white Adidas stripes on shoulders, Standard Chartered sponsor, LFC crest, white collar and cuffs"
+    },
+    {
+      "slug": "liverpool-away-jersey",
+      "displayName": "Liverpool Away Jersey",
+      "sourceFile": "1WhatsApp Image 2026-08-29 at 12.30.41 AM.jpeg",
+      "description": "Liverpool away kit: white with tonal jacquard oval pattern, maroon Adidas stripes on shoulders, maroon Standard Chartered sponsor and LFC crest, maroon V-neck and cuff trim, Expedia sleeve logo"
+    }
+  ]
+}

@@ -1,9 +1,13 @@
 @import '@jersey-commerce/ui/styles';
 
 :root {
+  /* Jerzyfy design-system/jerzyfy/MASTER.md baseline (CMS theme may override via inline vars). */
   --font-heading: var(--font-heading-face), 'Instrument Serif', serif;
   --font-body: var(--font-body-face), Inter, system-ui, sans-serif;
-  --glass: 36 20% 96% / 0.72;
+  --hero-plane: 0 0% 4%;
+  --jerzyfy-accent: 0 60% 30%;
+  --space-section: clamp(3rem, 6vw, 6rem);
+  --glass: 40 12% 97% / 0.72;
   --glass-border: 0 0% 100% / 0.35;
 }
 

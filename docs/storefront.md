@@ -1,13 +1,13 @@
 # Premium storefront engine
 
-Phase 10 of the Jersey Commerce Engine. One Next.js app (`apps/storefront`) renders every tenant. Shop names, colors, logos, catalog, and homepage sections come from the API. There is no per-tenant frontend codebase.
+Phase 10 of the Jersey Commerce Engine (Jerzyfy). One Next.js app (`apps/storefront`) serves the single Jerzyfy shop. Shop name, colors, logos, catalog, and homepage sections come from the API / Website Settings.
 
 This phase includes the staff **Storefront → Customize** screen (live iframe preview + editors), homepage/footer/chrome CMS, and promo codes. Live payment capture, reviews, and wishlists belong to later phases.
 
 ## Architecture
 
 ```text
-Host / ?tenant=slug / cookie
+Pinned shop slug (NEXT_PUBLIC_DEFAULT_TENANT_SLUG)
         │
         ▼
 Next.js middleware → X-Tenant-Slug
@@ -21,20 +21,15 @@ POST /api/v1/store/checkout   PENDING order + stock reservation
 
 The storefront never sends `tenantId`. Prices, tax, discounts, and stock are never trusted from the client. Checkout re-quotes from live catalog data. Bootstrap includes public `auth` flags (password, email OTP, SMS OTP, Google) so the login page only shows enabled methods.
 
-## Tenant resolution
+## Shop resolution
 
-Order of resolution:
+With `NEXT_PUBLIC_SINGLE_TENANT=true` (default), the storefront always uses `NEXT_PUBLIC_DEFAULT_TENANT_SLUG` (local default: `demo-jersey-store`). Host and `?tenant=` switching are disabled.
 
-1. `?tenant=slug` (local development; written to a cookie and stripped from the URL)
-2. Configured custom domain (`TenantHost`)
-3. `{slug}.{PLATFORM_DOMAIN}` or `{slug}.localhost`
-4. `NEXT_PUBLIC_DEFAULT_TENANT_SLUG` (local default: `demo-jersey-store`)
-
-Open http://localhost:3000/?tenant=demo-jersey-store to pin the demo shop.
+Open http://localhost:3000 for the Jerzyfy shop.
 
 ## Theme
 
-`StoreBootstrap.theme` maps to CSS variables (`--primary`, `--accent`, `--background`, fonts, logo, favicon). Changing tenant branding does not require a code change. Defaults are generic sportswear tokens, not a specific shop.
+`StoreBootstrap.theme` maps to CSS variables (`--primary`, `--accent`, `--background`, fonts, logo, favicon). Brand tokens can also be refined in code for Jerzyfy; CMS branding remains available. Defaults are sportswear tokens.
 
 Homepage sections are stored on `WebsiteSettings.homepageConfig.sections`. Footer copy is stored on `WebsiteSettings.footerConfig`. Announcement messages and header nav live in `WebsiteSettings.chromeConfig`. Theme colors, logo, SEO, and contact fields are columns on `WebsiteSettings`. Disabled sections are omitted. Missing config falls back to defaults.
 

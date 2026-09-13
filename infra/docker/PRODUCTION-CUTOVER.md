@@ -1,5 +1,22 @@
 # Production cutover — Jerzyfy
 
+## Cohost (live)
+
+Shared VM with Cullinos: `95.135.254.46`  
+API: `https://95-135-254-46.sslip.io` (nginx → `127.0.0.1:4000`, no Caddy)
+
+Full playbook: **[COHOST-CUTOVER.md](./COHOST-CUTOVER.md)**
+
+```powershell
+.\infra\docker\run-cohost-deploy.ps1   # API updates on shared VM
+```
+
+**Vercel (required for frontends):** set `NEXT_PUBLIC_API_URL=https://95-135-254-46.sslip.io` on storefront + admin and redeploy. Until then staff/storefront still call the legacy Vultr API.
+
+---
+
+## Standalone Vultr (legacy rollback)
+
 Known VM: `45.76.61.16`
 
 | App | Production URL |

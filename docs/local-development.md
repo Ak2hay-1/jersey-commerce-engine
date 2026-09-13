@@ -71,9 +71,9 @@ npm run dev:pos
 
 `NEXT_PUBLIC_PORTAL` defaults to `all` so local admin on :3001 matches production (website CMS + ERP together). Production also nests POS under the staff Vercel URL at `/pos`; locally use `npm run dev:pos` on :3002 for isolated POS work. `NEXT_PUBLIC_PORTAL=admin` or `erp` / `dev:erp` remain for legacy split previews only.
 
-The storefront uses `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=demo-jersey-store`. Switch tenants locally with `http://localhost:3000/?tenant=demo-jersey-store`. See [storefront.md](storefront.md) and [custom-orders.md](custom-orders.md).
+The storefront uses `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=demo-jersey-store` with `NEXT_PUBLIC_SINGLE_TENANT=true` (single Jerzyfy shop). See [storefront.md](storefront.md) and [custom-orders.md](custom-orders.md).
 
-The POS app is at http://localhost:3002. Sign in with `cashier@demo.local` / `DevPassword123!` / tenant `demo-jersey-store`. See [pos.md](pos.md).
+The POS app is at http://localhost:3002. Sign in with `cashier@demo.local` / `DevPassword123!` (shop is pinned automatically). See [pos.md](pos.md).
 
 Demo superior admin: `superadmin@demo.local` / `DevPassword123!`. That role is hidden from other staff.
 

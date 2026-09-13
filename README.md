@@ -1,10 +1,10 @@
-# Jersey Commerce Engine
+# Jersey Commerce Engine (Jerzyfy)
 
-Production-ready, multi-tenant commerce platform for storefront, in-store POS, and ERP/admin operations.
+Production-ready commerce platform for **one shop**: customer storefront, in-store POS, and ERP/admin.
 
-The first deployment target is a jersey and sportswear business. The architecture does not hard-code shop names, logos, products, domains, colors, or other business identity. Those values belong to tenants and will be loaded at runtime in later phases.
+Jerzyfy is operated as a **single-client** product. Branding, catalog, and settings belong to that one shop (seeded as `demo-jersey-store` / display name Jerzyfy). The database still uses an internal `tenantId` column for scoping — that is an implementation detail, not a multi-shop product feature.
 
-This repository currently contains **Phases 1–12** plus the POS cashier app: monorepo layout, authentication, catalog, inventory, POS sales and register UI, payments, CRM, purchasing, the ecommerce order engine, a tenant-aware premium storefront, custom/bulk jersey orders, PostgreSQL/Redis, Prisma domain models, NestJS modules, API versioning, seed data, homepage CMS editing, and documentation. Live payment gateways belong to a later phase.
+This repository currently contains **Phases 1–12** plus the POS cashier app: monorepo layout, authentication, catalog, inventory, POS sales and register UI, payments, CRM, purchasing, the ecommerce order engine, a premium storefront, custom/bulk jersey orders, PostgreSQL/Redis, Prisma domain models, NestJS modules, API versioning, seed data, homepage CMS editing, and documentation. Live payment gateways belong to a later phase.
 
 ## Architecture
 
@@ -134,6 +134,12 @@ Shop: Vercel storefront · Staff portal (Admin + ERP + POS at `/pos`): Vercel ad
 | `npm run prisma:migrate` | Create/apply Prisma migrations locally |
 | `npm run prisma:seed` | Load **development-only** demo data |
 
-## Multi-tenant rule
+## Single-shop rule
 
-Do not hard-code business identity in application code. Tenant records own shop names, branding, catalogs, and domains. The Prisma `Tenant` model is the isolation root. Protected APIs take tenant context from the authenticated JWT, never from a client-supplied tenant id. See [docs/auth.md](docs/auth.md).
+Jerzyfy serves **one client**. Do not build multi-shop switching, platform hosting, or tenant marketplaces.
+
+- Default shop slug: `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=demo-jersey-store` (display name: Jerzyfy).
+- API: `SINGLE_TENANT_MODE=true` (default) blocks `POST /api/v1/admin/tenants`.
+- Frontends: `NEXT_PUBLIC_SINGLE_TENANT=true` (default) pins that shop and hides shop pickers / tenant switchers.
+- You may hard-code Jerzyfy brand identity in UI when it improves the product; Website Settings remain available for CMS-driven logos and colors.
+- Protected APIs still take shop context from the authenticated JWT (or storefront slug), never from a client-supplied tenant id. See [docs/auth.md](docs/auth.md).

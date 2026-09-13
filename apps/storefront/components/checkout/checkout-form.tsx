@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from '@jersey-commerce/ui';
 import type { CheckoutQuote, FulfillmentMethod } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
@@ -17,6 +18,7 @@ import { Alert } from '../ui/alert';
 import { Input } from '../ui/input';
 import { EmptyState } from '../ui/empty-state';
 import { blockingCheckoutIssues } from '../../lib/checkout';
+import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
 
 const STEPS = ['Contact', 'Delivery', 'Payment', 'Confirmation'] as const;
 
@@ -35,6 +37,7 @@ export function CheckoutForm(): React.JSX.Element {
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     if (customer) {
@@ -97,15 +100,36 @@ export function CheckoutForm(): React.JSX.Element {
     }
   }
 
+  const sectionMotion = reduced
+    ? undefined
+    : {
+        initial: { opacity: 0, y: 10 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, amount: 0.2 },
+        transition: { duration: MOTION_DURATION, ease: MOTION_EASE },
+      };
+
   return (
     <form onSubmit={placeOrder} className="mx-auto grid max-w-store gap-8 store-gutter py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="space-y-8">
-        <ol className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {STEPS.map((label, index) => (
-            <li key={label} className={index === step ? 'text-foreground' : undefined}>
-              {index + 1}. {label}
-            </li>
-          ))}
+        <ol className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {STEPS.map((label, index) => {
+            const active = index === step;
+            return (
+              <li key={label} className="relative pb-1">
+                <span className={active ? 'text-foreground' : undefined}>
+                  {index + 1}. {label}
+                </span>
+                {active ? (
+                  <motion.span
+                    layoutId="checkout-step-underline"
+                    className="absolute inset-x-0 bottom-0 h-px bg-foreground"
+                    transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
+                  />
+                ) : null}
+              </li>
+            );
+          })}
         </ol>
         {error ? <Alert tone="danger">{error}</Alert> : null}
         {issues.map((issue) => (
@@ -113,7 +137,7 @@ export function CheckoutForm(): React.JSX.Element {
             {issue.message}
           </Alert>
         ))}
-        <section className="space-y-3">
+        <motion.section className="space-y-3" {...sectionMotion}>
           <h1 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Contact</h1>
           <label className="grid gap-1 text-sm">
             Name
@@ -127,26 +151,67 @@ export function CheckoutForm(): React.JSX.Element {
             Phone
             <Input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" required />
           </label>
-        </section>
-        <section className="space-y-3">
+        </motion.section>
+        <motion.section className="space-y-3" {...sectionMotion}>
           <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Promo code</h2>
           <PromoCodeField />
-        </section>
-        <section className="space-y-3">
+        </motion.section>
+        <motion.section className="space-y-3" {...sectionMotion}>
           <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Delivery</h2>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button type="button" className="w-full sm:w-auto" variant={method === 'DELIVERY' ? 'default' : 'outline'} onClick={() => { setMethod('DELIVERY'); setStep(1); }}>
+            <Button
+              type="button"
+              className="w-full cursor-pointer sm:w-auto"
+              variant={method === 'DELIVERY' ? 'default' : 'outline'}
+              onClick={() => {
+                setMethod('DELIVERY');
+                setStep(1);
+              }}
+            >
               Delivery
             </Button>
-            <Button type="button" className="w-full sm:w-auto" variant={method === 'STORE_PICKUP' ? 'default' : 'outline'} onClick={() => { setMethod('STORE_PICKUP'); setStep(1); }}>
+            <Button
+              type="button"
+              className="w-full cursor-pointer sm:w-auto"
+              variant={method === 'STORE_PICKUP' ? 'default' : 'outline'}
+              onClick={() => {
+                setMethod('STORE_PICKUP');
+                setStep(1);
+              }}
+            >
               Store pickup
             </Button>
           </div>
-          {method === 'DELIVERY' ? <AddressForm value={address} onChange={setAddress} /> : (
-            <p className="text-sm text-muted-foreground">Collect from {store.website.contactAddress ?? store.tenant.name}.</p>
-          )}
-        </section>
-        <section className="space-y-3">
+          <AnimatePresence mode="wait" initial={false}>
+            {method === 'DELIVERY' ? (
+              <motion.div
+                key="delivery-address"
+                initial={reduced ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
+              >
+                <AddressForm value={address} onChange={setAddress} />
+              </motion.div>
+            ) : (
+              <motion.p
+                key="pickup-note"
+                className="text-sm text-muted-foreground"
+                initial={reduced ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
+              >
+                Collect from {store.website.contactAddress ?? store.tenant.name}.
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.section>
+        <motion.section
+          className="space-y-3"
+          {...sectionMotion}
+          onFocusCapture={() => setStep(2)}
+        >
           <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Payment</h2>
           <div className="border border-foreground bg-foreground px-4 py-4 text-background">
             <p className="text-sm font-semibold uppercase tracking-[0.16em]">
@@ -158,8 +223,13 @@ export function CheckoutForm(): React.JSX.Element {
                 : 'Online checkout is being set up. Contact the store if you need help placing an order.'}
             </p>
           </div>
-        </section>
-        <Button type="submit" className="store-cta w-full rounded-none md:w-auto" disabled={pending || blocking.length > 0 || !razorpayEnabled} onClick={() => setStep(3)}>
+        </motion.section>
+        <Button
+          type="submit"
+          className="store-cta w-full cursor-pointer rounded-none md:w-auto"
+          disabled={pending || blocking.length > 0 || !razorpayEnabled}
+          onClick={() => setStep(3)}
+        >
           {pending ? 'Placing order…' : razorpayEnabled ? 'Pay & place order' : 'Checkout unavailable'}
         </Button>
       </div>

@@ -13,6 +13,7 @@ import { useAuth } from '../providers/auth-provider';
 import { SearchBar } from './search-bar';
 import { MobileMenu } from './mobile-menu';
 import { MOTION_TRANSITION } from '../motion/presence';
+import { SlidingNumber } from '../motion/sliding-number';
 
 export function StoreHeader(): React.JSX.Element {
   const store = useStore();
@@ -116,24 +117,32 @@ export function StoreHeader(): React.JSX.Element {
           </Button>
           <button
             type="button"
-            className="inline-flex min-h-11 items-center gap-2 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] md:min-h-0"
+            className="inline-flex min-h-11 cursor-pointer items-center gap-2 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] md:min-h-0"
             aria-label="Open cart"
             onClick={() => setOpen(true)}
           >
-            <span className="hidden sm:inline">Cart{count > 0 ? ` (${count})` : ''}</span>
+            <span className="hidden sm:inline">
+              Cart
+              {count > 0 ? (
+                <>
+                  {' '}
+                  (<SlidingNumber value={count} />)
+                </>
+              ) : null}
+            </span>
             <span className="relative">
               <ShoppingBag className="h-4 w-4" />
               <AnimatePresence>
                 {count > 0 ? (
                   <motion.span
-                    key={count}
-                    className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center bg-foreground px-1 text-[10px] font-bold text-background"
+                    key="cart-badge"
+                    className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center overflow-hidden bg-foreground px-1 text-[10px] font-bold text-background"
                     initial={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
                     animate={reduced ? { opacity: 1 } : { scale: 1, opacity: 1 }}
                     exit={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
                     transition={MOTION_TRANSITION}
                   >
-                    {count}
+                    <SlidingNumber value={count} />
                   </motion.span>
                 ) : null}
               </AnimatePresence>

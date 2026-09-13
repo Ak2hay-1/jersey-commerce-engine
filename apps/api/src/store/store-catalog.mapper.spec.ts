@@ -70,7 +70,40 @@ describe('toHomepageConfig', () => {
         ctaHref: '/products',
       },
     ]);
-    expect(config.sections[1]?.productSlugs).toEqual(['the-night-shift-oversized-tee']);
+    expect(config.sections.find((section) => section.type === 'new-arrivals')?.productSlugs).toEqual([
+      'the-night-shift-oversized-tee',
+    ]);
+  });
+
+  it('fills missing product rails when CMS only saved hero/statement sections', () => {
+    const config = toHomepageConfig({
+      sections: [
+        { type: 'hero', enabled: true, heading: 'Wear the game' },
+        { type: 'statement', enabled: true, heading: 'WEAR THE GAME' },
+        { type: 'featured-categories', enabled: true, heading: 'Shop by kit' },
+      ],
+    });
+    expect(config.sections.map((section) => section.type)).toEqual([
+      'hero',
+      'statement',
+      'featured-products',
+      'new-arrivals',
+      'featured-categories',
+    ]);
+    expect(config.sections.find((section) => section.type === 'featured-products')?.enabled).toBe(true);
+    expect(config.sections.find((section) => section.type === 'new-arrivals')?.enabled).toBe(true);
+  });
+
+  it('does not re-enable product rails that were explicitly turned off', () => {
+    const config = toHomepageConfig({
+      sections: [
+        { type: 'hero', enabled: true },
+        { type: 'featured-products', enabled: false, heading: 'Featured' },
+        { type: 'new-arrivals', enabled: false, heading: 'Latest' },
+      ],
+    });
+    expect(config.sections.find((section) => section.type === 'featured-products')?.enabled).toBe(false);
+    expect(config.sections.find((section) => section.type === 'new-arrivals')?.enabled).toBe(false);
   });
 });
 

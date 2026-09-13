@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button, cn } from '@jersey-commerce/ui';
 import type { StorefrontProductDetail, StorefrontVariant } from '@jersey-commerce/types';
 import { ProductVariantSelector } from './product-variant-selector';
@@ -10,6 +11,7 @@ import { PriceDisplay } from './price-display';
 import { useCart } from '../providers/cart-provider';
 import { publicErrorMessage } from '../../lib/errors';
 import { Alert } from '../ui/alert';
+import { MOTION_DURATION, MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
 
 export function ProductDetailActions({
   product,
@@ -32,6 +34,7 @@ export function ProductDetailActions({
   const sentinel = useRef<HTMLDivElement>(null);
   const needsVariant = product.variants.length > 1;
   const canBuy = Boolean(selected) && selected?.availability !== 'OUT_OF_STOCK';
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     return () => {
@@ -98,25 +101,49 @@ export function ProductDetailActions({
       </div>
       {error ? <Alert tone="danger">{error}</Alert> : null}
       <div ref={sentinel} className="flex flex-col gap-3 sm:flex-row">
-        <Button type="button" className="store-cta flex-1 rounded-none" disabled={!canBuy || pending} onClick={() => void add(false)}>
-          {addLabel}
+        <Button
+          type="button"
+          className="store-cta flex-1 cursor-pointer rounded-none"
+          disabled={!canBuy || pending}
+          aria-label={addLabel}
+          onClick={() => void add(false)}
+        >
+          <motion.span
+            key={addLabel}
+            className="inline-block"
+            initial={reduced ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: MOTION_EASE }}
+          >
+            {addLabel}
+          </motion.span>
         </Button>
-        <Button type="button" variant="outline" className="store-cta flex-1 rounded-none" disabled={!canBuy || pending} onClick={() => void add(true)}>
+        <Button type="button" variant="outline" className="store-cta flex-1 cursor-pointer rounded-none" disabled={!canBuy || pending} onClick={() => void add(true)}>
           Buy now
         </Button>
       </div>
-      {sticky ? (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/10 bg-background/95 px-[max(1rem,env(safe-area-inset-left))] py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
-          <Button
-            type="button"
-            className={cn('store-cta w-full rounded-none')}
-            disabled={!canBuy || pending}
-            onClick={() => void add(false)}
+      <AnimatePresence>
+        {sticky ? (
+          <motion.div
+            key="pdp-sticky-buy"
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-foreground/10 bg-background/95 px-[max(1rem,env(safe-area-inset-left))] py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:hidden"
+            initial={reduced ? { opacity: 0 } : { y: '100%' }}
+            animate={reduced ? { opacity: 1 } : { y: 0 }}
+            exit={reduced ? { opacity: 0 } : { y: '100%' }}
+            transition={MOTION_TRANSITION}
           >
-            {addLabel}
-          </Button>
-        </div>
-      ) : null}
+            <Button
+              type="button"
+              className={cn('store-cta w-full cursor-pointer rounded-none')}
+              disabled={!canBuy || pending}
+              aria-label={addLabel}
+              onClick={() => void add(false)}
+            >
+              {addLabel}
+            </Button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

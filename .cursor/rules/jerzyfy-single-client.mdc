@@ -1,0 +1,18 @@
+---
+description: Jerzyfy is a single-client (one shop) product — not a multi-tenant platform.
+alwaysApply: true
+---
+
+# Jerzyfy single-client product
+
+Jerzyfy serves **one shop / one client**. Do not design or ship multi-shop platform features.
+
+## Rules
+
+- Do not add shop switchers, tenant marketplaces, or "create another tenant" product flows.
+- Default env: `SINGLE_TENANT_MODE=true`, `NEXT_PUBLIC_SINGLE_TENANT=true`, `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=demo-jersey-store`.
+- Brand as **Jerzyfy**. Hard-coding brand identity in UI is allowed and preferred for polish.
+- Website Settings / CMS may still drive logos, colors, and homepage content for that one shop.
+- Keep internal `tenantId` scoping in the API/DB as an implementation detail; do not expose multi-tenancy in UX or docs as a product capability.
+- Protected APIs take shop context from JWT (staff) or the pinned storefront slug — never from a client-supplied tenant id.
+---

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Jersey Commerce Engine is a multi-application commerce platform. It includes a customer storefront, POS, ERP/admin, inventory, purchasing, CRM, payments, expenses, reporting, CMS, roles, audit logs, and multi-tenant isolation.
+Jersey Commerce Engine (Jerzyfy) is a multi-application commerce platform for **one shop**. It includes a customer storefront, POS, ERP/admin, inventory, purchasing, CRM, payments, expenses, reporting, CMS, roles, and audit logs. An internal `tenantId` column remains for data scoping; the product is not multi-tenant.
 
 ## System shape (hybrid production)
 
@@ -33,7 +33,7 @@ Legacy all-in-one VM (storefront + admin/POS on the same host) remains in [`infr
 
 | App | Host | Responsibility |
 | --- | --- | --- |
-| Storefront | Vercel | Tenant-aware catalog, cart, checkout, accounts, CMS homepage |
+| Storefront | Vercel | Catalog, cart, checkout, accounts, CMS homepage for the single Jerzyfy shop |
 | Staff portal (`portal=all`) | Vercel | Website CMS, promo codes, users, settings, dashboard, sales, inventory, purchasing, CRM, expenses, reports; POS at `/pos` |
 | API | Vultr (+ Caddy TLS) | Versioned commerce APIs, Prisma, Redis, RBAC, WebSocket |
 

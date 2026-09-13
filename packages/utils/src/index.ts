@@ -10,3 +10,8 @@ export {
   type RealtimeEventPayload,
   type RealtimeSocketHandle,
 } from './realtime';
+export {
+  resolveStaffModeUrl,
+  type StaffMode,
+  type StaffModeUrlContext,
+} from './staff-mode-url';

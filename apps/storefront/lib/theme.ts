@@ -57,14 +57,14 @@ export function themeStyleVars(theme: {
   bodyFont: string;
 }): Record<string, string> {
   const primary = hexToHslChannels(theme.primaryColor) ?? '0 0% 7%';
-  const secondary = hexToHslChannels(theme.secondaryColor) ?? '20 6% 42%';
+  const secondary = hexToHslChannels(theme.secondaryColor) ?? '24 6% 34%';
   const accent = hexToHslChannels(theme.accentColor) ?? '0 60% 30%';
-  const background = hexToHslChannels(theme.backgroundColor) ?? '36 20% 94%';
+  const background = hexToHslChannels(theme.backgroundColor) ?? '40 10% 96%';
   const foreground = hexToHslChannels(theme.foregroundColor) ?? '0 0% 7%';
   return {
     '--primary': primary,
     '--primary-foreground': contrastForeground(theme.primaryColor),
-    '--secondary': '36 14% 90%',
+    '--secondary': '40 8% 92%',
     '--secondary-foreground': secondary,
     '--accent': accent,
     '--accent-foreground': contrastForeground(theme.accentColor),
@@ -72,13 +72,14 @@ export function themeStyleVars(theme: {
     '--foreground': foreground,
     '--card': background,
     '--card-foreground': foreground,
-    '--muted': '36 12% 90%',
-    '--muted-foreground': '20 6% 38%',
+    '--muted': '40 8% 92%',
+    '--muted-foreground': '24 6% 38%',
     '--ring': primary,
-    '--border': '30 8% 82%',
-    '--input': '30 8% 82%',
+    '--border': '30 6% 84%',
+    '--input': '30 6% 84%',
     '--radius': '0.15rem',
-    '--glass': '36 20% 96% / 0.72',
+    '--hero-plane': '0 0% 4%',
+    '--glass': '40 12% 97% / 0.72',
     '--glass-border': '0 0% 100% / 0.35',
     '--font-heading': `var(--font-heading-face), "${theme.headingFont}", "Instrument Serif", serif`,
     '--font-body': `var(--font-body-face), "${theme.bodyFont}", Inter, sans-serif`,

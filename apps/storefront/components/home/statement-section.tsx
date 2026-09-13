@@ -8,10 +8,10 @@ export function StatementSection({ section: sectionProp }: { section: HomepageSe
   const store = useStore();
   const section = store.website.homepage.sections.find((item) => item.type === 'statement') ?? sectionProp;
   return (
-    <section className="mx-auto max-w-store store-gutter py-14 text-center md:py-28">
-      <SplitHeading as="h2" text={section.heading || 'THE TREND IS IN U'} />
+    <section className="mx-auto max-w-store store-gutter py-[var(--space-section)] text-center">
+      <SplitHeading as="h2" text={section.heading || 'WEAR THE GAME'} />
       {section.subheading ? (
-        <p className="mx-auto mt-6 max-w-xl break-words text-sm uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="mx-auto mt-6 max-w-xl break-words text-sm leading-relaxed text-muted-foreground sm:text-base">
           {section.subheading}
         </p>
       ) : null}

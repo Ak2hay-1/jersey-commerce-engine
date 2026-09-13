@@ -7,7 +7,7 @@ import type { LoginTenantOption } from '@jersey-commerce/types';
 import { DesktopModeSwitch } from '@/components/desktop-mode-switch';
 import { useAuth } from '@/lib/auth';
 import { listLoginTenants } from '@/lib/api';
-import { getDefaultTenantSlug, getStaffPortal, type StaffPortal } from '@/lib/env';
+import { getDefaultTenantSlug, getStaffPortal, isSingleTenantMode, type StaffPortal } from '@/lib/env';
 
 const SHOP_BRAND = 'Jerzyfy';
 const DEFAULT_SHOP: LoginTenantOption = {
@@ -123,22 +123,24 @@ export default function LoginPage(): React.JSX.Element {
               <Label htmlFor="password">Password</Label>
               <PasswordInput id="password" autoComplete="current-password" className="mt-1" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            <div>
-              <Label htmlFor="shop">Shop</Label>
-              <select
-                id="shop"
-                className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                value={tenantSlug}
-                onChange={(event) => setTenantSlug(event.target.value)}
-              >
-                {shops.length !== 1 ? <option value="">Select a shop</option> : null}
-                {shops.map((shop) => (
-                  <option key={shop.slug} value={shop.slug}>
-                    {shop.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!isSingleTenantMode() && shops.length !== 1 ? (
+              <div>
+                <Label htmlFor="shop">Shop</Label>
+                <select
+                  id="shop"
+                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={tenantSlug}
+                  onChange={(event) => setTenantSlug(event.target.value)}
+                >
+                  <option value="">Select a shop</option>
+                  {shops.map((shop) => (
+                    <option key={shop.slug} value={shop.slug}>
+                      {shop.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? 'Signing in…' : 'Sign in'}

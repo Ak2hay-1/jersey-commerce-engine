@@ -14,7 +14,8 @@ export class AdminTenantsController {
   @UseGuards(BootstrapGuard)
   @Post()
   @ApiOperation({
-    summary: 'Create a tenant and owner user (development / operations bootstrap only)',
+    summary:
+      'Create a tenant and owner user (blocked when SINGLE_TENANT_MODE=true; Jerzyfy is single-shop by default)',
   })
   @ApiHeader({ name: 'x-bootstrap-secret', required: true })
   create(@Body() dto: CreateTenantDto) {

@@ -31,6 +31,8 @@ export const serverEnvSchema = z.object({
   TRUST_PROXY: booleanFromString.default(false),
   BACKUP_ALLOWED_ROOT: z.string().optional().default(''),
   PLATFORM_DOMAIN: z.string().optional().default(''),
+  /** When true (default), Jerzyfy runs as one shop — block creating additional tenants. */
+  SINGLE_TENANT_MODE: booleanFromString.default(true),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -41,6 +43,8 @@ export const publicEnvSchema = z.object({
   NEXT_PUBLIC_PLATFORM_DOMAIN: z.string().min(1).max(180).optional(),
   NEXT_PUBLIC_PORTAL: z.enum(['admin', 'erp', 'all']).default('all'),
   NEXT_PUBLIC_STOREFRONT_URL: z.string().url().optional(),
+  /** When true (default), pin the default shop and hide multi-shop switching UI. */
+  NEXT_PUBLIC_SINGLE_TENANT: booleanFromString.default(true),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;

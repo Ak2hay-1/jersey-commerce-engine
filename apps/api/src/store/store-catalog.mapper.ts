@@ -364,12 +364,30 @@ export function defaultHomepageConfig(): HomepageConfig {
   };
 }
 
+/** Product rails omitted from a partial CMS config still show when the catalog has items. */
+function ensureCatalogSections(sections: HomepageSection[]): HomepageSection[] {
+  const types = new Set(sections.map((section) => section.type));
+  const extras: HomepageSection[] = [];
+  if (!types.has('featured-products')) {
+    extras.push({ type: 'featured-products', enabled: true, heading: 'Featured products' });
+  }
+  if (!types.has('new-arrivals')) {
+    extras.push({ type: 'new-arrivals', enabled: true, heading: 'Latest drop' });
+  }
+  if (!extras.length) {
+    return sections;
+  }
+  const statementIdx = sections.findIndex((section) => section.type === 'statement');
+  const insertAt = statementIdx >= 0 ? statementIdx + 1 : Math.min(1, sections.length);
+  return [...sections.slice(0, insertAt), ...extras, ...sections.slice(insertAt)];
+}
+
 export function toHomepageConfig(value: unknown): HomepageConfig {
   const sections = parseSections(value);
   if (sections.length === 0) {
     return defaultHomepageConfig();
   }
-  return { sections };
+  return { sections: ensureCatalogSections(sections) };
 }
 
 function asString(value: unknown, fallback: string, max = 800): string {

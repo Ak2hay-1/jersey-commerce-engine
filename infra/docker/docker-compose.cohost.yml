@@ -1,0 +1,25 @@
+# Cohost override: run Jerzyfy API next to Cullinos (or any host that already owns :80/:443).
+#
+# Usage (on the shared VM):
+#   docker compose \
+#     -f infra/docker/docker-compose.api.yml \
+#     -f infra/docker/docker-compose.cohost.yml \
+#     --env-file infra/docker/.env.production \
+#     up -d --build
+#
+# Or: bash infra/docker/prod-up-cohost.sh
+#
+# - Does NOT bind host 80/443 (Cullinos nginx keeps TLS)
+# - Publishes API only on loopback: 127.0.0.1:4000
+# - Postgres / Redis stay on the private Docker network
+# - Put nginx in front: see nginx-jerzyfy-api.conf
+
+services:
+  api:
+    ports:
+      - '127.0.0.1:4000:4000'
+
+  # Disable Caddy unless you explicitly pass --profile standalone-tls
+  caddy:
+    profiles:
+      - standalone-tls

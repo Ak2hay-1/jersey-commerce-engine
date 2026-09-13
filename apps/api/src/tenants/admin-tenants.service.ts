@@ -1,4 +1,6 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { ServerEnv } from '@jersey-commerce/config';
 import { Prisma } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from '../auth/password.service';
@@ -11,9 +13,15 @@ export class AdminTenantsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
+    private readonly config: ConfigService<ServerEnv, true>,
   ) {}
 
   async createForAdmin(dto: CreateTenantDto) {
+    if (this.config.get('SINGLE_TENANT_MODE', { infer: true })) {
+      throw new ForbiddenException(
+        'Jerzyfy is configured for a single shop. Disable SINGLE_TENANT_MODE to provision another tenant.',
+      );
+    }
     const ownerPasswordHash = await this.passwords.hash(dto.ownerPassword);
     try {
       const created = await this.prisma.withoutTenantScope(async () =>

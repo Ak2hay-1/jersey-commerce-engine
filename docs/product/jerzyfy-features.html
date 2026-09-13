@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jerzyfy — Complete Feature Guide</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #e2e8f0;
+      --accent: #0b3d2e;
+      --accent-soft: #ecf6f1;
+      --paper: #ffffff;
+      --wash: #f8fafc;
+      --gold: #b45309;
+    }
+
+    * { box-sizing: border-box; }
+
+    @page {
+      size: A4;
+      margin: 18mm 16mm 20mm 16mm;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page-break { break-before: page; page-break-before: always; }
+
+    /* Cover */
+    .cover {
+      min-height: 250mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12mm 4mm 8mm;
+      background:
+        radial-gradient(ellipse 80% 50% at 100% 0%, #d8efe6 0%, transparent 55%),
+        linear-gradient(165deg, #f8fafc 0%, #ffffff 45%, #ecf6f1 100%);
+    }
+
+    .cover-brand {
+      font-size: 42pt;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--accent);
+      margin: 0;
+      line-height: 1;
+    }
+
+    .cover-tag {
+      margin-top: 10px;
+      font-size: 14pt;
+      color: var(--muted);
+      font-weight: 500;
+      max-width: 420px;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      margin-top: 28px;
+      padding: 6px 14px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 9pt;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: 999px;
+    }
+
+    .cover-meta {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 9.5pt;
+      color: var(--muted);
+    }
+
+    .cover-meta strong {
+      display: block;
+      color: var(--ink);
+      font-size: 10pt;
+      margin-bottom: 2px;
+    }
+
+    .cover-footer {
+      font-size: 9pt;
+      color: var(--muted);
+    }
+
+    /* TOC */
+    h1.doc-title {
+      font-size: 22pt;
+      color: var(--accent);
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .lead {
+      color: var(--muted);
+      margin: 0 0 18px;
+      max-width: 560px;
+    }
+
+    .toc {
+      background: var(--wash);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 18px;
+      columns: 2;
+      column-gap: 28px;
+    }
+
+    .toc a {
+      display: block;
+      color: var(--ink);
+      text-decoration: none;
+      padding: 3px 0;
+      font-size: 9.5pt;
+      break-inside: avoid;
+    }
+
+    .toc a span {
+      color: var(--muted);
+      margin-right: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Sections */
+    h2 {
+      font-size: 14pt;
+      color: var(--accent);
+      margin: 22px 0 8px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid var(--accent-soft);
+      letter-spacing: -0.01em;
+      break-after: avoid;
+    }
+
+    h3 {
+      font-size: 11pt;
+      margin: 14px 0 6px;
+      color: var(--ink);
+      break-after: avoid;
+    }
+
+    p { margin: 0 0 8px; }
+
+    ul {
+      margin: 0 0 10px;
+      padding-left: 18px;
+    }
+
+    li { margin-bottom: 3px; }
+
+    .muted { color: var(--muted); }
+
+    .callout {
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      padding: 10px 12px;
+      margin: 10px 0 14px;
+      border-radius: 0 6px 6px 0;
+      font-size: 9.5pt;
+    }
+
+    .warn {
+      background: #fff7ed;
+      border-left-color: var(--gold);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 14px;
+      font-size: 9pt;
+      break-inside: avoid;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--wash);
+      font-weight: 650;
+      color: var(--ink);
+    }
+
+    tr:nth-child(even) td { background: #fcfdfe; }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 14px;
+      margin: 8px 0 12px;
+    }
+
+    .feature-card {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 11px;
+      background: #fff;
+      break-inside: avoid;
+    }
+
+    .feature-card h4 {
+      margin: 0 0 4px;
+      font-size: 10pt;
+      color: var(--accent);
+    }
+
+    .feature-card p {
+      margin: 0;
+      font-size: 9pt;
+      color: var(--muted);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 12px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 9px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 8.5pt;
+      font-weight: 600;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+
+    @media print {
+      .cover { min-height: auto; height: 260mm; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <section class="cover">
+    <div>
+      <p class="cover-badge">Product Feature Catalogue</p>
+      <h1 class="cover-brand">Jerzyfy</h1>
+      <p class="cover-tag">
+        Complete feature guide for the Jersey Commerce Engine —
+        storefront, POS, ERP, and custom team jersey operations.
+      </p>
+    </div>
+    <div>
+      <div class="cover-meta">
+        <div>
+          <strong>Product</strong>
+          Jersey Commerce Engine
+        </div>
+        <div>
+          <strong>Live tenant</strong>
+          Jerzyfy (jerzyfy.in)
+        </div>
+        <div>
+          <strong>Scope</strong>
+          Phases 1–12 (shipped)
+        </div>
+        <div>
+          <strong>Document date</strong>
+          12 September 2026
+        </div>
+      </div>
+      <p class="cover-footer" style="margin-top:16px;">
+        Confidential product documentation · Multi-tenant commerce platform for jersey &amp; sportswear retail
+      </p>
+    </div>
+  </section>
+
+  <!-- TOC -->
+  <section class="page-break">
+    <h1 class="doc-title">Contents</h1>
+    <p class="lead">All major capabilities of Jerzyfy, organised by product area.</p>
+    <nav class="toc">
+      <a href="#overview"><span>1.</span> Platform overview</a>
+      <a href="#apps"><span>2.</span> Applications</a>
+      <a href="#tenancy"><span>3.</span> Multi-tenant &amp; access</a>
+      <a href="#storefront"><span>4.</span> Online storefront</a>
+      <a href="#catalog"><span>5.</span> Catalog &amp; media</a>
+      <a href="#inventory"><span>6.</span> Inventory</a>
+      <a href="#pos"><span>7.</span> Point of sale (POS)</a>
+      <a href="#orders"><span>8.</span> Ecommerce orders</a>
+      <a href="#custom"><span>9.</span> Custom &amp; team jersey orders</a>
+      <a href="#payments"><span>10.</span> Payments &amp; refunds</a>
+      <a href="#crm"><span>11.</span> Customers &amp; CRM</a>
+      <a href="#purchasing"><span>12.</span> Suppliers &amp; purchasing</a>
+      <a href="#expenses"><span>13.</span> Expenses</a>
+      <a href="#reports"><span>14.</span> Dashboard &amp; reports</a>
+      <a href="#cms"><span>15.</span> Website CMS &amp; promos</a>
+      <a href="#settings"><span>16.</span> Settings &amp; backup</a>
+      <a href="#domain"><span>17.</span> Jersey retail domain fit</a>
+      <a href="#later"><span>18.</span> Later-phase items</a>
+    </nav>
+  </section>
+
+  <!-- 1 -->
+  <section class="page-break" id="overview">
+    <h2>1. Platform overview</h2>
+    <p>
+      <strong>Jerzyfy</strong> runs on the <strong>Jersey Commerce Engine</strong> — a production-ready,
+      multi-tenant commerce platform built for jersey and sportswear retail. Shop name, branding,
+      catalog, and domain are tenant data, not hard-coded in the product.
+    </p>
+    <div class="callout">
+      One platform serves three sales channels: a premium customer website, an in-store POS register,
+      and a full ERP/admin staff portal — all sharing one inventory, CRM, and payment ledger.
+    </div>
+    <div class="pill-row">
+      <span class="pill">Storefront</span>
+      <span class="pill">POS</span>
+      <span class="pill">ERP / Admin</span>
+      <span class="pill">Custom jersey engine</span>
+      <span class="pill">Multi-tenant</span>
+      <span class="pill">India-ready (INR · UPI)</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Capability area</th><th>What it delivers</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Commerce</td><td>Online catalog, cart, checkout, promo codes, pickup or delivery</td></tr>
+        <tr><td>In-store</td><td>Register sessions, barcode scan, held carts, cash/UPI/card tender</td></tr>
+        <tr><td>Operations</td><td>Inventory ledger, purchasing, expenses, refunds, receipts</td></tr>
+        <tr><td>Custom work</td><td>Team/bulk jersey enquiries, quotes, design approval, production tracking</td></tr>
+        <tr><td>Insight</td><td>KPI dashboard, channel reports, CSV export</td></tr>
+        <tr><td>Content</td><td>Live website customizer (theme, hero, sections, SEO)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2 -->
+  <section id="apps">
+    <h2>2. Applications</h2>
+    <table>
+      <thead>
+        <tr><th>App</th><th>Audience</th><th>Role</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Storefront</strong></td>
+          <td>Customers</td>
+          <td>Shop browse, cart, checkout, account, custom-order enquiries</td>
+        </tr>
+        <tr>
+          <td><strong>Staff portal (Admin + ERP)</strong></td>
+          <td>Owners, managers, website staff</td>
+          <td>Catalog, stock, orders, CRM, purchasing, CMS, reports, settings</td>
+        </tr>
+        <tr>
+          <td><strong>POS</strong></td>
+          <td>Cashiers</td>
+          <td>Register open/close, sell, hold carts, refunds, thermal receipts</td>
+        </tr>
+        <tr>
+          <td><strong>API</strong></td>
+          <td>System</td>
+          <td>NestJS REST + WebSocket, PostgreSQL, Redis, Prisma</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="muted">
+      In production, POS is nested under the staff portal at <code>/pos</code>. Staff can switch between
+      Admin, ERP, and POS modes without leaving the portal.
+    </p>
+  </section>
+
+  <!-- 3 -->
+  <section id="tenancy">
+    <h2>3. Multi-tenant platform &amp; staff access</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>Tenant isolation</h4>
+        <p>Every record is scoped to a tenant. JWT carries tenantId; the API never crosses shop boundaries.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Custom domains</h4>
+        <p>Storefront resolves branding and catalog from the shop’s host / subdomain.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Staff authentication</h4>
+        <p>Email/password login, refresh-token rotation, forced password change, Redis session denylist.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Realtime sync</h4>
+        <p>WebSocket invalidate events keep POS and ERP views in sync after sales and stock changes.</p>
+      </div>
+    </div>
+    <h3>Roles</h3>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Typical access</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>SUPER_ADMIN</td><td>Full platform permissions (hidden from lower roles)</td></tr>
+        <tr><td>OWNER</td><td>Full shop catalog and business control</td></tr>
+        <tr><td>MANAGER</td><td>Day-to-day ops; cannot manage settings or assign OWNER</td></tr>
+        <tr><td>CASHIER</td><td>POS sales and refunds; limited reporting</td></tr>
+        <tr><td>INVENTORY_MANAGER</td><td>Stock and purchasing; no expenses/reports by default</td></tr>
+        <tr><td>WEBSITE_MANAGER</td><td>CMS, promos, products, online orders</td></tr>
+      </tbody>
+    </table>
+    <p>Fine-grained permission codes (60+) cover products, inventory, sales, orders, custom orders, reports, and settings. User management lives under <strong>Users</strong> in the staff portal. Money and stock mutations are audit-logged.</p>
+  </section>
+
+  <!-- 4 -->
+  <section class="page-break" id="storefront">
+    <h2>4. Online storefront</h2>
+    <p>Customer-facing shop with tenant theme, SEO, and a premium homepage experience.</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>Tenant branding</h4>
+        <p>Logo, favicon, colours, and fonts loaded from website settings at runtime.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Configurable homepage</h4>
+        <p>Hero, marquee, featured categories/products, best-sellers, new arrivals, trust, CTA.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Catalog browse</h4>
+        <p>Search, filters, sort, pagination, nested category pages, collection tiles.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Product detail</h4>
+        <p>Size/colour variants, front/side/back gallery, stock status, compare-at / % off.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Cart &amp; checkout</h4>
+        <p>Guest cart token, server-side pricing, promo codes, stock reservation, order number.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Fulfillment choices</h4>
+        <p>Home delivery or store pickup; shipping free / fixed / free-above-threshold.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Customer account</h4>
+        <p>Profile, order history &amp; detail, cancel where allowed.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Flexible login</h4>
+        <p>Password, email OTP, SMS OTP, Google OAuth — toggled per tenant.</p>
+      </div>
+    </div>
+    <h3>Customer journeys</h3>
+    <ul>
+      <li>Browse → cart → checkout → order success (<code>ORD-######</code>)</li>
+      <li>Account login / register / Google complete / profile completion</li>
+      <li>About page (CMS-driven)</li>
+      <li>Custom jersey enquiry &amp; public order tracking pages</li>
+    </ul>
+    <p class="muted">SEO includes metadata, Open Graph, and JSON-LD for Organization, Product, and Breadcrumb.</p>
+  </section>
+
+  <!-- 5 -->
+  <section id="catalog">
+    <h2>5. Catalog &amp; media</h2>
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Products</td><td>Name, slug, brand, descriptions, SEO, draft/active/archived, featured flag</td></tr>
+        <tr><td>Variants</td><td>Size, colour, SKU (auto), barcode, cost / selling / compare-at, tax override, weight</td></tr>
+        <tr><td>Jersey size helpers</td><td>Bulk “add adult sizes” (S–XXL) for sportswear workflows</td></tr>
+        <tr><td>Images</td><td>Ordered uploads with front / side / back convention</td></tr>
+        <tr><td>Categories</td><td>Nested tree, images, sort order, status</td></tr>
+        <tr><td>Uniqueness</td><td>SKU and barcode unique per tenant</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 6 -->
+  <section id="inventory">
+    <h2>6. Inventory</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>Per-variant stock</h4>
+        <p>On-hand, reserved, and available quantities for every size/colour SKU.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Append-only ledger</h4>
+        <p>Opening, purchase, sale, online order, return, damage, adjustment, transfer, cancel.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Reservations</h4>
+        <p>Ecommerce and custom orders hold stock without reducing on-hand until consume.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Low-stock alerts</h4>
+        <p>Per-variant reorder level; dedicated low-stock and movements views.</p>
+      </div>
+    </div>
+    <ul>
+      <li>Barcode / SKU lookup for POS and ERP</li>
+      <li>Stock valuation (qty × cost; reports also show selling value)</li>
+      <li>Concurrency-safe mutations for register and checkout</li>
+    </ul>
+  </section>
+
+  <!-- 7 -->
+  <section class="page-break" id="pos">
+    <h2>7. Point of sale (POS)</h2>
+    <p>Built for fast counter sales with USB barcode scanners and India payment tenders.</p>
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>What staff can do</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Register session</td><td>Open/close float; expected cash = open + cash sales − cash refunds</td></tr>
+        <tr><td>Product lookup</td><td>Name, SKU, or barcode (scanner → search + Enter)</td></tr>
+        <tr><td>Working cart</td><td>Line and cart discounts (fixed or %); price snapshot at complete</td></tr>
+        <tr><td>Hold / resume</td><td>Park carts without inventory reservation</td></tr>
+        <tr><td>Customer attach</td><td>Walk-in or link CRM customer (blocked customers rejected)</td></tr>
+        <tr><td>Complete sale</td><td>Invoice <code>INV-######</code>, payments, inventory SALE, receipt payload</td></tr>
+        <tr><td>Tender</td><td>Cash (with change), UPI, card, other; split tender supported</td></tr>
+        <tr><td>Sales history</td><td>Filterable list and sale detail</td></tr>
+        <tr><td>Cancel / refund</td><td>Restock or damage/none; full or partial refunds</td></tr>
+        <tr><td>Thermal receipt</td><td>Browser print (HTML ~80mm); no ESC/POS hardware yet</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 8 -->
+  <section id="orders">
+    <h2>8. Ecommerce orders (ERP)</h2>
+    <p>Staff manage website (and channel) orders from a shared order model.</p>
+    <ul>
+      <li><strong>Sources:</strong> Website, POS-linked, WhatsApp, Manual</li>
+      <li><strong>Status flow:</strong> Pending → Confirmed → Processing → Ready → Shipped → Completed (plus cancel / return / refund paths)</li>
+      <li><strong>Pickup path:</strong> Store pickup skips the Shipped step</li>
+      <li><strong>Stock:</strong> Reserve at checkout; release on cancel; consume on complete</li>
+      <li><strong>Safety:</strong> Idempotent checkout with cart lock</li>
+      <li><strong>Revenue:</strong> Completed orders counted once (not double-counted with linked POS sales)</li>
+    </ul>
+  </section>
+
+  <!-- 9 -->
+  <section id="custom">
+    <h2>9. Custom &amp; team jersey orders</h2>
+    <div class="callout">
+      Domain specialty for Jerzyfy: bulk and team kit workflows from enquiry through production —
+      not a generic “contact form.”
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>Order types</h4>
+        <p>Custom jersey, team, corporate, college, tournament, bulk.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Guest enquiry</h4>
+        <p>Contact creates / matches CRM customer; file references attached.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Quotes</h4>
+        <p>Versioned quotes (<code>QT-######</code> v1/v2…); accept, supersede, or expire.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Ordering modes</h4>
+        <p>Player list (name / number / size) or size-quantity matrix.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Customization pricing</h4>
+        <p>Tenant-priced fixed, per-item, or percentage options — snapshotted on quote.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Design approval</h4>
+        <p>Upload versions; request approval; approve or request changes via public token.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Deposits &amp; balances</h4>
+        <p>Payment state tracked separately from production status.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Production tracking</h4>
+        <p>Design → materials → production → QC → ready; timeline and notes.</p>
+      </div>
+    </div>
+    <p>ERP filters: Enquiries / Quotes / Production. Dedicated custom-orders report available.</p>
+  </section>
+
+  <!-- 10 -->
+  <section class="page-break" id="payments">
+    <h2>10. Payments &amp; refunds</h2>
+    <h3>Payment methods</h3>
+    <p>Cash, UPI, Card, Online, Bank transfer, Other — shared ledger for POS sales, ecommerce orders, and custom orders.</p>
+    <ul>
+      <li>Duplicate UPI/card reference guard per tenant method</li>
+      <li>Razorpay settings UI with encrypted secrets (live online capture is later-phase)</li>
+      <li>Today’s online flow: COD, pay-in-store, or staff-recorded payment in ERP/POS</li>
+    </ul>
+    <h3>Refunds &amp; receipts</h3>
+    <ul>
+      <li>Full or partial refunds with restock modes: Restock / Damage / None</li>
+      <li>Refund payment rows are append-only (originals never deleted)</li>
+      <li>Frozen HTML receipt payloads for reprint; thermal browser print for POS</li>
+    </ul>
+  </section>
+
+  <!-- 11 -->
+  <section id="crm">
+    <h2>11. Customers &amp; CRM</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>Profiles</h4>
+        <p>Phone-normalised identity, email, address, active / inactive / blocked status.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Duplicate detection</h4>
+        <p>Warns on possible matches; optional allow-duplicate override.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Tags &amp; notes</h4>
+        <p>Tenant tags (e.g. Football, VIP) and internal staff notes.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Segments</h4>
+        <p>New, Repeat, High value (≥ ₹10k), Inactive (90 days).</p>
+      </div>
+    </div>
+    <ul>
+      <li>Derived spend/order metrics from POS + completed web orders; separate custom-order metrics</li>
+      <li>Activity history across sales, orders, and custom work</li>
+      <li>Fast POS customer lookup on the register</li>
+      <li>Email / SMS / WhatsApp opt-in storage (campaign sending not productized yet)</li>
+    </ul>
+  </section>
+
+  <!-- 12 -->
+  <section id="purchasing">
+    <h2>12. Suppliers &amp; purchasing</h2>
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Supplier CRM</td><td>Contact, tax fields, status; balance = purchases − payments</td></tr>
+        <tr><td>Purchase orders</td><td><code>PO-######</code>; Draft → Ordered → Partial/Full received / Cancelled</td></tr>
+        <tr><td>Receiving</td><td>Partial receipts; inventory PURCHASE movements; cost layers</td></tr>
+        <tr><td>Tenant flags</td><td>Allow over-receive, overpay, update variant cost on receive</td></tr>
+        <tr><td>Supplier payments (AP)</td><td>Cash / UPI / card / bank / other — separate from customer payments</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Purchase returns are not implemented; use stock adjustments when needed.</p>
+  </section>
+
+  <!-- 13 -->
+  <section id="expenses">
+    <h2>13. Expenses</h2>
+    <p>Operating expense tracking for shop P&amp;L visibility (not a full accounting ledger).</p>
+    <ul>
+      <li>Seeded categories: Rent, Electricity, Salary, Transport, Marketing, Packaging, Maintenance, Misc</li>
+      <li>Create and edit expenses; void instead of hard-delete</li>
+      <li>Only active expenses count in totals and reports</li>
+    </ul>
+  </section>
+
+  <!-- 14 -->
+  <section class="page-break" id="reports">
+    <h2>14. Dashboard &amp; reports</h2>
+    <h3>KPI dashboard</h3>
+    <p>Revenue, COGS, gross profit/margin, orders, AOV, customers, inventory value, supplier outstanding, expenses — with date presets (today, yesterday, 7d, 30d, this/last month, custom) in the tenant timezone (default Asia/Kolkata).</p>
+    <p>Cards are role-filtered (e.g. cashiers see ops KPIs, not gross profit/expenses by default). Results are Redis-cached briefly per tenant/user.</p>
+    <h3>Report modules</h3>
+    <table>
+      <thead>
+        <tr><th>Report</th><th>Focus</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Sales</td><td>Channel and product breakdowns</td></tr>
+        <tr><td>Inventory</td><td>Stock valuation and movement insight</td></tr>
+        <tr><td>Purchases</td><td>Supplier / PO performance and AP</td></tr>
+        <tr><td>Customers</td><td>CRM segments and spend</td></tr>
+        <tr><td>Payments</td><td>Tender mix</td></tr>
+        <tr><td>Expenses</td><td>Category trends</td></tr>
+        <tr><td>Custom orders</td><td>Enquiry → quote → production funnel</td></tr>
+      </tbody>
+    </table>
+    <p>CSV export is available and audited. Excel/PDF export is later work.</p>
+  </section>
+
+  <!-- 15 -->
+  <section id="cms">
+    <h2>15. Website CMS &amp; promotions</h2>
+    <h3>Live website customizer</h3>
+    <ul>
+      <li>Branding, theme colours/fonts, SEO, announcement bar</li>
+      <li>Header navigation, hero slides, homepage sections</li>
+      <li>Footer, socials, About page content</li>
+      <li>Live iframe preview while editing</li>
+    </ul>
+    <h3>Promo codes</h3>
+    <ul>
+      <li>Fixed amount or percentage off</li>
+      <li>Minimum subtotal, maximum discount, usage limits, date window</li>
+      <li>Active / disabled status; applied on storefront cart and re-validated at checkout</li>
+    </ul>
+  </section>
+
+  <!-- 16 -->
+  <section id="settings">
+    <h2>16. Settings &amp; backup</h2>
+    <table>
+      <thead>
+        <tr><th>Area</th><th>Features</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Business</td><td>Name, slug, timezone, currency (tenant)</td></tr>
+        <tr><td>Tax &amp; shipping</td><td>Default tax rate, inclusive pricing; free / fixed shipping + free-above threshold</td></tr>
+        <tr><td>Payments</td><td>Razorpay enable + encrypted credentials</td></tr>
+        <tr><td>Authentication</td><td>Toggle password / email OTP / SMS OTP / Google; encrypted provider secrets</td></tr>
+        <tr><td>Backup</td><td>Enable schedule, path, retain copies, run history</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 17 -->
+  <section id="domain">
+    <h2>17. Jersey &amp; sportswear domain fit</h2>
+    <p>Jerzyfy’s first live tenant is a jersey retail business. The product is shaped for that trade:</p>
+    <ul>
+      <li><strong>Product shape:</strong> Club kits, national kits, kids, custom/print bases; adult S–XXL and kids sizes as one variant per size</li>
+      <li><strong>Imagery:</strong> Front / side / back product shots; collection tiles for homepage merchandising</li>
+      <li><strong>Customization commerce:</strong> Names and numbers, team colours, player lists, bulk size matrices, design approval, deposits before production</li>
+      <li><strong>Channels:</strong> Walk-in POS + website catalog + custom/team enquiries (WhatsApp/manual as order sources)</li>
+      <li><strong>India retail ops:</strong> INR, UPI tender, Asia/Kolkata reporting, MSG91 OTP option</li>
+    </ul>
+  </section>
+
+  <!-- 18 -->
+  <section class="page-break" id="later">
+    <h2>18. Later-phase items (honest scope)</h2>
+    <div class="callout warn">
+      These capabilities are designed for or partially prepared, but are <strong>not</strong> part of the current go-live.
+      Documenting them prevents UAT confusion.
+    </div>
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Current behaviour</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Live online card capture (Razorpay)</td><td>Settings exist; capture not wired — use COD / pay-in-store / staff record</td></tr>
+        <tr><td>Customer forgot-password email</td><td>Staff sets a temporary password; forced change on next login</td></tr>
+        <tr><td>ESC/POS printers &amp; cash drawer</td><td>Browser HTML thermal receipts only</td></tr>
+        <tr><td>WhatsApp / email campaigns</td><td>Communication events stored; sending not productized</td></tr>
+        <tr><td>Purchase returns / FIFO–LIFO</td><td>Not implemented</td></tr>
+        <tr><td>Reviews, wishlists, loyalty</td><td>Not in current storefront phase</td></tr>
+        <tr><td>Full general ledger / GST filing</td><td>Expenses are operational records only</td></tr>
+        <tr><td>Public tenant self-signup</td><td>Bootstrap secret only</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Phase map (shipped)</h3>
+    <table>
+      <thead>
+        <tr><th>Phase</th><th>Capability</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Monorepo, database, tenants foundation</td></tr>
+        <tr><td>2</td><td>Auth, RBAC, isolation</td></tr>
+        <tr><td>3</td><td>Products &amp; categories</td></tr>
+        <tr><td>4</td><td>Inventory ledger</td></tr>
+        <tr><td>5</td><td>POS sessions, carts, sales</td></tr>
+        <tr><td>6</td><td>Payments, refunds, receipts</td></tr>
+        <tr><td>7</td><td>Customers / CRM</td></tr>
+        <tr><td>8</td><td>Suppliers &amp; purchasing</td></tr>
+        <tr><td>9</td><td>Ecommerce order engine</td></tr>
+        <tr><td>10</td><td>Premium storefront + CMS + promos</td></tr>
+        <tr><td>11</td><td>Custom / team jersey orders</td></tr>
+        <tr><td>12</td><td>Dashboard, reports, expenses</td></tr>
+      </tbody>
+    </table>
+
+    <div class="footer-note">
+      Jerzyfy Feature Catalogue · Generated from the Jersey Commerce Engine product surface (Phases 1–12).
+      For operational deep-dives see <code>docs/</code> (storefront, POS, orders, inventory, custom-orders, reports, delivery).
+      Live shop: www.jerzyfy.in · Staff: admin.jerzyfy.in
+    </div>
+  </section>
+
+</body>
+</html>

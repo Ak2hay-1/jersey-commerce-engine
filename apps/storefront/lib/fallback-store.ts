@@ -20,7 +20,7 @@ export const fallbackStore: StorefrontBootstrap = {
     primaryColor: '#111111',
     secondaryColor: '#8A8178',
     accentColor: '#7A1F1F',
-    backgroundColor: '#F4F1EC',
+    backgroundColor: '#F7F6F4',
     foregroundColor: '#111111',
     headingFont: 'Instrument Serif',
     bodyFont: 'Inter',
@@ -40,7 +40,7 @@ export const fallbackStore: StorefrontBootstrap = {
         {
           type: 'hero',
           enabled: true,
-          heading: 'Football jerseys, ready for match day',
+          heading: 'Football jerseys for match day',
           subheading: 'Club, national, kids, and custom kits — fan replicas built to wear hard.',
           ctaLabel: 'Shop jerseys',
           ctaHref: '/products',
@@ -49,7 +49,7 @@ export const fallbackStore: StorefrontBootstrap = {
             {
               id: 'hero-1',
               image: DEMO_HERO_IMAGE,
-              heading: 'Football jerseys, ready for match day',
+              heading: 'Football jerseys for match day',
               subheading: 'Club, national, kids, and custom kits — fan replicas built to wear hard.',
               ctaLabel: 'Shop jerseys',
               ctaHref: '/products',

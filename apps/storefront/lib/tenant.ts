@@ -1,6 +1,10 @@
 import { publicEnv } from './env';
 import { STORE_COOKIES, readBrowserCookie } from './cookies';
 
+export function isSingleTenantMode(): boolean {
+  return publicEnv.NEXT_PUBLIC_SINGLE_TENANT !== false;
+}
+
 export function defaultTenantSlug(): string | undefined {
   return publicEnv.NEXT_PUBLIC_DEFAULT_TENANT_SLUG || (process.env.NODE_ENV === 'development' ? 'demo-jersey-store' : undefined);
 }
@@ -27,5 +31,8 @@ export function tenantSlugFromHost(host: string | null | undefined): string | un
 }
 
 export function resolveClientTenantSlug(): string | undefined {
+  if (isSingleTenantMode()) {
+    return defaultTenantSlug();
+  }
   return readBrowserCookie(STORE_COOKIES.tenant) || defaultTenantSlug();
 }

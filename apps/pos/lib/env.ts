@@ -3,6 +3,7 @@ import { publicEnvSchema } from '@jersey-commerce/config';
 export const publicEnv = publicEnvSchema.parse({
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   NEXT_PUBLIC_DEFAULT_TENANT_SLUG: process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG || undefined,
+  NEXT_PUBLIC_SINGLE_TENANT: process.env.NEXT_PUBLIC_SINGLE_TENANT,
 });
 
 declare global {
@@ -18,4 +19,8 @@ export function getApiUrl(): string {
 
 export function getDefaultTenantSlug(): string | undefined {
   return publicEnv.NEXT_PUBLIC_DEFAULT_TENANT_SLUG;
+}
+
+export function isSingleTenantMode(): boolean {
+  return publicEnv.NEXT_PUBLIC_SINGLE_TENANT !== false;
 }

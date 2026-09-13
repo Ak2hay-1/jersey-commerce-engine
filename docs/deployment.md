@@ -18,6 +18,8 @@ Detailed Vercel steps: [../infra/vercel/README.md](../infra/vercel/README.md).
 
 Cutover checklist for an existing Vultr box: [../infra/docker/PRODUCTION-CUTOVER.md](../infra/docker/PRODUCTION-CUTOVER.md).
 
+**Cohost with another app (e.g. Cullinos nginx on the same VM):** do **not** run Caddy. Use [../infra/docker/COHOST-CUTOVER.md](../infra/docker/COHOST-CUTOVER.md) — API on `127.0.0.1:4000`, host nginx + certbot for `API_HOST`.
+
 Without a custom domain yet, you can use [sslip.io](https://sslip.io) so Let’s Encrypt works, e.g. `API_HOST=45-76-61-16.sslip.io` for IP `45.76.61.16`.
 
 ---
