@@ -1,5 +1,6 @@
 import { DEMO_CTA_IMAGE, DEMO_HERO_IMAGE, DEMO_KITS_IMAGE } from './demo-media';
 import { DEFAULT_STOREFRONT_CHROME, DEFAULT_STOREFRONT_FOOTER, type StorefrontBootstrap } from '@jersey-commerce/types';
+import { JERZYFY_DARK_MATCHDAY } from './jerzyfy-brand';
 
 export const fallbackStore: StorefrontBootstrap = {
   tenant: {
@@ -17,11 +18,7 @@ export const fallbackStore: StorefrontBootstrap = {
     postalCode: '400001',
   },
   theme: {
-    primaryColor: '#111111',
-    secondaryColor: '#8A8178',
-    accentColor: '#7A1F1F',
-    backgroundColor: '#F7F6F4',
-    foregroundColor: '#111111',
+    ...JERZYFY_DARK_MATCHDAY,
     headingFont: 'Instrument Serif',
     bodyFont: 'Inter',
     logo: '/demo/logo.png',
@@ -40,8 +37,8 @@ export const fallbackStore: StorefrontBootstrap = {
         {
           type: 'hero',
           enabled: true,
-          heading: 'Football jerseys for match day',
-          subheading: 'Club, national, kids, and custom kits — fan replicas built to wear hard.',
+          heading: 'Wear the game',
+          subheading: 'Match-day kits for the stands, the street, and every kick-off.',
           ctaLabel: 'Shop jerseys',
           ctaHref: '/products',
           image: DEMO_HERO_IMAGE,
@@ -49,8 +46,8 @@ export const fallbackStore: StorefrontBootstrap = {
             {
               id: 'hero-1',
               image: DEMO_HERO_IMAGE,
-              heading: 'Football jerseys for match day',
-              subheading: 'Club, national, kids, and custom kits — fan replicas built to wear hard.',
+              heading: 'Wear the game',
+              subheading: 'Match-day kits for the stands, the street, and every kick-off.',
               ctaLabel: 'Shop jerseys',
               ctaHref: '/products',
             },
@@ -73,6 +70,12 @@ export const fallbackStore: StorefrontBootstrap = {
           ],
         },
         {
+          type: 'marquee',
+          enabled: true,
+          heading: 'Club · National · Custom · Kids',
+          subheading: 'Wear the game · Match day ready',
+        },
+        {
           type: 'statement',
           enabled: true,
           heading: 'WEAR THE GAME',
@@ -86,13 +89,15 @@ export const fallbackStore: StorefrontBootstrap = {
         {
           type: 'promo-banner',
           enabled: true,
-          heading: 'Jerzyfy football',
+          heading: 'Floodlit football',
           subheading: 'Replica-inspired football jerseys with durable knits and match-day fit.',
+          ctaLabel: 'Browse catalog',
+          ctaHref: '/products',
         },
         {
           type: 'featured-products',
           enabled: true,
-          heading: 'Featured jerseys',
+          heading: 'Featured kits',
         },
         {
           type: 'featured-categories',
