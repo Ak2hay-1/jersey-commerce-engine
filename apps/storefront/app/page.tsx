@@ -11,6 +11,7 @@ import {
 } from '../lib/cached-store';
 import {
   CtaSection,
+  DualMarquee,
   FeaturedCategories,
   FeaturedProducts,
   LatestDrop,
@@ -19,7 +20,6 @@ import {
   TrustSection,
 } from '../components/home/homepage-sections';
 import { CinematicHero } from '../components/home/cinematic-hero';
-import { CoverflowStage } from '../components/home/coverflow-stage';
 import { LookbookStrip } from '../components/home/lookbook-strip';
 import { storeApi } from '../lib/api';
 
@@ -89,17 +89,15 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       section.type === 'new-arrivals' ||
       section.type === 'best-sellers',
   );
-  // Partial CMS configs (hero/statement only) still surface the catalog on the home page.
-  // Do not override rails that were explicitly saved as disabled.
+  const hasMarquee = sections.some((section) => section.type === 'marquee');
   const sectionsWithCatalog =
     catalogRailsConfigured || products.length === 0
       ? sections
       : [
           ...sections,
-          { type: 'featured-products' as const, enabled: true, heading: 'Featured jerseys' },
+          { type: 'featured-products' as const, enabled: true, heading: 'Featured kits' },
           { type: 'new-arrivals' as const, enabled: true, heading: 'Latest kits' },
         ];
-  // Hero banner must lead the page regardless of CMS section order.
   const orderedSections = [
     ...sectionsWithCatalog.filter((section) => section.type === 'hero'),
     ...sectionsWithCatalog.filter((section) => section.type !== 'hero'),
@@ -118,7 +116,13 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         return <CinematicHero key={key} section={section} fallbackImage={products[0]?.primaryImage} />;
       }
       if (section.type === 'marquee') {
-        return null;
+        return (
+          <DualMarquee
+            key={key}
+            heading={section.heading || 'Club · National · Custom · Kids'}
+            subheading={section.subheading || 'Wear the game'}
+          />
+        );
       }
       if (section.type === 'statement') {
         return <StatementSection key={key} section={section} />;
@@ -132,7 +136,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       if (section.type === 'featured-products') {
         const picked = section.productSlugs?.length ? pickBySlugs(catalogItems, section.productSlugs) : [];
         const listed = picked.length ? picked : products;
-        return <CoverflowStage key={key} products={listed} currency={currency} heading={section.heading} />;
+        return <FeaturedProducts key={key} section={section} products={listed} currency={currency} />;
       }
       if (section.type === 'promo-banner') {
         return <PromoBanner key={key} section={section} />;
@@ -161,8 +165,11 @@ export default async function HomePage(): Promise<React.JSX.Element> {
   const hasHero = orderedSections.some((section) => section.type === 'hero');
 
   return (
-    <div>
+    <div className="home-matchday">
       {hasHero ? null : <CinematicHero fallbackImage={products[0]?.primaryImage} />}
+      {hasHero && !hasMarquee ? (
+        <DualMarquee heading="Club · National · Custom · Kids" subheading="Wear the game · Match day ready" />
+      ) : null}
       {rendered}
       <LookbookStrip street={street} pitch={pitch} />
     </div>

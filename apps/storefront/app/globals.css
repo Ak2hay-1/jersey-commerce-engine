@@ -1,14 +1,14 @@
 @import '@jersey-commerce/ui/styles';
 
 :root {
-  /* Jerzyfy design-system/jerzyfy/MASTER.md baseline (CMS theme may override via inline vars). */
+  /* Dark match-day baseline; CMS theme may still set inline vars — single-tenant lock in theme.ts wins. */
   --font-heading: var(--font-heading-face), 'Instrument Serif', serif;
   --font-body: var(--font-body-face), Inter, system-ui, sans-serif;
-  --hero-plane: 0 0% 4%;
+  --hero-plane: 0 0% 3%;
   --jerzyfy-accent: 0 60% 30%;
   --space-section: clamp(3rem, 6vw, 6rem);
-  --glass: 40 12% 97% / 0.72;
-  --glass-border: 0 0% 100% / 0.35;
+  --glass: 0 0% 8% / 0.72;
+  --glass-border: 0 0% 100% / 0.12;
 }
 
 html {
@@ -133,6 +133,38 @@ h3,
   transform: translateY(-1px);
 }
 
+.store-pill-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border: 1px solid hsl(var(--accent));
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.2s ease,
+    filter 0.2s ease;
+}
+
+.store-pill-accent:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.home-pitch {
+  background-color: hsl(var(--background));
+}
+
+.home-matchday {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
 .editorial-rule {
   height: 1px;
   width: 100%;
@@ -202,10 +234,10 @@ h3,
   inset: 0;
   /* Stay below drawers/modals (cart uses z-[110]) so blend mode cannot steal taps */
   z-index: 40;
-  opacity: 0.04;
+  opacity: 0.055;
   background-image: url('/demo/grain.png');
   background-size: 220px;
-  mix-blend-mode: multiply;
+  mix-blend-mode: soft-light;
   transform: translateZ(0);
 }
 
@@ -596,9 +628,11 @@ a, button, [role='button'] {
   .store-cta,
   .store-cta:hover:not(:disabled),
   .store-pill,
-  .store-pill:hover:not(:disabled) {
+  .store-pill:hover:not(:disabled),
+  .store-pill-accent,
+  .store-pill-accent:hover:not(:disabled) {
     transform: none;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
   }
 
   .nav-link::after {

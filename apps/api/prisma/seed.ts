@@ -317,8 +317,8 @@ async function main(): Promise<void> {
     primaryColor: tenant.primaryColor,
     secondaryColor: tenant.secondaryColor,
     accentColor: tenant.accentColor,
-    backgroundColor: '#F7F6F4',
-    foregroundColor: '#111111',
+    backgroundColor: '#0A0A0A',
+    foregroundColor: '#F5F5F4',
     headingFont: 'Instrument Serif',
     bodyFont: 'Inter',
     homepageConfig: {
@@ -326,19 +326,25 @@ async function main(): Promise<void> {
         {
           type: 'hero',
           enabled: true,
-          heading: 'Football jerseys for match day',
-          subheading: 'Club, national, kids, and custom kits — built to wear hard.',
+          heading: 'Wear the game',
+          subheading: 'Match-day kits for the stands, the street, and every kick-off.',
           ctaLabel: 'Shop jerseys',
           ctaHref: '/products',
           slides: [
             {
               id: 'hero-1',
-              heading: 'Football jerseys for match day',
-              subheading: 'Club, national, kids, and custom kits — add products in Admin to populate your storefront.',
+              heading: 'Wear the game',
+              subheading: 'Match-day kits for the stands, the street, and every kick-off. Add products in Admin to populate your storefront.',
               ctaLabel: 'Shop jerseys',
               ctaHref: '/products',
             },
           ],
+        },
+        {
+          type: 'marquee',
+          enabled: true,
+          heading: 'Club · National · Custom · Kids',
+          subheading: 'Wear the game · Match day ready',
         },
         {
           type: 'statement',

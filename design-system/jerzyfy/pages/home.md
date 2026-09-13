@@ -1,30 +1,25 @@
-# Home — overrides
+# Home — dark match-day
 
 Extends `design-system/jerzyfy/MASTER.md`.
 
-## First viewport
+## Stack
 
-- Full-bleed cinematic hero (`CinematicHero`), min-height ~85dvh on desktop
-- Hierarchy (fixed):
-  1. **Jerzyfy** — brand wordmark (hero-level)
-  2. **Headline** — one line from slide/CMS `heading`
-  3. **Support** — optional one sentence from `subheading`
-  4. **CTA** — single magnetic pill
-- No overlays: no floating badges, chips, or promo stickers on the media
-- Carousel chrome: minimal arrows + dots; keep secondary to the composition
-- Motion: media crossfade + staggered brand/headline/CTA enter; Ken Burns only if motion allowed
+1. Full-bleed floodlit hero (~90dvh)
+2. Dual marquee (kit phrases)
+3. Oversized statement
+4. Editorial kit rail/grid (no coverflow)
+5. Dark lookbook strip
+6. Trust on dark
+7. Burgundy CTA band
 
-## Below the fold
+## Hero
 
-- Statement: oversized centered serif line (`SplitHeading`)
-- Collections / coverflow / latest drop: image-led, not card chrome
-- Lookbook strip: dual full-bleed category planes
-- Trust: typographic columns, no icon-emoji rows
-- Closing CTA: solid foreground block, one action
+- Brand **Jerzyfy** hero-level
+- One headline + one support line
+- CTA: `.store-pill-accent` (burgundy)
+- Strong vignette / pitch-light gradient
+- Thin burgundy rule above copy optional
 
-## Copy defaults (when CMS empty)
+## Success
 
-- Brand: Jerzyfy
-- Headline: Football jerseys for match day
-- Support: Club, national, kids, and custom kits.
-- CTA: Shop jerseys → `/products`
+First viewport must read dark match-day without the nav — not a light stone shop.

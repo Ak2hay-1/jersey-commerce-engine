@@ -1,3 +1,6 @@
+import { applyJerzyfyDarkMatchday } from './jerzyfy-brand';
+import { publicEnv } from './env';
+
 export function hexToHslChannels(hex: string): string | null {
   const normalized = hex.trim().replace('#', '');
   if (!/^[\da-fA-F]{6}$/.test(normalized)) {
@@ -56,32 +59,34 @@ export function themeStyleVars(theme: {
   headingFont: string;
   bodyFont: string;
 }): Record<string, string> {
-  const primary = hexToHslChannels(theme.primaryColor) ?? '0 0% 7%';
-  const secondary = hexToHslChannels(theme.secondaryColor) ?? '24 6% 34%';
-  const accent = hexToHslChannels(theme.accentColor) ?? '0 60% 30%';
-  const background = hexToHslChannels(theme.backgroundColor) ?? '40 10% 96%';
-  const foreground = hexToHslChannels(theme.foregroundColor) ?? '0 0% 7%';
+  const singleTenant = publicEnv.NEXT_PUBLIC_SINGLE_TENANT !== false;
+  const locked = applyJerzyfyDarkMatchday(theme, singleTenant);
+  const primary = hexToHslChannels(locked.primaryColor) ?? '40 6% 96%';
+  const secondary = hexToHslChannels(locked.secondaryColor) ?? '24 6% 64%';
+  const accent = hexToHslChannels(locked.accentColor) ?? '0 60% 30%';
+  const background = hexToHslChannels(locked.backgroundColor) ?? '0 0% 4%';
+  const foreground = hexToHslChannels(locked.foregroundColor) ?? '40 6% 96%';
   return {
     '--primary': primary,
-    '--primary-foreground': contrastForeground(theme.primaryColor),
-    '--secondary': '40 8% 92%',
+    '--primary-foreground': contrastForeground(locked.primaryColor),
+    '--secondary': '0 0% 12%',
     '--secondary-foreground': secondary,
     '--accent': accent,
-    '--accent-foreground': contrastForeground(theme.accentColor),
+    '--accent-foreground': contrastForeground(locked.accentColor),
     '--background': background,
     '--foreground': foreground,
-    '--card': background,
+    '--card': '0 0% 7%',
     '--card-foreground': foreground,
-    '--muted': '40 8% 92%',
-    '--muted-foreground': '24 6% 38%',
-    '--ring': primary,
-    '--border': '30 6% 84%',
-    '--input': '30 6% 84%',
+    '--muted': '0 0% 12%',
+    '--muted-foreground': '24 6% 62%',
+    '--ring': accent,
+    '--border': '0 0% 18%',
+    '--input': '0 0% 18%',
     '--radius': '0.15rem',
-    '--hero-plane': '0 0% 4%',
-    '--glass': '40 12% 97% / 0.72',
-    '--glass-border': '0 0% 100% / 0.35',
-    '--font-heading': `var(--font-heading-face), "${theme.headingFont}", "Instrument Serif", serif`,
-    '--font-body': `var(--font-body-face), "${theme.bodyFont}", Inter, sans-serif`,
+    '--hero-plane': '0 0% 3%',
+    '--glass': '0 0% 8% / 0.72',
+    '--glass-border': '0 0% 100% / 0.12',
+    '--font-heading': `var(--font-heading-face), "${locked.headingFont}", "Instrument Serif", serif`,
+    '--font-body': `var(--font-body-face), "${locked.bodyFont}", Inter, sans-serif`,
   };
 }
