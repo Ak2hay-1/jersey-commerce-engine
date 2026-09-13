@@ -177,10 +177,9 @@ export const DEFAULT_STOREFRONT_CHROME: StorefrontChromeConfig = {
     'Replica-inspired football jerseys',
   ],
   headerNav: [
+    { href: '/', label: 'Home' },
     { href: '/products', label: 'Shop' },
-    { href: '/products?sort=newest', label: 'Latest' },
-    { href: '/category/football-jerseys', label: 'Jerseys' },
-    { href: '/about', label: 'About' },
+    { href: '/custom-orders', label: 'Customize' },
   ],
 };
 

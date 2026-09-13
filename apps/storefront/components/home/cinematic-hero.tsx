@@ -8,10 +8,17 @@ import type { HomepageBannerSlide, HomepageSection, StorefrontProductListItem } 
 import { Magnetic } from '../motion/magnetic';
 import { ProductImage } from '../catalog/product-image';
 import { resolveDemoMediaUrl } from '../../lib/demo-media';
+import { formatMoney } from '../../lib/format';
 import { MOTION_EASE, MOTION_HERO } from '../motion/presence';
 import { useStore } from '../providers/store-provider';
 
 const AUTOPLAY_MS = 5500;
+
+const FLOAT_POSES = [
+  { className: 'hero-float-card hero-float-card--left', rotate: -8, y: [0, -10, 0] as number[] },
+  { className: 'hero-float-card hero-float-card--right', rotate: 7, y: [0, -14, 0] as number[] },
+  { className: 'hero-float-card hero-float-card--mid', rotate: -3, y: [0, -8, 0] as number[] },
+];
 
 function slidesFromSection(
   section?: HomepageSection,
@@ -27,7 +34,7 @@ function slidesFromSection(
   return [
     {
       image: image ?? '',
-      heading: section?.heading?.trim() || 'Wear the game',
+      heading: section?.heading?.trim() || 'Rule the pitch',
       subheading: section?.subheading ?? 'Match-day kits for the stands, the street, and every kick-off.',
       ctaLabel: section?.ctaLabel || 'Shop jerseys',
       ctaHref: section?.ctaHref || '/products',
@@ -38,9 +45,13 @@ function slidesFromSection(
 export function CinematicHero({
   section: sectionProp,
   fallbackImage,
+  featuredProducts = [],
+  currency = 'INR',
 }: {
   section?: HomepageSection;
   fallbackImage?: StorefrontProductListItem['primaryImage'];
+  featuredProducts?: StorefrontProductListItem[];
+  currency?: string;
 }): React.JSX.Element {
   const store = useStore();
   const section =
@@ -51,6 +62,7 @@ export function CinematicHero({
   const [direction, setDirection] = useState(1);
   const count = slides.length;
   const brand = store.tenant.name?.trim() || 'Jerzyfy';
+  const floatProducts = featuredProducts.slice(0, 3);
 
   useEffect(() => {
     setActive(0);
@@ -88,7 +100,7 @@ export function CinematicHero({
 
   const slide = slides[active] ?? slides[0];
   const image = resolveDemoMediaUrl(slide?.image);
-  const heading = slide?.heading?.trim() || 'Wear the game';
+  const heading = slide?.heading?.trim() || 'Rule the pitch';
   const subheading = slide?.subheading?.trim();
   const href = slide?.ctaHref || '/products';
   const label = slide?.ctaLabel || 'Shop jerseys';
@@ -161,38 +173,81 @@ export function CinematicHero({
           )}
         </motion.div>
       </AnimatePresence>
-      {/* Floodlight / pitch vignette */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_60%_20%,rgba(122,31,31,0.28),transparent_55%)]" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/25" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent" />
 
-      <div className="relative z-10 mx-auto mt-auto flex w-full max-w-store flex-col justify-end store-gutter pb-20 pt-28 sm:pb-24 md:pb-28">
+      {floatProducts.map((product, index) => {
+        const pose = FLOAT_POSES[index] ?? FLOAT_POSES[0]!;
+        return (
+          <motion.div
+            key={product.id}
+            className={pose.className}
+            initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24 }}
+            animate={
+              reduced
+                ? { opacity: 1, rotate: pose.rotate }
+                : { opacity: 1, rotate: pose.rotate, y: pose.y }
+            }
+            transition={
+              reduced
+                ? { duration: 0.2 }
+                : {
+                    opacity: { duration: 0.5, delay: 0.2 + index * 0.08, ease: MOTION_EASE },
+                    rotate: { duration: 0.5, delay: 0.2 + index * 0.08, ease: MOTION_EASE },
+                    y: { duration: 4.5 + index, repeat: Infinity, ease: 'easeInOut' },
+                  }
+            }
+          >
+            <Link href={`/products/${product.slug}`} className="hero-float-card-inner block cursor-pointer">
+              <div className="overflow-hidden rounded-2xl bg-white/95 shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+                <div className="relative aspect-[3/4] w-full bg-[#eceae6]">
+                  <ProductImage
+                    src={product.primaryImage?.url}
+                    alt={product.primaryImage?.altText ?? product.name}
+                    className="object-cover"
+                    sizes="200px"
+                    fill
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-2 bg-black/80 px-3 py-2.5 text-white backdrop-blur-md">
+                  <div className="min-w-0">
+                    <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em]">{product.name}</p>
+                    <p className="mt-0.5 text-xs font-bold">
+                      {formatMoney(product.lowestPrice, currency) || 'Shop'}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-black">
+                    Shop
+                  </span>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        );
+      })}
+
+      <div className="relative z-10 mx-auto flex w-full max-w-store flex-1 flex-col items-center justify-center store-gutter pb-24 pt-28 text-center">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={`${slideKey}-copy`}
-            className="max-w-3xl"
+            className="max-w-4xl"
             variants={copyContainer}
             initial="enter"
             animate="center"
             exit="exit"
           >
-            <motion.div
-              variants={copyItem}
-              transition={{ duration: reduced ? 0.12 : 0.45, ease: MOTION_EASE }}
-              className="mb-5 h-0.5 w-14 bg-[hsl(var(--accent))]"
-              aria-hidden
-            />
             <motion.p
               variants={copyItem}
               transition={{ duration: reduced ? 0.12 : 0.5, ease: MOTION_EASE }}
-              className="font-heading text-[clamp(3rem,14vw,7.5rem)] leading-[0.85] tracking-tight text-white"
+              className="font-heading text-[clamp(2.5rem,10vw,5.5rem)] leading-[0.88] tracking-tight text-white"
             >
               {brand}
             </motion.p>
             <motion.h1
               variants={copyItem}
               transition={{ duration: reduced ? 0.12 : 0.45, ease: MOTION_EASE }}
-              className="mt-5 max-w-xl text-[clamp(1.2rem,3.4vw,1.75rem)] font-semibold uppercase leading-snug tracking-[0.1em] text-white"
+              className="mt-4 text-[clamp(1.75rem,6vw,3.75rem)] font-black uppercase italic leading-[0.95] tracking-tight text-white drop-shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
             >
               {heading}
             </motion.h1>
@@ -200,7 +255,7 @@ export function CinematicHero({
               <motion.p
                 variants={copyItem}
                 transition={{ duration: reduced ? 0.12 : 0.45, ease: MOTION_EASE }}
-                className="mt-4 max-w-md text-sm leading-relaxed text-white/70 sm:text-base"
+                className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/70 sm:text-base"
               >
                 {subheading}
               </motion.p>
@@ -257,7 +312,13 @@ export function CinematicHero({
             ))}
           </div>
         </>
-      ) : null}
+      ) : (
+        <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-1.5" aria-hidden>
+          <span className="block h-1 w-8 rounded-full bg-white/80" />
+          <span className="block h-1 w-4 rounded-full bg-white/30" />
+          <span className="block h-1 w-4 rounded-full bg-white/30" />
+        </div>
+      )}
     </section>
   );
 }

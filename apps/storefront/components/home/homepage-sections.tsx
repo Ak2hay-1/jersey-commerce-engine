@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { HomepageSection, StorefrontProductListItem } from '@jersey-commerce/types';
 import type { CategoryDetail } from '@jersey-commerce/types';
-import { ProductGrid } from '../catalog/product-grid';
 import { CategoryCard } from '../catalog/category-card';
 import { Stagger, StaggerItem } from '../motion/stagger';
 import { ScrollHeading } from '../motion/scroll-heading';
@@ -9,10 +8,12 @@ import { Magnetic } from '../motion/magnetic';
 import { Reveal } from '../motion/reveal';
 import { DualMarquee } from './dual-marquee';
 import { LatestDrop } from './latest-drop';
-import { PriceDisplay } from '../catalog/price-display';
-import { ProductImage } from '../catalog/product-image';
+import { CollectionGrid } from './collection-grid';
 
 export { StatementSection } from './statement-section';
+export { CollectionGrid } from './collection-grid';
+export { TrendingSection } from './trending-section';
+export { LimitedEditionBand } from './limited-edition-band';
 
 export function FeaturedCategories({
   section,
@@ -47,39 +48,7 @@ export function FeaturedProducts({
   products: StorefrontProductListItem[];
   currency: string;
 }): React.JSX.Element | null {
-  if (products.length === 0) {
-    return null;
-  }
-  return (
-    <section className="home-kit-rail border-y border-foreground/10 bg-[hsl(var(--card))] py-[var(--space-section)]">
-      <div className="mx-auto max-w-store store-gutter">
-        {section.heading ? <ScrollHeading kicker="Kits">{section.heading}</ScrollHeading> : null}
-        <div className="mt-10 hidden gap-6 lg:grid lg:grid-cols-3">
-          {products.slice(0, 6).map((product) => (
-            <article key={product.id} className="group">
-              <Link href={`/products/${product.slug}`} className="block cursor-pointer">
-                <div className="overflow-hidden bg-muted">
-                  <ProductImage
-                    src={product.primaryImage?.url}
-                    alt={product.primaryImage?.altText ?? product.name}
-                    className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                </div>
-                <h3 className="mt-4 break-words font-heading text-2xl uppercase leading-tight">{product.name}</h3>
-                <PriceDisplay price={product.lowestPrice} compareAt={product.compareAtPrice} currency={currency} size="sm" />
-                {product.brand ? (
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{product.brand} · limited drop</p>
-                ) : null}
-              </Link>
-            </article>
-          ))}
-        </div>
-        <div className="mt-8 lg:hidden">
-          <ProductGrid products={products.slice(0, 6)} currency={currency} />
-        </div>
-      </div>
-    </section>
-  );
+  return <CollectionGrid section={section} products={products} currency={currency} />;
 }
 
 export function PromoBanner({ section }: { section: HomepageSection }): React.JSX.Element {

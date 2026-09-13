@@ -2,7 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Menu, Search, ShoppingBag, User, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Heart, Menu, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button, cn } from '@jersey-commerce/ui';
@@ -15,8 +16,22 @@ import { MobileMenu } from './mobile-menu';
 import { MOTION_TRANSITION } from '../motion/presence';
 import { SlidingNumber } from '../motion/sliding-number';
 
+const PILL_NAV = [
+  { href: '/', label: 'Home' },
+  { href: '/products', label: 'Shop' },
+  { href: '/custom-orders', label: 'Customize' },
+] as const;
+
+function isActivePath(pathname: string, href: string): boolean {
+  if (href === '/') {
+    return pathname === '/';
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function StoreHeader(): React.JSX.Element {
   const store = useStore();
+  const pathname = usePathname();
   const { cart, setOpen } = useCart();
   const { customer } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,6 +39,8 @@ export function StoreHeader(): React.JSX.Element {
   const [scrolled, setScrolled] = useState(false);
   const reduced = useReducedMotion();
   const count = cart?.itemCount ?? 0;
+  const isHome = pathname === '/';
+  const brand = store.tenant.name?.trim() || 'Jerzyfy';
   const nav =
     store.website.chrome?.headerNav?.length
       ? store.website.chrome.headerNav
@@ -53,100 +70,139 @@ export function StoreHeader(): React.JSX.Element {
   return (
     <header
       className={cn(
-        'sticky top-9 z-40 bg-background/85 backdrop-blur-xl transition-shadow duration-300',
-        scrolled ? 'shadow-header' : 'shadow-none',
+        'z-40 transition-[background-color,box-shadow,border-color] duration-300',
+        isHome ? 'fixed inset-x-0 top-9' : 'sticky top-9',
+        isHome && !scrolled
+          ? 'border-b border-transparent bg-transparent'
+          : 'glass-nav-bar border-b border-white/10 shadow-header',
       )}
     >
       <div className="mx-auto grid h-14 max-w-store grid-cols-[1fr_auto_1fr] items-center gap-2 store-gutter sm:h-16 sm:gap-3">
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 items-center gap-1">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-11 w-11 rounded-none lg:hidden"
+            className="h-11 w-11 rounded-full text-foreground lg:hidden"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((value) => !value)}
           >
             {menuOpen ? <X /> : <Menu />}
           </Button>
-          <nav className="hidden min-w-0 items-center gap-5 lg:flex" aria-label="Primary">
-            {nav.map((item) => (
+          <Link href="/" className="hidden min-w-0 items-center gap-2 lg:flex" aria-label={brand}>
+            {store.theme.logo ? (
+              <Image
+                src={store.theme.logo}
+                alt={brand}
+                width={120}
+                height={40}
+                className="h-8 w-auto object-contain"
+                priority
+              />
+            ) : (
+              <span className="flex flex-col leading-none">
+                <span className="font-heading text-lg font-bold uppercase italic tracking-[0.12em]">{brand}</span>
+              </span>
+            )}
+          </Link>
+        </div>
+
+        <nav
+          className="glass-nav-pill hidden items-center gap-1 justify-self-center px-1.5 py-1.5 md:flex"
+          aria-label="Primary"
+        >
+          {PILL_NAV.map((item) => {
+            const active = isActivePath(pathname, item.href);
+            return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="nav-link text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/80 hover:text-foreground"
+                className={cn(
+                  'rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] transition-colors',
+                  active
+                    ? 'bg-foreground text-background'
+                    : 'text-foreground/75 hover:bg-foreground/10 hover:text-foreground',
+                )}
               >
                 {item.label}
               </Link>
-            ))}
-          </nav>
-        </div>
+            );
+          })}
+        </nav>
 
-        <Link href="/" className="min-w-0 justify-self-center px-1" aria-label={store.tenant.name}>
+        <Link href="/" className="min-w-0 justify-self-center px-1 lg:hidden" aria-label={brand}>
           {store.theme.logo ? (
             <Image
               src={store.theme.logo}
-              alt={store.tenant.name}
+              alt={brand}
               width={120}
               height={40}
-              className="mx-auto h-8 w-auto max-w-[42vw] object-contain sm:h-9 sm:max-w-[46vw] md:h-10 lg:max-w-none"
+              className="mx-auto h-8 w-auto max-w-[42vw] object-contain"
               priority
             />
           ) : (
-            <span className="block max-w-[42vw] truncate text-center font-heading text-lg uppercase tracking-[0.14em] sm:max-w-[46vw] sm:text-xl sm:tracking-[0.18em] md:text-2xl lg:max-w-none lg:tracking-[0.2em]">{store.tenant.name}</span>
+            <span className="block max-w-[42vw] truncate text-center font-heading text-lg font-bold uppercase italic tracking-[0.12em]">
+              {brand}
+            </span>
           )}
         </Link>
 
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-11 w-11 rounded-none md:h-9 md:w-9"
+            className="h-11 w-11 rounded-full md:h-9 md:w-9"
             aria-label={searchOpen ? 'Close search' : 'Search'}
             aria-expanded={searchOpen}
             onClick={() => setSearchOpen((value) => !value)}
           >
             <Search className="h-4 w-4" />
           </Button>
-          <Button asChild variant="ghost" size="icon" className="h-11 w-11 rounded-none md:h-9 md:w-9" aria-label={customer ? 'Account' : 'Sign in'}>
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="hidden h-9 w-9 rounded-full sm:inline-flex"
+            aria-label="Wishlist"
+          >
+            <Link href="/products">
+              <Heart className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-11 w-11 rounded-full md:h-9 md:w-9"
+            aria-label={customer ? 'Account' : 'Sign in'}
+          >
             <Link href={customer ? '/account' : '/auth/login'}>
               <User className="h-4 w-4" />
             </Link>
           </Button>
           <button
             type="button"
-            className="inline-flex min-h-11 cursor-pointer items-center gap-2 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] md:min-h-0"
+            className="relative inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full md:h-9 md:w-9"
             aria-label="Open cart"
             onClick={() => setOpen(true)}
           >
-            <span className="hidden sm:inline">
-              Cart
+            <ShoppingBag className="h-4 w-4" />
+            <AnimatePresence>
               {count > 0 ? (
-                <>
-                  {' '}
-                  (<SlidingNumber value={count} />)
-                </>
+                <motion.span
+                  key="cart-badge"
+                  className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center overflow-hidden rounded-full bg-foreground px-1 text-[10px] font-bold text-background"
+                  initial={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
+                  animate={reduced ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                  exit={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
+                  transition={MOTION_TRANSITION}
+                >
+                  <SlidingNumber value={count} />
+                </motion.span>
               ) : null}
-            </span>
-            <span className="relative">
-              <ShoppingBag className="h-4 w-4" />
-              <AnimatePresence>
-                {count > 0 ? (
-                  <motion.span
-                    key="cart-badge"
-                    className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center overflow-hidden bg-foreground px-1 text-[10px] font-bold text-background"
-                    initial={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
-                    animate={reduced ? { opacity: 1 } : { scale: 1, opacity: 1 }}
-                    exit={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
-                    transition={MOTION_TRANSITION}
-                  >
-                    <SlidingNumber value={count} />
-                  </motion.span>
-                ) : null}
-              </AnimatePresence>
-            </span>
+            </AnimatePresence>
           </button>
         </div>
       </div>
