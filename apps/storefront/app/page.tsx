@@ -127,6 +127,8 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           key={key}
           section={section}
           fallbackImage={products[0]?.primaryImage}
+          products={products.slice(0, 5)}
+          currency={currency}
         />,
       );
       continue;
@@ -210,7 +212,11 @@ export default async function HomePage(): Promise<React.JSX.Element> {
   return (
     <div className="home-matchday">
       {hasHero ? null : (
-        <CinematicHero fallbackImage={products[0]?.primaryImage} />
+        <CinematicHero
+          fallbackImage={products[0]?.primaryImage}
+          products={products.slice(0, 5)}
+          currency={currency}
+        />
       )}
       {rendered}
       {!injectedTrending ? <TrendingSection categories={categoriesWithCovers} /> : null}

@@ -53,8 +53,11 @@ export function ProductCard({
     }
   }
 
-  async function pickSize(variant: StorefrontVariant) {
-    if (variant.availability === 'OUT_OF_STOCK') {
+  async function pickSize(size: string) {
+    const variant =
+      variants?.find((item) => item.size === size && item.availability !== 'OUT_OF_STOCK') ??
+      variants?.find((item) => item.size === size);
+    if (!variant || variant.availability === 'OUT_OF_STOCK') {
       return;
     }
     setPending(true);
@@ -125,14 +128,15 @@ export function ProductCard({
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Select size</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {sizes.map((size) => {
-                    const variant = variants?.find((item) => item.size === size);
-                    const unavailable = !variant || variant.availability === 'OUT_OF_STOCK';
+                    const unavailable = !(variants ?? []).some(
+                      (item) => item.size === size && item.availability !== 'OUT_OF_STOCK',
+                    );
                     return (
                       <button
                         key={size}
                         type="button"
                         disabled={unavailable || pending}
-                        onClick={() => variant && void pickSize(variant)}
+                        onClick={() => void pickSize(size)}
                         className={cn(
                           'min-h-9 min-w-9 cursor-pointer border border-foreground/20 px-2 py-1 text-xs uppercase transition-colors hover:border-foreground',
                           unavailable && 'cursor-not-allowed opacity-40',

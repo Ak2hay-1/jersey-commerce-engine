@@ -19,7 +19,13 @@ export function ProductVariantSelector({
 
   function selectSize(size: string) {
     const match =
-      variants.find((variant) => variant.size === size && variant.colour === selected?.colour && variant.availability !== 'OUT_OF_STOCK') ??
+      (selected?.colour
+        ? variants.find(
+            (variant) =>
+              variant.size === size && variant.colour === selected.colour && variant.availability !== 'OUT_OF_STOCK',
+          )
+        : undefined) ??
+      variants.find((variant) => variant.size === size && variant.availability !== 'OUT_OF_STOCK') ??
       variants.find((variant) => variant.size === size);
     if (match) {
       onSelect(match);
@@ -62,8 +68,12 @@ export function ProductVariantSelector({
           <legend className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Size</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {sizes.map((size) => {
-              const variant = variants.find((item) => item.size === size && (!selected?.colour || item.colour === selected.colour));
-              const unavailable = !variant || variant.availability === 'OUT_OF_STOCK';
+              const unavailable = !variants.some(
+                (item) =>
+                  item.size === size &&
+                  item.availability !== 'OUT_OF_STOCK' &&
+                  (!selected?.colour || item.colour === selected.colour),
+              );
               return (
                 <button
                   key={size}
