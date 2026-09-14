@@ -14,7 +14,6 @@ import { CartProvider } from '../components/providers/cart-provider';
 import { AuthProvider } from '../components/providers/auth-provider';
 import { StoreHeader } from '../components/layout/store-header';
 import { StoreFooter } from '../components/layout/store-footer';
-import { AnnouncementBar } from '../components/layout/announcement-bar';
 import { BrandPreloader } from '../components/layout/brand-preloader';
 import { CartDrawer } from '../components/cart/cart-drawer';
 import { JsonLd, organizationJsonLd } from '../components/seo/json-ld';
@@ -88,7 +87,6 @@ export default async function RootLayout({
                 <CustomCursor />
                 <FilmGrain />
                 <BrandPreloader />
-                <AnnouncementBar />
                 <StoreHeader />
                 <CartDrawer />
                 <main id="main">{unavailable ? <p className="px-4 py-16 text-center text-sm text-muted-foreground">The store is temporarily unavailable. Please try again shortly.</p> : children}</main>

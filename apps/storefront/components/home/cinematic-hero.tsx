@@ -56,9 +56,6 @@ export function CinematicHero({
           />
         )}
       </div>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_60%_20%,rgba(122,31,31,0.28),transparent_55%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/25" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent" />
     </section>
   );
 }
