@@ -116,4 +116,11 @@ describe('ProductVariantSelector', () => {
     expect(screen.getByRole('button', { name: 'M' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'L' })).toBeDisabled();
   });
+
+  it('explains when every size is out of stock', () => {
+    const onSelect = vi.fn();
+    const allOut = variants.map((variant) => ({ ...variant, availability: 'OUT_OF_STOCK' as const, remaining: null }));
+    render(<ProductVariantSelector variants={allOut} onSelect={onSelect} />);
+    expect(screen.getByText(/all sizes are currently out of stock/i)).toBeInTheDocument();
+  });
 });

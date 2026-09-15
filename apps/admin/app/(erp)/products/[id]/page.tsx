@@ -9,6 +9,7 @@ import { apiRequest, queryString } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/env';
 import { statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
+import { ProductStockPanel } from '@/components/product-stock-panel';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
 import { useRouteParam } from '@/lib/use-route-param';
@@ -34,6 +35,7 @@ interface PendingImage {
 }
 
 const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const;
+const KIDS_SIZES = ['6', '8', '10', '12', '14'] as const;
 
 /** Matches a single size token (adult/kids/extended). Used to detect multi-size fields. */
 const SIZE_TOKEN = /^(?:XXL|XL|2XL|3XL|4XL|5XL|XS|S|M|L|[0-9]+)$/i;
@@ -119,6 +121,7 @@ export default function ProductDetailPage(): React.JSX.Element {
   const [samePriceForAllVariants, setSamePriceForAllVariants] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [stockRefreshKey, setStockRefreshKey] = useState(0);
 
   useEffect(() => {
     return () => {
@@ -197,11 +200,11 @@ export default function ProductDetailPage(): React.JSX.Element {
     setVariants((rows) => rows.map((row) => ({ ...row, ...patch })));
   }
 
-  function addAdultSizes(): void {
+  function addSizePreset(sizes: readonly string[]): void {
     setVariants((rows) => {
       const template = rows[rows.length - 1] ?? emptyVariant();
       const existing = new Set(rows.map((row) => row.size.trim().toUpperCase()));
-      const additions = ADULT_SIZES.filter((size) => !existing.has(size)).map((size) => ({
+      const additions = sizes.filter((size) => !existing.has(size.toUpperCase())).map((size) => ({
         ...emptyVariant(),
         size,
         colour: template.colour,
@@ -216,6 +219,14 @@ export default function ProductDetailPage(): React.JSX.Element {
       const singleBlank = rows.length === 1 && !rows[0]!.id && !rows[0]!.size.trim();
       return singleBlank ? additions : [...rows, ...additions];
     });
+  }
+
+  function addAdultSizes(): void {
+    addSizePreset(ADULT_SIZES);
+  }
+
+  function addKidsSizes(): void {
+    addSizePreset(KIDS_SIZES);
   }
 
   function collectPendingImages(): PendingImage[] {
@@ -275,7 +286,7 @@ export default function ProductDetailPage(): React.JSX.Element {
     const compound = variants.find((variant) => looksLikeCompoundSize(variant.size));
     if (compound) {
       setError(
-        `Size "${compound.size.trim()}" looks like multiple sizes in one field. Use one size per variant (e.g. S), or click Add adult sizes.`,
+        `Size "${compound.size.trim()}" looks like multiple sizes in one field. Use one size per variant (e.g. S), or click Add adult sizes / Add kids sizes.`,
       );
       return;
     }
@@ -353,6 +364,7 @@ export default function ProductDetailPage(): React.JSX.Element {
 
       await uploadPending(id);
       await loadProduct(id);
+      setStockRefreshKey((key) => key + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to save product');
     } finally {
@@ -366,6 +378,7 @@ export default function ProductDetailPage(): React.JSX.Element {
     try {
       await apiRequest(`/products/${id}/variants/${variantId}`, { method: 'DELETE' });
       await loadProduct(id);
+      setStockRefreshKey((key) => key + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to archive variant');
       throw err;
@@ -412,7 +425,7 @@ export default function ProductDetailPage(): React.JSX.Element {
   }
 
   const canSave = (isNew && auth.can('products.create')) || (!isNew && auth.can('products.update'));
-  const firstVariantId = product?.variants[0]?.id;
+  const showStockPanel = !isNew && auth.can('inventory.read');
 
   return (
     <div className="space-y-4">
@@ -420,9 +433,9 @@ export default function ProductDetailPage(): React.JSX.Element {
         title={isNew ? 'Add product' : product?.name ?? 'Product'}
         description={product ? `${statusLabel(product.status)} · ${product.variants.length} variants` : undefined}
         actions={
-          !isNew && firstVariantId ? (
+          showStockPanel ? (
             <Button asChild variant="outline">
-              <Link href={`/inventory/${firstVariantId}`}>Set stock</Link>
+              <a href="#stock-by-size">Set stock</a>
             </Button>
           ) : null
         }
@@ -563,6 +576,9 @@ export default function ProductDetailPage(): React.JSX.Element {
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => addAdultSizes()}>
                     Add adult sizes
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => addKidsSizes()}>
+                    Add kids sizes
                   </Button>
                   <Button type="button" variant="outline" size="sm" onClick={() => setVariants((rows) => [...rows, emptyVariant()])}>
                     Add variant
@@ -724,6 +740,8 @@ export default function ProductDetailPage(): React.JSX.Element {
           </form>
         </CardContent>
       </Card>
+
+      {!isNew ? <ProductStockPanel productId={id} refreshKey={stockRefreshKey} /> : null}
 
       {!isNew && product?.images?.length ? (
         <Card>

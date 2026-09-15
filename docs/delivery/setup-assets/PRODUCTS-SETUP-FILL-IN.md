@@ -51,7 +51,7 @@ Homepage “collections” tiles use these slugs in Website settings (see homepa
 
 **Colour default per product:** fill in each product card below.
 
-**One size = one variant.** Never type `S M L XL XXL` into a single Size field — that becomes one storefront button and one SKU. In ERP use **Add adult sizes** (creates S–XXL rows) or add each size as its own row.
+**One size = one variant.** Never type `S M L XL XXL` into a single Size field — that becomes one storefront button and one SKU. In ERP use **Add adult sizes** (S–XXL) or **Add kids sizes** (6–14), or add each size as its own row.
 
 **Compare-at (MRP):** optional, must be higher than selling. Storefront shows selling price, strikethrough MRP, and auto-calculated `% off`. Leave blank if there is no list price.
 
@@ -258,11 +258,12 @@ For each product: create product → add variants (**one size per row**; cost + 
 
 ## 4. Opening stock (after catalog)
 
-Variants start at **0**. For each size row above, in Admin product → set stock / opening stock:
+Variants start at **0**. For each size row above, open the product in Admin and use the **Stock by size** panel (or header **Set stock**):
 
-- Quantity ≥ 1 (physical count)
-- Reason required (e.g. `Opening stock go-live YYYY-MM-DD`)
-- Optional reorder level
+- Enter on-hand quantity for each size and click **Save stock**
+- Quantity ≥ 1 (physical count) for sizes you want sellable on the storefront
+- First save records opening stock; later edits adjust inventory
+- Optional: open **Ledger** per size for movement history / reorder level
 
 - [ ] All ACTIVE variants have opening qty entered
 - [ ] Spot-check: one SKU matches shelf count

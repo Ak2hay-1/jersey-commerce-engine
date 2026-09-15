@@ -38,6 +38,44 @@ function sizesFromVariants(variants: StorefrontVariant[]): string[] {
   return [...new Set(variants.map((item) => item.size).filter((value): value is string => Boolean(value)))];
 }
 
+function parseHex(hex: string): [number, number, number] {
+  const raw = hex.replace('#', '').trim();
+  const full =
+    raw.length === 3
+      ? raw
+          .split('')
+          .map((char) => `${char}${char}`)
+          .join('')
+      : raw.padEnd(6, '0').slice(0, 6);
+  return [parseInt(full.slice(0, 2), 16), parseInt(full.slice(2, 4), 16), parseInt(full.slice(4, 6), 16)];
+}
+
+function mixHex(hex: string, target: string, amount: number): string {
+  const [r1, g1, b1] = parseHex(hex);
+  const [r2, g2, b2] = parseHex(target);
+  const t = Math.min(1, Math.max(0, amount));
+  const to = (value: number) => value.toString(16).padStart(2, '0');
+  return `#${to(Math.round(r1 + (r2 - r1) * t))}${to(Math.round(g1 + (g2 - g1) * t))}${to(Math.round(b1 + (b2 - b1) * t))}`;
+}
+
+function relativeLuminance(hex: string): number {
+  const [r, g, b] = parseHex(hex).map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+}
+
+function heroStageBackground(colourName: string | null): string {
+  const base = colorToHex(colourName || 'navy');
+  const light = relativeLuminance(base) > 0.55;
+  // Keep text readable: lift mid-tones for dark kits, mute very light kits toward charcoal.
+  const center = light ? mixHex(base, '#2a2a2a', 0.55) : mixHex(base, '#ffffff', 0.22);
+  const mid = light ? mixHex(base, '#141414', 0.72) : mixHex(base, '#000000', 0.35);
+  const edge = light ? '#0e0e0e' : mixHex(base, '#000000', 0.72);
+  return `radial-gradient(ellipse 70% 55% at 50% 42%, ${center} 0%, ${mid} 45%, ${edge} 100%)`;
+}
+
 export function CinematicHero({
   section: sectionProp,
   fallbackImage,
@@ -161,6 +199,8 @@ export function CinematicHero({
   const tagline = 'Wear the game. Own the look.';
   const href = product ? `/products/${product.slug}` : section?.ctaHref || '/products';
   const social = socialEntries(store.website.socialLinks);
+  const stageColour = selectedColour ?? colours[0] ?? matchingVariant?.colour ?? null;
+  const stageBackground = heroStageBackground(stageColour);
 
   async function onCta() {
     if (!matchingVariant || pending) {
@@ -181,11 +221,8 @@ export function CinematicHero({
   return (
     <section className="home-matchday px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4" aria-label="Homepage hero">
       <div
-        className="relative flex min-h-[min(92dvh,56rem)] flex-col overflow-hidden rounded-[1.75rem] text-white sm:rounded-[2rem] lg:min-h-[min(92dvh,58rem)]"
-        style={{
-          background:
-            'radial-gradient(ellipse 70% 55% at 50% 42%, #5a5a5a 0%, #2e2e2e 45%, #141414 100%)',
-        }}
+        className="relative flex min-h-[min(92dvh,56rem)] flex-col overflow-hidden rounded-[1.75rem] text-white transition-[background] duration-700 ease-out sm:rounded-[2rem] lg:min-h-[min(92dvh,58rem)]"
+        style={{ background: stageBackground }}
       >
         <div className="relative z-10 grid flex-1 grid-cols-1 gap-8 px-5 pb-8 pt-24 sm:px-8 sm:pt-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-6 lg:px-12 lg:pb-12 lg:pt-28">
           {/* Left copy */}

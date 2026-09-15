@@ -98,6 +98,9 @@ export function ProductVariantSelector({
           {availabilityLabel(selected.availability, selected.remaining)}
           {selected.sku ? <span className="ml-2">SKU {selected.sku}</span> : null}
         </p>
+      ) : sizes.length > 0 &&
+        !variants.some((item) => item.availability !== 'OUT_OF_STOCK' && Boolean(item.size)) ? (
+        <p className="text-sm text-muted-foreground">All sizes are currently out of stock.</p>
       ) : (
         <p className="text-sm text-muted-foreground">Select a size{colours.length ? ' and colour' : ''} to add to cart.</p>
       )}
