@@ -16,7 +16,7 @@ import { money } from '../pos/pos-money';
 import { parseTaxRate } from '../finance/tax';
 import { priceOrderLines, type PricedOrderLineInput } from './order-pricing';
 import { ShippingCalculator } from './shipping.calculator';
-import { UnconfiguredOnlineGateway } from './unconfigured-online.gateway';
+import { RazorpayOnlineGateway } from './razorpay-online.gateway';
 import { OrderSaleRecognitionService } from './order-sale.service';
 import { assertOrderTransition, isCancellableStatus } from './order-state-machine';
 import { orderInclude, toOrderDetail, type OrderRecord } from './order.mapper';
@@ -58,7 +58,7 @@ export class OrderEngineService {
     private readonly audit: AuditService,
     private readonly inventory: InventoryService,
     private readonly shipping: ShippingCalculator,
-    private readonly gateway: UnconfiguredOnlineGateway,
+    private readonly gateway: RazorpayOnlineGateway,
     private readonly saleRecognition: OrderSaleRecognitionService,
   ) {}
 

@@ -33,6 +33,9 @@ export const serverEnvSchema = z.object({
   PLATFORM_DOMAIN: z.string().optional().default(''),
   /** When true (default), Jerzyfy runs as one shop — block creating additional tenants. */
   SINGLE_TENANT_MODE: booleanFromString.default(true),
+  /** Optional env fallback for Razorpay. Prefer Admin → Settings → Payments when set. */
+  RAZORPAY_KEY_ID: z.string().optional().default(''),
+  RAZORPAY_KEY_SECRET: z.string().optional().default(''),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

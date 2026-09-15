@@ -96,6 +96,10 @@ export interface OrderDetail extends OrderSummary {
     currency: string;
     provider: string | null;
     nextAction: 'AWAIT_GATEWAY' | 'NONE';
+    /** Razorpay Standard Checkout fields (KEY_ID only — never the secret). */
+    razorpayOrderId?: string | null;
+    razorpayKeyId?: string | null;
+    amountPaise?: number | null;
   };
 }
 

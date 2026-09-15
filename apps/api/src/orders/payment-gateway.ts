@@ -13,6 +13,12 @@ export interface CreatePaymentIntentInput {
   metadata?: Record<string, unknown> | null;
 }
 
+export interface RazorpayCheckoutPayload {
+  razorpayOrderId: string;
+  razorpayKeyId: string;
+  amountPaise: number;
+}
+
 export interface PaymentIntentResult {
   paymentId: string;
   status: PaymentStatus;
@@ -21,6 +27,8 @@ export interface PaymentIntentResult {
   method: PaymentMethod;
   provider: string | null;
   nextAction: PaymentIntentNextAction;
+  /** Present when the gateway can open a client checkout modal (e.g. Razorpay). */
+  checkout?: RazorpayCheckoutPayload;
 }
 
 export interface VerifyPaymentInput {

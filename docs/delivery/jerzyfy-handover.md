@@ -41,7 +41,7 @@ Current production logo URL is served from the API media path (`/api/v1/media/..
 
 ## Known limitations (not bugs)
 
-- Online card capture (Razorpay) is not wired — use COD / pay-in-store
+- Online card capture (Razorpay) is wired for Standard Checkout — configure keys in Admin → Settings → Payments or `RAZORPAY_*` env vars
 - Customer password-reset email is not live — owner sets temp password in Staff portal
 - Receipt printers are HTML only — no ESC/POS drivers
 

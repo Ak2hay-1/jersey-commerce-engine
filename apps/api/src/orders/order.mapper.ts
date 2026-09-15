@@ -105,6 +105,14 @@ export function toOrderTracking(order: OrderRecord): OrderTrackingStep[] {
 export function toOrderDetail(order: OrderRecord, paymentIntent?: OrderDetail['paymentIntent']): OrderDetail {
   const payments = order.payments.map(toPayment);
   const latest = [...order.payments].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+  const meta =
+    latest?.metadata && typeof latest.metadata === 'object' && !Array.isArray(latest.metadata)
+      ? (latest.metadata as {
+          razorpayOrderId?: string;
+          razorpayKeyId?: string;
+          amountPaise?: number;
+        })
+      : {};
   return {
     ...toOrderSummary(order),
     notes: order.notes,
@@ -129,6 +137,9 @@ export function toOrderDetail(order: OrderRecord, paymentIntent?: OrderDetail['p
             currency: order.currency,
             provider: latest.provider,
             nextAction: latest.status === 'PENDING' ? 'AWAIT_GATEWAY' : 'NONE',
+            razorpayOrderId: meta.razorpayOrderId ?? (latest.provider === 'razorpay' ? latest.reference : null) ?? null,
+            razorpayKeyId: meta.razorpayKeyId ?? null,
+            amountPaise: meta.amountPaise ?? null,
           }
         : undefined),
   };

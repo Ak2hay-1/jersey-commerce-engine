@@ -10,7 +10,7 @@ Platform design: [../architecture.md](../architecture.md). Auth: [../auth.md](..
 
 | Item | What the client sees today | When it changes |
 | --- | --- | --- |
-| Live payment gateways | Online prepaid capture is not wired. Use COD, pay-in-store, or record payment in ERP/POS. | Later payments phase |
+| Live payment gateways | Razorpay Standard Checkout is wired. Configure keys in Admin → Settings → Payments or `RAZORPAY_*` env vars. | Done |
 | Forgot / reset password email | `PasswordResetToken` exists; no public reset endpoints. Owner or superior admin sets a **temporary password** in Admin → Users; that staff member must change it on next sign-in. | Email phase |
 | Domain + HTTPS | Hybrid production uses `API_HOST` + Caddy TLS and Vercel HTTPS frontends. Legacy IP-only HTTP stack is optional (`docker-compose.prod.yml`). | Custom shop/admin domains on Vercel when the client is ready |
 | Hardware printers | Receipts are frozen HTML payloads. No ESC/POS / cash drawer drivers. | Hardware phase |

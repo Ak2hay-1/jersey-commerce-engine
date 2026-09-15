@@ -8,6 +8,7 @@ import type { CheckoutQuote, FulfillmentMethod } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
 import { STORE_COOKIES, writeBrowserCookie } from '../../lib/cookies';
 import { publicErrorMessage } from '../../lib/errors';
+import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { useCart } from '../providers/cart-provider';
 import { useAuth } from '../providers/auth-provider';
 import { useStore } from '../providers/store-provider';
@@ -26,6 +27,7 @@ export function CheckoutForm(): React.JSX.Element {
   const router = useRouter();
   const store = useStore();
   const razorpayEnabled = store.payments?.razorpay ?? false;
+  const razorpayKeyId = store.payments?.razorpayKeyId ?? null;
   const { cart, refresh } = useCart();
   const { customer } = useAuth();
   const [step, setStep] = useState(0);
@@ -91,6 +93,56 @@ export function CheckoutForm(): React.JSX.Element {
       if (result.customerAccessToken) {
         writeBrowserCookie(STORE_COOKIES.customer, result.customerAccessToken, 30 * 24 * 60 * 60);
       }
+
+      const intent = result.order.paymentIntent;
+      const orderId = intent?.razorpayOrderId;
+      const keyId = intent?.razorpayKeyId || razorpayKeyId;
+      const amountPaise = intent?.amountPaise;
+
+      if (!razorpayEnabled || !orderId || !keyId || !amountPaise) {
+        setError('Online payment could not be started. Please try again or contact the store.');
+        return;
+      }
+
+      const Razorpay = await loadRazorpayCheckout();
+      await new Promise<void>((resolve, reject) => {
+        const rzp = new Razorpay({
+          key: keyId,
+          amount: amountPaise,
+          currency: result.order.currency || 'INR',
+          name: store.tenant.name,
+          description: `Order ${result.order.orderNumber}`,
+          order_id: orderId,
+          prefill: {
+            name: name || undefined,
+            email: email || undefined,
+            contact: phone || undefined,
+          },
+          theme: { color: store.theme.primaryColor || '#111111' },
+          modal: {
+            ondismiss: () => {
+              reject(new Error('Payment cancelled. Your order is reserved — complete payment to confirm it.'));
+            },
+          },
+          handler: async (response) => {
+            try {
+              await storeApi.verifyRazorpayPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              resolve();
+            } catch (verifyError) {
+              reject(verifyError instanceof Error ? verifyError : new Error('Payment verification failed.'));
+            }
+          },
+        });
+        rzp.on('payment.failed', (response) => {
+          reject(new Error(response.error.description || response.error.reason || 'Payment failed.'));
+        });
+        rzp.open();
+      });
+
       await refresh();
       router.push(`/order/success/${result.order.orderNumber}`);
     } catch (caught) {
@@ -230,7 +282,7 @@ export function CheckoutForm(): React.JSX.Element {
           disabled={pending || blocking.length > 0 || !razorpayEnabled}
           onClick={() => setStep(3)}
         >
-          {pending ? 'Placing order…' : razorpayEnabled ? 'Pay & place order' : 'Checkout unavailable'}
+          {pending ? 'Processing payment…' : razorpayEnabled ? 'Pay & place order' : 'Checkout unavailable'}
         </Button>
       </div>
       <CheckoutSummary cart={cart} quote={quote} currency={store.tenant.currency} />

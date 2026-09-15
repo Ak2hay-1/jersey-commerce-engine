@@ -296,6 +296,40 @@ export const storeApi = {
     });
   },
 
+  createRazorpayOrder(
+    input: { amount: number; currency?: string; receipt?: string },
+    options?: StoreRequestOptions,
+  ) {
+    return storeFetch<{ order_id: string; amount: number; currency: string; key_id: string }>(
+      '/store/razorpay/create-order',
+      {
+        ...options,
+        method: 'POST',
+        body: JSON.stringify(input),
+        cache: 'no-store',
+      },
+    );
+  },
+
+  verifyRazorpayPayment(
+    input: {
+      razorpay_order_id: string;
+      razorpay_payment_id: string;
+      razorpay_signature: string;
+    },
+    options?: StoreRequestOptions,
+  ) {
+    return storeFetch<{ success: true; paymentId: string; orderNumber: string | null }>(
+      '/store/razorpay/verify-payment',
+      {
+        ...options,
+        method: 'POST',
+        body: JSON.stringify(input),
+        cache: 'no-store',
+      },
+    );
+  },
+
   register(input: { name: string; email: string; password: string; phone?: string }, options?: StoreRequestOptions) {
     return storeFetch<StorefrontAuthResponse>('/store/auth/register', {
       ...options,
