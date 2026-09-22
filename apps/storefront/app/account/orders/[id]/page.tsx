@@ -3,8 +3,7 @@ import { notFound } from 'next/navigation';
 import { storeApi } from '../../../../lib/api';
 import { serverStoreOptions } from '../../../../lib/server-options';
 import { StoreApiError } from '../../../../lib/errors';
-import { formatMoney } from '../../../../lib/format';
-import { nextStepCopy, OrderStatus } from '../../../../components/account/order-status';
+import { OrderDetailsPanel } from '../../../../components/account/order-details';
 
 type Params = { id: string };
 
@@ -26,19 +25,7 @@ export default async function AccountOrderPage({ params }: { params: Promise<Par
   return (
     <div className="space-y-6">
       <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">Order {order.orderNumber}</h1>
-      <p className="text-sm text-muted-foreground">{nextStepCopy(order)}</p>
-      <OrderStatus order={order} />
-      <ul className="divide-y border-y">
-        {order.items.map((item) => (
-          <li key={item.id} className="flex justify-between gap-3 py-3 text-sm">
-            <span className="min-w-0 break-words">
-              {item.productName} × {item.quantity}
-            </span>
-            <span className="shrink-0">{formatMoney(item.total, store.tenant.currency)}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="font-heading text-2xl uppercase">Total {formatMoney(order.total, store.tenant.currency)}</p>
+      <OrderDetailsPanel order={order} currency={store.tenant.currency} />
     </div>
   );
 }

@@ -31,6 +31,16 @@ export default function SettingsPage(): React.JSX.Element {
           </Link>
         ) : null}
         {auth.can('settings.read') || auth.can('settings.manage') ? (
+          <Link href="/settings/shipping">
+            <Card className="h-full hover:bg-muted/40">
+              <CardHeader className="p-4"><CardTitle className="text-sm">Shipping</CardTitle></CardHeader>
+              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+                Delhivery courier: warehouse, COD, rates, labels, and tracking.
+              </CardContent>
+            </Card>
+          </Link>
+        ) : null}
+        {auth.can('settings.read') || auth.can('settings.manage') ? (
           <Link href="/settings/authentication">
             <Card className="h-full hover:bg-muted/40">
               <CardHeader className="p-4"><CardTitle className="text-sm">Authentication</CardTitle></CardHeader>

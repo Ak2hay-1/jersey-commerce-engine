@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { InventoryModule } from '../inventory/inventory.module';
 import { CustomersModule } from '../customers/customers.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { ShippingModule } from '../shipping/shipping.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { OrderEngineService } from './order-engine.service';
@@ -19,7 +20,14 @@ import { StoreCoreModule } from '../store/store-core.module';
 import { PromoCodesModule } from '../promo-codes/promo-codes.module';
 
 @Module({
-  imports: [InventoryModule, CustomersModule, PaymentsModule, StoreCoreModule, PromoCodesModule],
+  imports: [
+    InventoryModule,
+    CustomersModule,
+    PaymentsModule,
+    StoreCoreModule,
+    PromoCodesModule,
+    forwardRef(() => ShippingModule),
+  ],
   controllers: [
     OrdersController,
     StoreCartController,
@@ -37,6 +45,13 @@ import { PromoCodesModule } from '../promo-codes/promo-codes.module';
     StoreCartService,
     StoreCheckoutService,
   ],
-  exports: [OrdersService, OrderEngineService, StoreCartService, StoreCheckoutService, ShippingCalculator, RazorpayOnlineGateway],
+  exports: [
+    OrdersService,
+    OrderEngineService,
+    StoreCartService,
+    StoreCheckoutService,
+    ShippingCalculator,
+    RazorpayOnlineGateway,
+  ],
 })
 export class OrdersModule {}

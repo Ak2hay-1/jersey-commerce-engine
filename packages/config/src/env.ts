@@ -36,6 +36,9 @@ export const serverEnvSchema = z.object({
   /** Optional env fallback for Razorpay. Prefer Admin → Settings → Payments when set. */
   RAZORPAY_KEY_ID: z.string().optional().default(''),
   RAZORPAY_KEY_SECRET: z.string().optional().default(''),
+  /** Optional env fallback for Delhivery. Prefer Admin → Settings → Shipping when set. */
+  DELHIVERY_API_TOKEN: z.string().optional().default(''),
+  DELHIVERY_ENVIRONMENT: z.string().optional().default('STAGING'),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

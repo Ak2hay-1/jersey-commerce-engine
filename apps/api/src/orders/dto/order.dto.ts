@@ -81,6 +81,16 @@ export class StoreCheckoutDto {
   @IsIn(FULFILLMENT_METHODS)
   fulfillmentMethod?: (typeof FULFILLMENT_METHODS)[number];
 
+  @ApiPropertyOptional({ enum: ['ONLINE', 'COD'] })
+  @IsOptional()
+  @IsIn(['ONLINE', 'COD'])
+  paymentMethod?: 'ONLINE' | 'COD';
+
+  @ApiPropertyOptional({ enum: ['EXPRESS', 'SURFACE'] })
+  @IsOptional()
+  @IsIn(['EXPRESS', 'SURFACE'])
+  shippingMode?: 'EXPRESS' | 'SURFACE';
+
   @ApiPropertyOptional()
   @IsOptional()
   @ValidateNested()

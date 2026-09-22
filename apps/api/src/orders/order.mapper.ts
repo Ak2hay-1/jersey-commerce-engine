@@ -3,6 +3,7 @@ import type {
   OrderItemDto,
   OrderPaymentDto,
   OrderPaymentState,
+  OrderShipmentDto,
   OrderShippingAddressDto,
   OrderSummary,
   OrderTrackingStep,
@@ -17,6 +18,7 @@ export const orderInclude = {
   items: { orderBy: { id: 'asc' as const } },
   payments: { orderBy: { createdAt: 'asc' as const } },
   shippingAddress: true,
+  shipment: true,
 } satisfies Prisma.OrderInclude;
 
 export type OrderRecord = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
@@ -72,6 +74,27 @@ function toPayment(payment: OrderRecord['payments'][number]): OrderPaymentDto {
   };
 }
 
+function toShipment(shipment: OrderRecord['shipment']): OrderShipmentDto | null {
+  if (!shipment) {
+    return null;
+  }
+  return {
+    id: shipment.id,
+    provider: 'DELHIVERY',
+    waybill: shipment.waybill,
+    trackingUrl: shipment.trackingUrl,
+    labelUrl: shipment.labelUrl,
+    packageWeightKg: shipment.packageWeightKg ? moneyString(shipment.packageWeightKg) : null,
+    carrierShippingAmount: shipment.carrierShippingAmount
+      ? moneyString(shipment.carrierShippingAmount)
+      : null,
+    codAmount: shipment.codAmount ? moneyString(shipment.codAmount) : null,
+    providerStatus: shipment.providerStatus,
+    createdAt: shipment.createdAt.toISOString(),
+    updatedAt: shipment.updatedAt.toISOString(),
+  };
+}
+
 export function toOrderSummary(order: OrderRecord): OrderSummary {
   return {
     id: order.id,
@@ -97,7 +120,10 @@ export function toOrderSummary(order: OrderRecord): OrderSummary {
 export function toOrderTracking(order: OrderRecord): OrderTrackingStep[] {
   return buildOrderTracking({
     status: order.status,
-    paymentCompleted: order.paymentStatus === 'COMPLETED' || order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED',
+    paymentCompleted:
+      order.paymentStatus === 'COMPLETED' ||
+      order.paymentStatus === 'REFUNDED' ||
+      order.paymentStatus === 'PARTIALLY_REFUNDED',
     fulfillmentMethod: order.fulfillmentMethod as FulfillmentMethod,
   });
 }
@@ -126,6 +152,7 @@ export function toOrderDetail(order: OrderRecord, paymentIntent?: OrderDetail['p
     items: order.items.map(toItem),
     payments,
     tracking: toOrderTracking(order),
+    shipment: toShipment(order.shipment),
     paymentIntent:
       paymentIntent ??
       (latest
@@ -136,7 +163,7 @@ export function toOrderDetail(order: OrderRecord, paymentIntent?: OrderDetail['p
             amount: moneyString(latest.amount),
             currency: order.currency,
             provider: latest.provider,
-            nextAction: latest.status === 'PENDING' ? 'AWAIT_GATEWAY' : 'NONE',
+            nextAction: latest.status === 'PENDING' && latest.method === 'ONLINE' ? 'AWAIT_GATEWAY' : 'NONE',
             razorpayOrderId: meta.razorpayOrderId ?? (latest.provider === 'razorpay' ? latest.reference : null) ?? null,
             razorpayKeyId: meta.razorpayKeyId ?? null,
             amountPaise: meta.amountPaise ?? null,

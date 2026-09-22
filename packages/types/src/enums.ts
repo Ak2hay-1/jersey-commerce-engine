@@ -78,7 +78,7 @@ export const ORDER_STATUSES = [
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-export const PAYMENT_METHODS = ['CASH', 'UPI', 'CARD', 'ONLINE', 'BANK_TRANSFER', 'OTHER'] as const;
+export const PAYMENT_METHODS = ['CASH', 'UPI', 'CARD', 'ONLINE', 'BANK_TRANSFER', 'COD', 'OTHER'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const SUPPLIER_PAYMENT_METHODS = ['CASH', 'UPI', 'CARD', 'BANK_TRANSFER', 'OTHER'] as const;
@@ -124,8 +124,17 @@ export type CartStatus = (typeof CART_STATUSES)[number];
 export const FULFILLMENT_METHODS = ['DELIVERY', 'STORE_PICKUP'] as const;
 export type FulfillmentMethod = (typeof FULFILLMENT_METHODS)[number];
 
-export const SHIPPING_CALCULATION_MODES = ['FREE', 'FIXED'] as const;
+export const SHIPPING_CALCULATION_MODES = ['FREE', 'FIXED', 'DELHIVERY'] as const;
 export type ShippingCalculationMode = (typeof SHIPPING_CALCULATION_MODES)[number];
+
+export const SHIPMENT_PROVIDERS = ['DELHIVERY'] as const;
+export type ShipmentProvider = (typeof SHIPMENT_PROVIDERS)[number];
+
+export const DELHIVERY_ENVIRONMENTS = ['STAGING', 'PRODUCTION'] as const;
+export type DelhiveryEnvironment = (typeof DELHIVERY_ENVIRONMENTS)[number];
+
+export const DELHIVERY_SERVICE_MODES = ['EXPRESS', 'SURFACE'] as const;
+export type DelhiveryServiceMode = (typeof DELHIVERY_SERVICE_MODES)[number];
 
 export const ORDER_INVENTORY_STATES = ['NONE', 'RESERVED', 'RELEASED', 'CONSUMED'] as const;
 export type OrderInventoryState = (typeof ORDER_INVENTORY_STATES)[number];

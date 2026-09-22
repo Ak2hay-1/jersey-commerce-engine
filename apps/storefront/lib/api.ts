@@ -29,6 +29,7 @@ export type StoreRequestOptions = {
   tenantSlug?: string;
   cartToken?: string;
   accessToken?: string;
+  orderAccessToken?: string;
   cache?: RequestCache;
   next?: { revalidate?: number; tags?: string[] };
   signal?: AbortSignal;
@@ -78,6 +79,7 @@ async function storeFetch<T>(
   const tenantSlug = init.tenantSlug || readBrowserCookie(STORE_COOKIES.tenant) || defaultTenantSlug();
   const cartToken = init.cartToken ?? readBrowserCookie(STORE_COOKIES.cart);
   const accessToken = init.accessToken ?? readBrowserCookie(STORE_COOKIES.customer);
+  const orderAccessToken = init.orderAccessToken ?? readBrowserCookie(STORE_COOKIES.orderAccess);
   const headers = new Headers(init.headers);
   headers.set('accept', 'application/json');
   if (init.body && !headers.has('content-type') && !(init.body instanceof FormData)) {
@@ -92,9 +94,18 @@ async function storeFetch<T>(
   if (accessToken) {
     headers.set('authorization', `Bearer ${accessToken}`);
   }
+  if (orderAccessToken) {
+    headers.set('x-order-access-token', orderAccessToken);
+  }
   const url = `${apiBase()}${path}`;
-  const { tenantSlug: _tenantSlug, cartToken: _cartToken, accessToken: _accessToken, parse: _parse, ...requestInit } =
-    init;
+  const {
+    tenantSlug: _tenantSlug,
+    cartToken: _cartToken,
+    accessToken: _accessToken,
+    orderAccessToken: _orderAccessToken,
+    parse: _parse,
+    ...requestInit
+  } = init;
   const response = await fetch(url, {
     ...requestInit,
     headers,
@@ -268,6 +279,8 @@ export const storeApi = {
   checkout(
     input: {
       fulfillmentMethod?: FulfillmentMethod;
+      paymentMethod?: 'ONLINE' | 'COD';
+      shippingMode?: 'EXPRESS' | 'SURFACE';
       customer?: { name: string; phone?: string; email?: string };
       shippingAddress?: {
         fullName: string;
@@ -291,6 +304,27 @@ export const storeApi = {
       ...options,
       method: 'POST',
       headers,
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+  },
+
+  shippingServiceability(postalCode: string, options?: StoreRequestOptions) {
+    return storeFetch<import('@jersey-commerce/types').ShippingServiceability>('/store/shipping/serviceability', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify({ postalCode }),
+      cache: 'no-store',
+    });
+  },
+
+  shippingQuote(
+    input: { postalCode: string; mode?: 'EXPRESS' | 'SURFACE'; cod?: boolean },
+    options?: StoreRequestOptions,
+  ) {
+    return storeFetch<import('@jersey-commerce/types').ShippingQuoteResult>('/store/shipping/quote', {
+      ...options,
+      method: 'POST',
       body: JSON.stringify(input),
       cache: 'no-store',
     });

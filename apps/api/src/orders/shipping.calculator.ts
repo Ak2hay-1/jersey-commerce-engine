@@ -31,6 +31,8 @@ export class ShippingCalculator {
     if (threshold && !threshold.isZero() && merchandiseNet.gte(threshold)) {
       return { amount: money(0), mode: 'FREE_THRESHOLD' };
     }
-    return { amount: roundMoney(settings.shippingFixedAmount), mode: 'FIXED' };
+    // DELHIVERY live rates are applied by checkout via shippingAmountOverride.
+    // Without an override (e.g. staff orders), fall back to the fixed amount.
+    return { amount: roundMoney(settings.shippingFixedAmount), mode: settings.shippingCalculationMode };
   }
 }

@@ -33,6 +33,9 @@ export {
   CART_STATUSES,
   FULFILLMENT_METHODS,
   SHIPPING_CALCULATION_MODES,
+  SHIPMENT_PROVIDERS,
+  DELHIVERY_ENVIRONMENTS,
+  DELHIVERY_SERVICE_MODES,
   ORDER_INVENTORY_STATES,
   ORDER_PAYMENT_STATES,
   ORDER_TRACKING_STEPS,
@@ -78,6 +81,9 @@ export {
   type CartStatus,
   type FulfillmentMethod,
   type ShippingCalculationMode,
+  type ShipmentProvider,
+  type DelhiveryEnvironment,
+  type DelhiveryServiceMode,
   type OrderInventoryState,
   type OrderPaymentState,
   type OrderTrackingStepKey,
@@ -142,6 +148,13 @@ export {
   type StorefrontPaymentMethods,
   type UpdatePaymentSettingsInput,
 } from './payment-settings';
+export {
+  type ShippingSettings,
+  type UpdateShippingSettingsInput,
+  type ShippingRateOption,
+  type ShippingServiceability,
+  type ShippingQuoteResult,
+} from './shipping-settings';
 export {
   type BackupRun,
   type BackupSettings,
@@ -248,6 +261,7 @@ export {
   type OrderDetail,
   type OrderItemDto,
   type OrderPaymentDto,
+  type OrderShipmentDto,
   type OrderShippingAddressDto,
   type OrderSummary,
   type OrderTrackingStep,

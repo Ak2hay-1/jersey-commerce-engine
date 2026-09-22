@@ -1,11 +1,13 @@
 const TENANT_COOKIE = 'jce_tenant';
 const CART_COOKIE = 'jce_cart_token';
 const CUSTOMER_COOKIE = 'jce_customer_token';
+const ORDER_ACCESS_COOKIE = 'jce_order_access';
 
 export const STORE_COOKIES = {
   tenant: TENANT_COOKIE,
   cart: CART_COOKIE,
   customer: CUSTOMER_COOKIE,
+  orderAccess: ORDER_ACCESS_COOKIE,
 } as const;
 
 export function readBrowserCookie(name: string): string | undefined {

@@ -1,16 +1,28 @@
-import type { CartDto, CheckoutQuote } from '@jersey-commerce/types';
+import type { CartDto, CheckoutQuote, ShippingQuoteResult } from '@jersey-commerce/types';
 import { formatMoney } from '../../lib/format';
 
 export function CheckoutSummary({
   cart,
   quote,
   currency,
+  shippingQuote,
 }: {
   cart: CartDto;
   quote?: CheckoutQuote | null;
   currency: string;
+  shippingQuote?: ShippingQuoteResult | null;
 }): React.JSX.Element {
   const totals = quote?.totals ?? cart.totals;
+  const shippingAmount =
+    shippingQuote?.calculationMode === 'DELHIVERY' && shippingQuote.shippingAmount
+      ? shippingQuote.shippingAmount
+      : totals.shippingAmount;
+  const merchandise = Number(totals.total) - Number(totals.shippingAmount);
+  const displayTotal =
+    shippingQuote?.calculationMode === 'DELHIVERY'
+      ? (merchandise + Number(shippingAmount)).toFixed(2)
+      : totals.total;
+
   return (
     <aside className="border border-border p-4">
       <h2 className="font-heading text-xl uppercase tracking-wide">Order summary</h2>
@@ -36,8 +48,8 @@ export function CheckoutSummary({
           </div>
         ) : null}
         <div className="flex justify-between">
-          <dt>Shipping</dt>
-          <dd>{formatMoney(totals.shippingAmount, currency)}</dd>
+          <dt>Shipping{shippingQuote?.selectedMode ? ` (${shippingQuote.selectedMode})` : ''}</dt>
+          <dd>{Number(shippingAmount) > 0 ? formatMoney(shippingAmount, currency) : 'Free'}</dd>
         </div>
         <div className="flex justify-between">
           <dt>Tax</dt>
@@ -45,9 +57,8 @@ export function CheckoutSummary({
         </div>
         <div className="flex justify-between font-heading text-lg uppercase">
           <dt>Total</dt>
-          <dd>{formatMoney(totals.total, currency)}</dd>
+          <dd>{formatMoney(displayTotal, currency)}</dd>
         </div>
-        <p className="text-xs text-muted-foreground">Free delivery on orders above ₹2,000.</p>
       </dl>
     </aside>
   );

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPaginationArgs, toPaginationMeta } from '../common/dto/pagination-query.dto';
@@ -7,6 +7,7 @@ import { phoneSearchDigits } from '../customers/customer-phone';
 import type { AuthPrincipal } from '../common/context/request-context';
 import type { RequestMeta } from '../auth/auth-session.service';
 import { assertFound } from '../common/http/assert-found';
+import { hashOpaqueToken } from '../common/crypto/token-hash';
 import { OrderEngineService } from './order-engine.service';
 import { orderInclude, toOrderDetail, toOrderSummary, type OrderRecord } from './order.mapper';
 import type { AdminOrderQueryDto, CancelOrderDto, UpdateOrderStatusDto } from './dto/order.dto';
@@ -70,6 +71,28 @@ export class OrdersService {
       include: orderInclude,
     });
     return toOrderDetail(assertFound(record, 'Order not found') as OrderRecord);
+  }
+
+  async findStoreOrder(
+    tenantId: string,
+    id: string,
+    access: { customerId?: string; orderAccessToken?: string },
+  ) {
+    if (access.customerId) {
+      return this.findCustomerOrder(tenantId, access.customerId, id);
+    }
+    if (access.orderAccessToken) {
+      const record = await this.prisma.order.findFirst({
+        where: {
+          tenantId,
+          accessTokenHash: hashOpaqueToken(access.orderAccessToken),
+          OR: [{ id }, { orderNumber: id }],
+        },
+        include: orderInclude,
+      });
+      return toOrderDetail(assertFound(record, 'Order not found') as OrderRecord);
+    }
+    throw new UnauthorizedException('Customer authentication or order access token required.');
   }
 
   async updateStatus(actor: AuthPrincipal, id: string, dto: UpdateOrderStatusDto, meta?: RequestMeta) {

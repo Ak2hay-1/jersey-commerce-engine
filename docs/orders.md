@@ -81,15 +81,24 @@ Two checkouts cannot reserve the last unit: reservation takes `SELECT … FOR UP
 
 Orders never write `inventories` or `inventory_movements` directly.
 
+## Shipping / Delhivery
+
+Jerzyfy can charge FREE or FIXED storefront shipping, or `DELHIVERY` live carrier rates. Courier ops use `ShippingSettings` (encrypted API token, warehouse/pickup, COD) and a 1:1 `Shipment` on the order (AWB, label, tracking).
+
+- Admin: Settings → Shipping; order detail → Create Delhivery shipment when READY
+- Storefront: pincode serviceability, rate options, COD when enabled
+- Webhook: `POST /api/v1/webhooks/delhivery` (optional `X-Delhivery-Secret`)
+- Guest receipts: checkout returns `orderAccessToken` (cookie `jce_order_access`) for full order detail without login
+
 ## Payments
 
 `PaymentGateway` is the online port:
 
 - `createPaymentIntent()` — creates a `PENDING` `Payment` on the order  
-- `verifyPayment()` — not implemented until a real provider exists  
-- `refundPayment()` — not implemented until a real provider exists  
+- `verifyPayment()` — Razorpay signature verification  
+- `refundPayment()` — provider-dependent  
 
-The unconfigured adapter **does not** mark ONLINE payments completed. That is the same rule as Phase 6 `OnlinePaymentProvider`.
+COD uses `PaymentMethod.COD` (PENDING until Delhivery marks delivered). Online Razorpay path is unchanged.
 
 Staff WhatsApp/manual orders use the same `Order` + PENDING payment intent. Capturing cash/UPI for those orders remains a later wiring of the existing POS payment providers; this phase does not invent a successful gateway response.
 
@@ -101,7 +110,7 @@ Staff WhatsApp/manual orders use the same `Order` + PENDING payment intent. Capt
 
 Authenticated storefront customers receive a `customer` JWT at checkout (`typ: customer`, 30 days). `GET /api/v1/store/orders` only returns that customer’s orders.
 
-Guest checkout creates or attaches a CRM customer by phone/email using the existing duplicate detector. Blocked customers cannot order. Profile address edits do not change `OrderShippingAddress`.
+Guest checkout creates or attaches a CRM customer by phone/email using the existing duplicate detector. Guests can load a single order with `X-Order-Access-Token` / `jce_order_access`. Blocked customers cannot order. Profile address edits do not change `OrderShippingAddress`.
 
 ## Endpoints
 
@@ -114,8 +123,10 @@ Storefront (public + `X-Tenant-Slug`):
 - `DELETE /api/v1/store/cart/items/:id`
 - `DELETE /api/v1/store/cart`
 - `POST /api/v1/store/checkout`
+- `POST /api/v1/store/shipping/serviceability`
+- `POST /api/v1/store/shipping/quote`
 - `GET /api/v1/store/orders` (customer token)
-- `GET /api/v1/store/orders/:id`
+- `GET /api/v1/store/orders/:id` (customer token or order access token)
 - `POST /api/v1/store/orders/:id/cancel`
 
 Staff (JWT + RBAC):

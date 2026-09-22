@@ -22,6 +22,7 @@ interface VariantDraft {
   costPrice: string;
   sellingPrice: string;
   compareAtPrice: string;
+  weight: string;
   status: string;
 }
 
@@ -48,6 +49,7 @@ function emptyVariant(): VariantDraft {
     costPrice: '',
     sellingPrice: '',
     compareAtPrice: '',
+    weight: '',
     status: 'ACTIVE',
   };
 }
@@ -61,6 +63,7 @@ function fromApi(variant: ProductVariantDto): VariantDraft {
     costPrice: variant.costPrice,
     sellingPrice: variant.sellingPrice,
     compareAtPrice: variant.compareAtPrice ?? '',
+    weight: variant.weight ?? '',
     status: variant.status,
   };
 }
@@ -211,6 +214,7 @@ export default function ProductDetailPage(): React.JSX.Element {
         costPrice: template.costPrice,
         sellingPrice: template.sellingPrice,
         compareAtPrice: template.compareAtPrice,
+        weight: template.weight,
         status: template.status || 'ACTIVE',
       }));
       if (additions.length === 0) {
@@ -311,6 +315,7 @@ export default function ProductDetailPage(): React.JSX.Element {
         costPrice: variant.costPrice.trim() || '0',
         sellingPrice: variant.sellingPrice.trim() || '0',
         compareAtPrice: variant.compareAtPrice.trim() || null,
+        weight: variant.weight.trim() || null,
         status: variant.status,
       }));
 
@@ -700,6 +705,17 @@ export default function ProductDetailPage(): React.JSX.Element {
                         </div>
                       </>
                     )}
+                    <div>
+                      <Label htmlFor={`weight-${index}`}>Weight (kg)</Label>
+                      <Input
+                        id={`weight-${index}`}
+                        className="mt-1"
+                        inputMode="decimal"
+                        value={variant.weight}
+                        onChange={(e) => updateVariant(index, { weight: e.target.value })}
+                        placeholder="0.500"
+                      />
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-xs text-muted-foreground">

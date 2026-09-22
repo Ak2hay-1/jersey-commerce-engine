@@ -603,6 +603,7 @@ export function toBootstrap(input: {
     payments: input.payments ?? {
       razorpay: false,
       razorpayKeyId: null,
+      cod: false,
     },
   };
 }

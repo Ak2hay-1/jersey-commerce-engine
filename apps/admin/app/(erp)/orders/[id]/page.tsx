@@ -3,26 +3,14 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
-import type { ProductListItem } from '@jersey-commerce/types';
+import type { OrderDetail, ProductListItem } from '@jersey-commerce/types';
 import { apiRequest, queryString } from '@/lib/api';
-import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
+import { formatDateTime, statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
-import { DataTable } from '@/components/data-table';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
+import { OrderDetailsPanel } from '@/components/order-details-panel';
 import { useAuth } from '@/lib/auth';
 import { useRouteParam } from '@/lib/use-route-param';
-
-interface OrderDetail {
-  id: string;
-  orderNumber: string;
-  source: string;
-  status: string;
-  paymentStatus: string;
-  total: string;
-  createdAt: string;
-  customer?: { name: string } | null;
-  items: Array<{ id: string; productNameSnapshot: string; quantity: number; total: string }>;
-}
 
 interface VariantOption {
   id: string;
@@ -46,6 +34,7 @@ export default function OrderDetailPage(): React.JSX.Element {
   const [lines, setLines] = useState([{ productVariantId: '', quantity: '1' }]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [shipping, setShipping] = useState(false);
 
   async function load(): Promise<void> {
     const next = await apiRequest<OrderDetail>(`/orders/${id}`);
@@ -134,6 +123,32 @@ export default function OrderDetailPage(): React.JSX.Element {
     }
   }
 
+  async function onCreateShipment(): Promise<void> {
+    setShipping(true);
+    setError('');
+    try {
+      await apiRequest(`/orders/${id}/shipments`, { method: 'POST', body: JSON.stringify({}) });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create Delhivery shipment');
+    } finally {
+      setShipping(false);
+    }
+  }
+
+  async function onRefreshShipment(): Promise<void> {
+    setShipping(true);
+    setError('');
+    try {
+      await apiRequest(`/orders/${id}/shipments/refresh`, { method: 'POST', body: JSON.stringify({}) });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to refresh shipment');
+    } finally {
+      setShipping(false);
+    }
+  }
+
   if (isNew) {
     return (
       <div className="space-y-4">
@@ -209,6 +224,12 @@ export default function OrderDetailPage(): React.JSX.Element {
   if (!order && !error) return <p className="text-sm text-muted-foreground">Loading order…</p>;
   if (!order) return <FormError>{error}</FormError>;
 
+  const canShip =
+    auth.can('orders.update') &&
+    order.fulfillmentMethod === 'DELIVERY' &&
+    order.status === 'READY' &&
+    !order.shipment;
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -217,9 +238,6 @@ export default function OrderDetailPage(): React.JSX.Element {
         actions={<Badge variant="secondary">{statusLabel(order.status)}</Badge>}
       />
       <FormError>{error}</FormError>
-      <p className="text-sm">
-        Payment {order.paymentStatus} · Total {formatMoney(order.total)}
-      </p>
       {auth.can('orders.update') && order.status !== 'CANCELLED' ? (
         <div className="flex flex-wrap items-end gap-2">
           <div>
@@ -235,6 +253,16 @@ export default function OrderDetailPage(): React.JSX.Element {
           <Button type="button" disabled={saving} onClick={() => void onStatus()}>
             Update status
           </Button>
+          {canShip ? (
+            <Button type="button" disabled={shipping} onClick={() => void onCreateShipment()}>
+              {shipping ? 'Creating…' : 'Create Delhivery shipment'}
+            </Button>
+          ) : null}
+          {order.shipment ? (
+            <Button type="button" variant="outline" disabled={shipping} onClick={() => void onRefreshShipment()}>
+              Refresh tracking
+            </Button>
+          ) : null}
           {auth.can('orders.cancel') ? (
             <ConfirmAction
               triggerLabel="Cancel order"
@@ -247,15 +275,7 @@ export default function OrderDetailPage(): React.JSX.Element {
           ) : null}
         </div>
       ) : null}
-      <DataTable
-        caption="Order items"
-        rows={order.items}
-        columns={[
-          { key: 'name', header: 'Item', render: (item) => item.productNameSnapshot },
-          { key: 'qty', header: 'Qty', render: (item) => item.quantity },
-          { key: 'total', header: 'Total', render: (item) => formatMoney(item.total) },
-        ]}
-      />
+      <OrderDetailsPanel order={order} />
     </div>
   );
 }

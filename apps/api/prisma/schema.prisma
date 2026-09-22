@@ -132,10 +132,11 @@ enum FulfillmentMethod {
   STORE_PICKUP
 }
 
-/// Configurable shipping calculator. ZONE, WEIGHT, and courier modes belong to a later phase.
+/// Configurable shipping calculator. DELHIVERY quotes live carrier rates when enabled.
 enum ShippingCalculationMode {
   FREE
   FIXED
+  DELHIVERY
 }
 
 /// Inventory reservation lifecycle for an order. Independent of payment and fulfillment status.
@@ -152,7 +153,22 @@ enum PaymentMethod {
   CARD
   ONLINE
   BANK_TRANSFER
+  COD
   OTHER
+}
+
+enum ShipmentProvider {
+  DELHIVERY
+}
+
+enum DelhiveryEnvironment {
+  STAGING
+  PRODUCTION
+}
+
+enum DelhiveryServiceMode {
+  EXPRESS
+  SURFACE
 }
 
 /// Methods allowed when recording money paid to a supplier. No card/bank secrets are stored.
@@ -381,6 +397,7 @@ model Tenant {
   customerIdentities CustomerIdentity[]
   authSettings       AuthSettings?
   paymentSettings    PaymentSettings?
+  shippingSettings   ShippingSettings?
   tags               Tag[]
   customerTags       CustomerTag[]
   customerNotes      CustomerNote[]
@@ -402,6 +419,7 @@ model Tenant {
   orders             Order[]
   orderItems         OrderItem[]
   orderShippingAddresses OrderShippingAddress[]
+  shipments          Shipment[]
   checkoutIdempotencyKeys CheckoutIdempotency[]
   payments           Payment[]
   refunds            Refund[]
@@ -811,6 +829,60 @@ model PaymentSettings {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@map("payment_settings")
+}
+
+/// Per-tenant Delhivery / courier settings (encrypted API token).
+model ShippingSettings {
+  id                          String               @id @default(cuid())
+  tenantId                    String               @unique @map("tenant_id")
+  delhiveryEnabled            Boolean              @default(false) @map("delhivery_enabled")
+  delhiveryApiTokenEncrypted  String?              @map("delhivery_api_token_encrypted") @db.Text
+  delhiveryEnvironment        DelhiveryEnvironment @default(STAGING) @map("delhivery_environment")
+  delhiveryServiceMode        DelhiveryServiceMode @default(SURFACE) @map("delhivery_service_mode")
+  codEnabled                  Boolean              @default(false) @map("cod_enabled")
+  defaultPackageWeightKg      Decimal              @default(0.5) @map("default_package_weight_kg") @db.Decimal(10, 3)
+  warehouseName               String?              @map("warehouse_name")
+  warehousePhone              String?              @map("warehouse_phone")
+  warehouseAddress            String?              @map("warehouse_address")
+  warehouseCity               String?              @map("warehouse_city")
+  warehouseState              String?              @map("warehouse_state")
+  warehousePostalCode         String?              @map("warehouse_postal_code")
+  warehouseCountry            String               @default("IN") @map("warehouse_country")
+  /// Registered Delhivery pickup location name / id.
+  pickupLocation              String?              @map("pickup_location")
+  webhookSecretEncrypted      String?              @map("webhook_secret_encrypted") @db.Text
+  createdAt                   DateTime             @default(now()) @map("created_at")
+  updatedAt                   DateTime             @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@map("shipping_settings")
+}
+
+/// Carrier shipment linked 1:1 with an ecommerce Order.
+model Shipment {
+  id                     String           @id @default(cuid())
+  tenantId               String           @map("tenant_id")
+  orderId                String           @unique @map("order_id")
+  provider               ShipmentProvider @default(DELHIVERY)
+  waybill                String?
+  trackingUrl            String?          @map("tracking_url")
+  labelUrl               String?          @map("label_url")
+  packageWeightKg        Decimal?         @map("package_weight_kg") @db.Decimal(10, 3)
+  carrierShippingAmount  Decimal?         @map("carrier_shipping_amount") @db.Decimal(14, 2)
+  codAmount              Decimal?         @map("cod_amount") @db.Decimal(14, 2)
+  providerStatus         String?          @map("provider_status")
+  providerRef            String?          @map("provider_ref")
+  lastPayload            Json?            @map("last_payload")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([tenantId, waybill])
+  @@map("shipments")
 }
 
 /// Linked OAuth identities for a storefront customer. Tenant-scoped.
@@ -1334,6 +1406,8 @@ model Order {
   completedAt       DateTime?           @map("completed_at")
   saleId            String?             @unique @map("sale_id")
   promoCodeId       String?             @map("promo_code_id")
+  /// SHA-256 of opaque guest order access token (order_…).
+  accessTokenHash   String?             @map("access_token_hash")
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @updatedAt @map("updated_at")
 
@@ -1345,6 +1419,7 @@ model Order {
   items           OrderItem[]
   payments        Payment[]
   shippingAddress OrderShippingAddress?
+  shipment        Shipment?
   convertedCart   Cart?                  @relation("CartConvertedOrder")
   promoCode       PromoCode?             @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   checkoutKeys    CheckoutIdempotency[]
@@ -1359,6 +1434,7 @@ model Order {
   @@index([tenantId, total])
   @@index([promoCodeId])
   @@index([orderNumber])
+  @@index([tenantId, accessTokenHash])
   @@map("orders")
 }
 

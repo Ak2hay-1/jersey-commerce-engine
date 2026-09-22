@@ -18,5 +18,6 @@ export async function serverStoreOptions(): Promise<StoreRequestOptions> {
     tenantSlug: tenant.tenantSlug || cookieStore.get(STORE_COOKIES.tenant)?.value,
     cartToken: cookieStore.get(STORE_COOKIES.cart)?.value,
     accessToken: cookieStore.get(STORE_COOKIES.customer)?.value,
+    orderAccessToken: cookieStore.get(STORE_COOKIES.orderAccess)?.value,
   };
 }

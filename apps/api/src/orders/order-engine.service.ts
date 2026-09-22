@@ -49,6 +49,10 @@ export interface CreateOrderEngineInput {
   items: OrderLineRequest[];
   actor?: InventoryActor;
   meta?: RequestMeta;
+  /** When set, overrides FREE/FIXED/DELHIVERY calculator amount. */
+  shippingAmountOverride?: Prisma.Decimal;
+  paymentMethod?: 'ONLINE' | 'COD';
+  accessTokenHash?: string | null;
 }
 
 @Injectable()
@@ -76,11 +80,13 @@ export class OrderEngineService {
     const discountType = input.discountType ?? 'NONE';
     const discountValue = input.discountValue ?? money(0);
     const provisional = priceOrderLines(pricedInputs, discountType, discountValue, money(0));
-    const shippingQuote = this.shipping.quote(input.fulfillmentMethod, provisional.total, {
-      shippingCalculationMode: tenant.shippingCalculationMode,
-      shippingFixedAmount: tenant.shippingFixedAmount,
-      freeShippingMinSubtotal: tenant.freeShippingMinSubtotal,
-    });
+    const shippingQuote = input.shippingAmountOverride
+      ? { amount: input.shippingAmountOverride, mode: 'DELHIVERY' as const }
+      : this.shipping.quote(input.fulfillmentMethod, provisional.total, {
+          shippingCalculationMode: tenant.shippingCalculationMode,
+          shippingFixedAmount: tenant.shippingFixedAmount,
+          freeShippingMinSubtotal: tenant.freeShippingMinSubtotal,
+        });
     const priced = priceOrderLines(pricedInputs, discountType, discountValue, shippingQuote.amount);
     const orderNumber = await nextDocumentNumber(client, input.tenantId, DOCUMENT_TYPES.ORDER);
     const created = await client.order.create({
@@ -104,6 +110,7 @@ export class OrderEngineService {
         currency: tenant.currency,
         notes: input.notes?.trim() || null,
         promoCodeId: input.promoCodeId ?? null,
+        accessTokenHash: input.accessTokenHash ?? null,
       },
     });
     for (const line of priced.lines) {
@@ -151,18 +158,34 @@ export class OrderEngineService {
       where: { id: created.id },
       data: { inventoryState: 'RESERVED' },
     });
-    await this.gateway.createPaymentIntent(
-      {
-        tenantId: input.tenantId,
-        orderId: created.id,
-        amount: priced.total,
-        currency: tenant.currency,
-        customerId: input.customerId,
-        createdById: input.createdById ?? null,
-        metadata: { orderNumber, source: input.source },
-      },
-      tx,
-    );
+    if (input.paymentMethod === 'COD') {
+      await client.payment.create({
+        data: {
+          tenantId: input.tenantId,
+          orderId: created.id,
+          createdById: input.createdById ?? null,
+          amount: priced.total,
+          method: 'COD',
+          status: 'PENDING',
+          provider: 'delhivery',
+          reference: orderNumber,
+          metadata: { orderNumber, source: input.source, paymentMethod: 'COD' },
+        },
+      });
+    } else {
+      await this.gateway.createPaymentIntent(
+        {
+          tenantId: input.tenantId,
+          orderId: created.id,
+          amount: priced.total,
+          currency: tenant.currency,
+          customerId: input.customerId,
+          createdById: input.createdById ?? null,
+          metadata: { orderNumber, source: input.source },
+        },
+        tx,
+      );
+    }
     await this.audit.log(
       {
         action: AUDIT_ACTIONS.ORDER_CREATED,
@@ -289,7 +312,7 @@ export class OrderEngineService {
     tenantId: string;
     orderId: string;
     status: OrderRecord['status'];
-    actor: AuthPrincipal;
+    actor?: AuthPrincipal;
     meta?: RequestMeta;
   }): Promise<OrderRecord> {
     return this.prisma.$transaction(async (tx) => {
@@ -311,14 +334,18 @@ export class OrderEngineService {
             orderId: order.id,
             orderNumber: order.orderNumber,
             items: order.items.map((item) => ({ productVariantId: item.productVariantId, quantity: item.quantity })),
-            actor: { userId: input.actor.userId, ipAddress: input.meta?.ipAddress, userAgent: input.meta?.userAgent },
+            actor: {
+              userId: input.actor?.userId,
+              ipAddress: input.meta?.ipAddress,
+              userAgent: input.meta?.userAgent,
+            },
           });
           data.inventoryState = 'CONSUMED';
           await this.audit.log(
             {
               action: AUDIT_ACTIONS.ORDER_STOCK_CONSUMED,
               tenantId: input.tenantId,
-              userId: input.actor.userId,
+              userId: input.actor?.userId,
               entity: 'Order',
               entityId: order.id,
               metadata: { orderNumber: order.orderNumber },
@@ -332,7 +359,7 @@ export class OrderEngineService {
         {
           action: input.status === 'CONFIRMED' ? AUDIT_ACTIONS.ORDER_CONFIRMED : AUDIT_ACTIONS.ORDER_STATUS_CHANGED,
           tenantId: input.tenantId,
-          userId: input.actor.userId,
+          userId: input.actor?.userId,
           entity: 'Order',
           entityId: order.id,
           oldValue: { status: order.status },

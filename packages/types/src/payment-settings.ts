@@ -17,4 +17,5 @@ export interface UpdatePaymentSettingsInput {
 export interface StorefrontPaymentMethods {
   razorpay: boolean;
   razorpayKeyId: string | null;
+  cod: boolean;
 }

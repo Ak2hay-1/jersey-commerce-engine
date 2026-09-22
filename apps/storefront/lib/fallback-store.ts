@@ -145,5 +145,6 @@ export const fallbackStore: StorefrontBootstrap = {
   payments: {
     razorpay: false,
     razorpayKeyId: null,
+    cod: false,
   },
 };

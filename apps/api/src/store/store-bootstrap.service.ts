@@ -7,6 +7,7 @@ import { toCategorySummary } from '../catalog/catalog.mapper';
 import { toBootstrap } from './store-catalog.mapper';
 import { AuthSettingsService } from '../auth-settings/auth-settings.service';
 import { PaymentSettingsService } from '../payment-settings/payment-settings.service';
+import { ShippingSettingsService } from '../shipping/shipping-settings.service';
 
 const INACTIVE = new Set(['SUSPENDED', 'CANCELLED']);
 
@@ -17,6 +18,7 @@ export class StoreBootstrapService {
     private readonly config: ConfigService<ServerEnv, true>,
     private readonly authSettings: AuthSettingsService,
     private readonly paymentSettings: PaymentSettingsService,
+    private readonly shippingSettings: ShippingSettingsService,
   ) {}
 
   async resolve(input: { slug?: string; host?: string }) {
@@ -43,12 +45,13 @@ export class StoreBootstrapService {
     });
     const auth = await this.authSettings.getPublicFlags(tenantId);
     const payments = await this.paymentSettings.getPublicFlags(tenantId);
+    const cod = await this.shippingSettings.isCodOffered(tenantId);
     return toBootstrap({
       tenant,
       website: tenant.websiteSettings,
       navigation: navigation.map(toCategorySummary),
       auth,
-      payments,
+      payments: { ...payments, cod },
     });
   }
 

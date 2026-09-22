@@ -4,10 +4,11 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from '@jersey-commerce/ui';
-import type { CheckoutQuote, FulfillmentMethod } from '@jersey-commerce/types';
+import type { CheckoutQuote, FulfillmentMethod, ShippingQuoteResult } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
 import { STORE_COOKIES, writeBrowserCookie } from '../../lib/cookies';
 import { publicErrorMessage } from '../../lib/errors';
+import { formatMoney } from '../../lib/format';
 import { loadRazorpayCheckout } from '../../lib/razorpay';
 import { useCart } from '../providers/cart-provider';
 import { useAuth } from '../providers/auth-provider';
@@ -27,6 +28,7 @@ export function CheckoutForm(): React.JSX.Element {
   const router = useRouter();
   const store = useStore();
   const razorpayEnabled = store.payments?.razorpay ?? false;
+  const codEnabled = store.payments?.cod ?? false;
   const razorpayKeyId = store.payments?.razorpayKeyId ?? null;
   const { cart, refresh } = useCart();
   const { customer } = useAuth();
@@ -35,8 +37,11 @@ export function CheckoutForm(): React.JSX.Element {
   const [email, setEmail] = useState(customer?.email ?? '');
   const [phone, setPhone] = useState(customer?.phone ?? '');
   const [method, setMethod] = useState<FulfillmentMethod>('DELIVERY');
+  const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'COD'>(razorpayEnabled ? 'ONLINE' : 'COD');
+  const [shippingMode, setShippingMode] = useState<'EXPRESS' | 'SURFACE'>('SURFACE');
   const [address, setAddress] = useState(emptyAddress());
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [shippingQuote, setShippingQuote] = useState<ShippingQuoteResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const reduced = useReducedMotion();
@@ -56,8 +61,29 @@ export function CheckoutForm(): React.JSX.Element {
     void storeApi.quoteCheckout(method).then(setQuote).catch(() => setQuote(null));
   }, [cart, method]);
 
+  useEffect(() => {
+    if (method !== 'DELIVERY' || address.postalCode.trim().length < 6) {
+      setShippingQuote(null);
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      void storeApi
+        .shippingQuote({
+          postalCode: address.postalCode.trim(),
+          mode: shippingMode,
+          cod: paymentMethod === 'COD',
+        })
+        .then(setShippingQuote)
+        .catch(() => setShippingQuote(null));
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [method, address.postalCode, shippingMode, paymentMethod]);
+
   const issues = quote?.issues ?? [];
   const blocking = blockingCheckoutIssues(issues);
+  const canPayOnline = razorpayEnabled;
+  const canPayCod = codEnabled && method === 'DELIVERY';
+  const checkoutAvailable = canPayOnline || canPayCod;
 
   const idempotencyKey = useMemo(() => {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -81,17 +107,41 @@ export function CheckoutForm(): React.JSX.Element {
         setError(latest.issues[0]?.message ?? 'Checkout is not available for this cart.');
         return;
       }
+      if (paymentMethod === 'ONLINE' && !canPayOnline) {
+        setError('Online payment is not available.');
+        return;
+      }
+      if (paymentMethod === 'COD' && !canPayCod) {
+        setError('Cash on delivery is not available.');
+        return;
+      }
+      if (shippingQuote && method === 'DELIVERY' && !shippingQuote.serviceability.serviceable) {
+        setError(shippingQuote.serviceability.message ?? 'Delivery is not available for this pincode.');
+        return;
+      }
+
       const result = await storeApi.checkout(
         {
           fulfillmentMethod: method,
+          paymentMethod,
+          shippingMode: method === 'DELIVERY' ? shippingMode : undefined,
           customer: { name, email: email || undefined, phone: phone || undefined },
           shippingAddress: method === 'DELIVERY' ? toShippingDto(address) : undefined,
-          notes: razorpayEnabled ? 'ONLINE' : undefined,
+          notes: paymentMethod === 'ONLINE' ? 'ONLINE' : 'COD',
         },
         { idempotencyKey },
       );
       if (result.customerAccessToken) {
         writeBrowserCookie(STORE_COOKIES.customer, result.customerAccessToken, 30 * 24 * 60 * 60);
+      }
+      if (result.orderAccessToken) {
+        writeBrowserCookie(STORE_COOKIES.orderAccess, result.orderAccessToken, 30 * 24 * 60 * 60);
+      }
+
+      if (paymentMethod === 'COD') {
+        await refresh();
+        router.push(`/order/success/${result.order.orderNumber}`);
+        return;
       }
 
       const intent = result.order.paymentIntent;
@@ -99,7 +149,7 @@ export function CheckoutForm(): React.JSX.Element {
       const keyId = intent?.razorpayKeyId || razorpayKeyId;
       const amountPaise = intent?.amountPaise;
 
-      if (!razorpayEnabled || !orderId || !keyId || !amountPaise) {
+      if (!orderId || !keyId || !amountPaise) {
         setError('Online payment could not be started. Please try again or contact the store.');
         return;
       }
@@ -160,6 +210,15 @@ export function CheckoutForm(): React.JSX.Element {
         viewport: { once: true, amount: 0.2 },
         transition: { duration: MOTION_DURATION, ease: MOTION_EASE },
       };
+
+  const submitLabel =
+    paymentMethod === 'COD'
+      ? pending
+        ? 'Placing order…'
+        : 'Place COD order'
+      : pending
+        ? 'Processing payment…'
+        : 'Pay & place order';
 
   return (
     <form onSubmit={placeOrder} className="mx-auto grid max-w-store gap-8 store-gutter py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -228,6 +287,9 @@ export function CheckoutForm(): React.JSX.Element {
               variant={method === 'STORE_PICKUP' ? 'default' : 'outline'}
               onClick={() => {
                 setMethod('STORE_PICKUP');
+                if (paymentMethod === 'COD') {
+                  setPaymentMethod('ONLINE');
+                }
                 setStep(1);
               }}
             >
@@ -238,12 +300,40 @@ export function CheckoutForm(): React.JSX.Element {
             {method === 'DELIVERY' ? (
               <motion.div
                 key="delivery-address"
+                className="space-y-3"
                 initial={reduced ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
                 transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
               >
                 <AddressForm value={address} onChange={setAddress} />
+                {shippingQuote ? (
+                  <div className="space-y-2 border border-foreground/15 px-3 py-3 text-sm">
+                    <p>
+                      {shippingQuote.serviceability.serviceable
+                        ? 'Pincode is serviceable'
+                        : shippingQuote.serviceability.message ?? 'Pincode not serviceable'}
+                    </p>
+                    {shippingQuote.rates.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {shippingQuote.rates.map((rate) => (
+                          <Button
+                            key={rate.mode}
+                            type="button"
+                            size="sm"
+                            variant={shippingMode === rate.mode ? 'default' : 'outline'}
+                            onClick={() => setShippingMode(rate.mode)}
+                          >
+                            {rate.mode} · {formatMoney(rate.amount, store.tenant.currency)}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {shippingQuote.serviceability.codAvailable === false && paymentMethod === 'COD' ? (
+                      <p className="text-muted-foreground">COD is not available for this pincode.</p>
+                    ) : null}
+                  </div>
+                ) : null}
               </motion.div>
             ) : (
               <motion.p
@@ -265,27 +355,51 @@ export function CheckoutForm(): React.JSX.Element {
           onFocusCapture={() => setStep(2)}
         >
           <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Payment</h2>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {canPayOnline ? (
+              <Button
+                type="button"
+                className="w-full cursor-pointer sm:w-auto"
+                variant={paymentMethod === 'ONLINE' ? 'default' : 'outline'}
+                onClick={() => setPaymentMethod('ONLINE')}
+              >
+                Pay online
+              </Button>
+            ) : null}
+            {canPayCod ? (
+              <Button
+                type="button"
+                className="w-full cursor-pointer sm:w-auto"
+                variant={paymentMethod === 'COD' ? 'default' : 'outline'}
+                onClick={() => setPaymentMethod('COD')}
+              >
+                Cash on delivery
+              </Button>
+            ) : null}
+          </div>
           <div className="border border-foreground bg-foreground px-4 py-4 text-background">
             <p className="text-sm font-semibold uppercase tracking-[0.16em]">
-              {razorpayEnabled ? 'Pay with Razorpay' : 'Online payment'}
+              {paymentMethod === 'COD' ? 'Cash on delivery' : razorpayEnabled ? 'Pay with Razorpay' : 'Online payment'}
             </p>
             <p className="mt-2 text-sm text-background/75">
-              {razorpayEnabled
-                ? 'Pay securely with UPI, cards, or net banking. Your order is confirmed once payment succeeds.'
-                : 'Online checkout is being set up. Contact the store if you need help placing an order.'}
+              {paymentMethod === 'COD'
+                ? 'Pay the courier when your order arrives. COD is collected by Delhivery.'
+                : razorpayEnabled
+                  ? 'Pay securely with UPI, cards, or net banking. Your order is confirmed once payment succeeds.'
+                  : 'Online checkout is being set up. Contact the store if you need help placing an order.'}
             </p>
           </div>
         </motion.section>
         <Button
           type="submit"
           className="store-cta w-full cursor-pointer rounded-none md:w-auto"
-          disabled={pending || blocking.length > 0 || !razorpayEnabled}
+          disabled={pending || blocking.length > 0 || !checkoutAvailable}
           onClick={() => setStep(3)}
         >
-          {pending ? 'Processing payment…' : razorpayEnabled ? 'Pay & place order' : 'Checkout unavailable'}
+          {checkoutAvailable ? submitLabel : 'Checkout unavailable'}
         </Button>
       </div>
-      <CheckoutSummary cart={cart} quote={quote} currency={store.tenant.currency} />
+      <CheckoutSummary cart={cart} quote={quote} currency={store.tenant.currency} shippingQuote={shippingQuote} />
     </form>
   );
 }

@@ -76,6 +76,20 @@ export interface OrderSummary {
   updatedAt: string;
 }
 
+export interface OrderShipmentDto {
+  id: string;
+  provider: 'DELHIVERY';
+  waybill: string | null;
+  trackingUrl: string | null;
+  labelUrl: string | null;
+  packageWeightKg: string | null;
+  carrierShippingAmount: string | null;
+  codAmount: string | null;
+  providerStatus: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface OrderDetail extends OrderSummary {
   notes: string | null;
   cancelReason: string | null;
@@ -88,6 +102,7 @@ export interface OrderDetail extends OrderSummary {
   items: OrderItemDto[];
   payments: OrderPaymentDto[];
   tracking: OrderTrackingStep[];
+  shipment?: OrderShipmentDto | null;
   paymentIntent?: {
     paymentId: string;
     status: PaymentStatus;
@@ -147,4 +162,6 @@ export interface CheckoutResult {
   order: OrderDetail;
   cart: { id: string; status: CartStatus };
   customerAccessToken?: string;
+  /** Opaque token for guest order receipt access (hashed server-side). */
+  orderAccessToken?: string;
 }

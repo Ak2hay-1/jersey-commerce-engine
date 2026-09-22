@@ -22,14 +22,16 @@ import { parseTaxRate } from '../finance/tax';
 import { availableQuantity } from '../inventory/inventory-math';
 import type { CheckoutIssue, CheckoutQuote, FulfillmentMethod } from '@jersey-commerce/types';
 import { toCartDto } from './store-cart.mapper';
-import { toOrderDetail } from '../orders/order.mapper';
+import { toOrderDetail, orderInclude } from '../orders/order.mapper';
 import type { StaffCreateOrderDto, StoreCheckoutDto } from '../orders/dto/order.dto';
 import type { AuthPrincipal } from '../common/context/request-context';
 import type { RequestMeta } from '../auth/auth-session.service';
 import { StoreCartService } from './store-cart.service';
-import { hashOpaqueToken } from '../common/crypto/token-hash';
+import { createOpaqueToken, hashOpaqueToken } from '../common/crypto/token-hash';
 import { assertPromoApplicable } from '../promo-codes/promo-code.engine';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
+import { ShippingSettingsService } from '../shipping/shipping-settings.service';
+import { StoreShippingService } from '../shipping/store-shipping.service';
 
 const TX_OPTIONS = {
   maxWait: 5_000,
@@ -49,6 +51,8 @@ export class StoreCheckoutService {
     private readonly redis: RedisService,
     private readonly shipping: ShippingCalculator,
     private readonly promoCodes: PromoCodesService,
+    private readonly shippingSettings: ShippingSettingsService,
+    private readonly storeShipping: StoreShippingService,
   ) {}
 
   async quote(tenantId: string, token: string | undefined, fulfillmentMethod: FulfillmentMethod = 'DELIVERY'): Promise<CheckoutQuote> {
@@ -203,6 +207,8 @@ export class StoreCheckoutService {
     const fingerprint = this.fingerprint({
       cartPublicId: cart.publicId,
       fulfillmentMethod: dto.fulfillmentMethod ?? 'DELIVERY',
+      paymentMethod: dto.paymentMethod ?? 'ONLINE',
+      shippingMode: dto.shippingMode,
       customer: dto.customer,
       shippingAddress: dto.shippingAddress,
       notes: dto.notes,
@@ -225,6 +231,47 @@ export class StoreCheckoutService {
       throw new ConflictException('Checkout is already in progress for this cart.');
     }
     try {
+      const fulfillmentMethod = dto.fulfillmentMethod ?? 'DELIVERY';
+      const paymentMethod = dto.paymentMethod ?? 'ONLINE';
+      let shippingAmountOverride: Prisma.Decimal | undefined;
+
+      if (fulfillmentMethod === 'DELIVERY' && dto.shippingAddress?.postalCode) {
+        const tenant = await this.prisma.tenant.findFirst({ where: { id: tenantId } });
+        if (tenant?.shippingCalculationMode === 'DELHIVERY') {
+          const quote = await this.storeShipping.quote(
+            tenantId,
+            token,
+            dto.shippingAddress.postalCode,
+            dto.shippingMode,
+            paymentMethod === 'COD',
+          );
+          if (!quote.serviceability.serviceable) {
+            throw new BadRequestException(quote.serviceability.message ?? 'Delivery is not available for this pincode.');
+          }
+          if (paymentMethod === 'COD' && !quote.serviceability.codAvailable) {
+            throw new BadRequestException('Cash on delivery is not available for this pincode.');
+          }
+          shippingAmountOverride = money(quote.shippingAmount);
+        } else if (paymentMethod === 'COD') {
+          const serviceability = await this.storeShipping.serviceability(tenantId, dto.shippingAddress.postalCode);
+          if (!serviceability.codAvailable) {
+            throw new BadRequestException('Cash on delivery is not available for this pincode.');
+          }
+        }
+      }
+
+      if (paymentMethod === 'COD') {
+        const codOffered = await this.shippingSettings.isCodOffered(tenantId);
+        if (!codOffered) {
+          throw new BadRequestException('Cash on delivery is not enabled.');
+        }
+        if (fulfillmentMethod !== 'DELIVERY') {
+          throw new BadRequestException('Cash on delivery is only available for delivery orders.');
+        }
+      }
+
+      const orderAccessToken = createOpaqueToken('order_');
+
       return await this.prisma.$transaction(async (tx) => {
         const lockedCart = await asTx(tx).$queryRaw<Array<{ id: string; status: string }>>`
           SELECT id, status FROM carts WHERE id = ${cart.id} AND tenant_id = ${tenantId} FOR UPDATE
@@ -279,12 +326,15 @@ export class StoreCheckoutService {
             tenantId,
             source: 'WEBSITE',
             customerId: customer.id,
-            fulfillmentMethod: dto.fulfillmentMethod ?? 'DELIVERY',
+            fulfillmentMethod,
             notes: dto.notes,
             discountType,
             discountValue,
             promoCodeId: cart.promoCodeId,
             shippingAddress: dto.shippingAddress,
+            shippingAmountOverride,
+            paymentMethod,
+            accessTokenHash: hashOpaqueToken(orderAccessToken),
             items: cart.items.map((item) => ({
               productVariantId: item.productVariantId,
               quantity: item.quantity,
@@ -305,6 +355,7 @@ export class StoreCheckoutService {
           order: toOrderDetail(order),
           cart: { id: cart.publicId, status: 'CONVERTED' as const },
           customerAccessToken: access.token,
+          orderAccessToken,
         };
       }, TX_OPTIONS);
     } finally {
@@ -382,12 +433,7 @@ export class StoreCheckoutService {
     }
     const order = await this.prisma.order.findFirst({
       where: { id: existing.orderId, tenantId },
-      include: {
-        customer: { select: { id: true, name: true, phone: true, email: true } },
-        items: { orderBy: { id: 'asc' as const } },
-        payments: { orderBy: { createdAt: 'asc' as const } },
-        shippingAddress: true,
-      },
+      include: orderInclude,
     });
     if (!order || !order.customerId) {
       return null;

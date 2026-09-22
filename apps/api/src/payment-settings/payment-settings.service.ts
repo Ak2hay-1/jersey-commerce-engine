@@ -41,13 +41,13 @@ export class PaymentSettingsService {
     const row = await this.prisma.paymentSettings.findUnique({ where: { tenantId } });
     // Explicit Admin disable wins over env fallback.
     if (row && row.razorpayEnabled === false) {
-      return { razorpay: false, razorpayKeyId: null };
+      return { razorpay: false, razorpayKeyId: null, cod: false };
     }
     const credentials = await this.resolveCredentials(tenantId);
     if (!credentials) {
-      return { razorpay: false, razorpayKeyId: null };
+      return { razorpay: false, razorpayKeyId: null, cod: false };
     }
-    return { razorpay: true, razorpayKeyId: credentials.keyId };
+    return { razorpay: true, razorpayKeyId: credentials.keyId, cod: false };
   }
 
   /**
