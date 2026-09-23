@@ -116,8 +116,9 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
 
   useEffect(() => {
     if (!isNew) {
-      load().catch((err: Error) => setError(err.message));
+      void load().catch((err: Error) => setError(err.message));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when route id changes
   }, [isNew, id]);
 
   async function onCreate(event: FormEvent): Promise<void> {

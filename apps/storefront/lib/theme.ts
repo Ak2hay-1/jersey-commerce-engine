@@ -86,7 +86,7 @@ export function themeStyleVars(theme: {
     '--hero-plane': '0 0% 3%',
     '--glass': '0 0% 8% / 0.72',
     '--glass-border': '0 0% 100% / 0.12',
-    '--font-heading': `var(--font-heading-face), "${locked.headingFont}", Inter, system-ui, sans-serif`,
+    '--font-heading': `var(--font-body-face), "${locked.headingFont}", Inter, system-ui, sans-serif`,
     '--font-body': `var(--font-body-face), "${locked.bodyFont}", Inter, sans-serif`,
   };
 }

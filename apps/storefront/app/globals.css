@@ -2,7 +2,7 @@
 
 :root {
   /* Dark match-day baseline; CMS theme may still set inline vars — single-tenant lock in theme.ts wins. */
-  --font-heading: var(--font-heading-face), Inter, system-ui, sans-serif;
+  --font-heading: var(--font-body-face), Inter, system-ui, sans-serif;
   --font-body: var(--font-body-face), Inter, system-ui, sans-serif;
   --hero-plane: 0 0% 3%;
   --jerzyfy-accent: 0 60% 30%;
