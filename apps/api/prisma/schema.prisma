@@ -398,6 +398,7 @@ model Tenant {
   authSettings       AuthSettings?
   paymentSettings    PaymentSettings?
   shippingSettings   ShippingSettings?
+  notificationSettings NotificationSettings?
   tags               Tag[]
   customerTags       CustomerTag[]
   customerNotes      CustomerNote[]
@@ -829,6 +830,26 @@ model PaymentSettings {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@map("payment_settings")
+}
+
+/// Per-tenant staff Telegram alerts (encrypted bot token).
+model NotificationSettings {
+  id                           String   @id @default(cuid())
+  tenantId                     String   @unique @map("tenant_id")
+  telegramEnabled              Boolean  @default(false) @map("telegram_enabled")
+  telegramBotTokenEncrypted    String?  @map("telegram_bot_token_encrypted") @db.Text
+  telegramChatId               String?  @map("telegram_chat_id")
+  notifyOrderCreated           Boolean  @default(true) @map("notify_order_created")
+  notifyCustomOrderCreated     Boolean  @default(true) @map("notify_custom_order_created")
+  notifyPaymentConfirmed       Boolean  @default(true) @map("notify_payment_confirmed")
+  notifyOrderStatusChanged     Boolean  @default(true) @map("notify_order_status_changed")
+  notifyPosSale                Boolean  @default(true) @map("notify_pos_sale")
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@map("notification_settings")
 }
 
 /// Per-tenant Delhivery / courier settings (encrypted API token).

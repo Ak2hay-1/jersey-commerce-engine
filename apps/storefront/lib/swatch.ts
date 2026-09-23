@@ -31,7 +31,7 @@ export type StoreChrome = {
 };
 
 export const DEFAULT_STORE_CHROME: StoreChrome = {
-  sizes: ['S', 'M', 'L', 'XL'],
+  sizes: ['S', 'M', 'L', 'XL', 'XXL'],
   colours: ['Orange', 'Black'],
   featuredName: null,
   featuredSlug: null,

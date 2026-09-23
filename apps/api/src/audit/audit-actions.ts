@@ -10,6 +10,7 @@ export const AUDIT_ACTIONS = {
   AUTH_TEST_EMAIL_SENT: 'auth.test.email',
   AUTH_TEST_SMS_SENT: 'auth.test.sms',
   PAYMENT_SETTINGS_UPDATED: 'payment.settings.updated',
+  NOTIFICATION_SETTINGS_UPDATED: 'notification.settings.updated',
   SHIPPING_SETTINGS_UPDATED: 'shipping.settings.updated',
   SHIPMENT_CREATED: 'shipment.created',
   SHIPMENT_UPDATED: 'shipment.updated',

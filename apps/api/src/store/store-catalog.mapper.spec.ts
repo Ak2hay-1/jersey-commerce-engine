@@ -25,7 +25,7 @@ describe('toFacets', () => {
         ['Demo Athletic', null],
       ),
     ).toEqual({
-      sizes: ['L', 'M'],
+      sizes: ['M', 'L'],
       colours: ['Red'],
       brands: ['Demo Athletic'],
       minPrice: '2499.00',

@@ -15,3 +15,9 @@ export {
   type StaffMode,
   type StaffModeUrlContext,
 } from './staff-mode-url';
+export {
+  ADULT_SIZES,
+  KIDS_SIZES,
+  compareProductSizes,
+  sortUniqueSizes,
+} from './product-sizes';

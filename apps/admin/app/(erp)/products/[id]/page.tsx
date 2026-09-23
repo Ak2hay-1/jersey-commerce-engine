@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { CategoryDetail, ProductDetail, ProductVariantDto } from '@jersey-commerce/types';
+import { ADULT_SIZES, KIDS_SIZES } from '@jersey-commerce/utils';
 import { apiRequest, queryString } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/env';
 import { statusLabel } from '@/lib/format';
@@ -34,9 +35,6 @@ interface PendingImage {
   isPrimary: boolean;
   sortOrder: number;
 }
-
-const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const;
-const KIDS_SIZES = ['6', '8', '10', '12', '14'] as const;
 
 /** Matches a single size token (adult/kids/extended). Used to detect multi-size fields. */
 const SIZE_TOKEN = /^(?:XXL|XL|2XL|3XL|4XL|5XL|XS|S|M|L|[0-9]+)$/i;

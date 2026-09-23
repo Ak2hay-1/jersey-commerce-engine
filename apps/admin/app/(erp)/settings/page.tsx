@@ -51,6 +51,16 @@ export default function SettingsPage(): React.JSX.Element {
           </Link>
         ) : null}
         {auth.can('settings.read') || auth.can('settings.manage') ? (
+          <Link href="/settings/notifications">
+            <Card className="h-full hover:bg-muted/40">
+              <CardHeader className="p-4"><CardTitle className="text-sm">Notifications</CardTitle></CardHeader>
+              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+                Telegram bot alerts for new orders, payments, status changes, and POS sales.
+              </CardContent>
+            </Card>
+          </Link>
+        ) : null}
+        {auth.can('settings.read') || auth.can('settings.manage') ? (
           <Link href="/settings/backup">
             <Card className="h-full hover:bg-muted/40">
               <CardHeader className="p-4"><CardTitle className="text-sm">Automatic backups</CardTitle></CardHeader>

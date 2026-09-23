@@ -23,6 +23,9 @@ import { orderInclude, toOrderDetail, type OrderRecord } from './order.mapper';
 import type { OrderShippingAddressDto } from './dto/order.dto';
 import type { AuthPrincipal } from '../common/context/request-context';
 import type { RequestMeta } from '../auth/auth-session.service';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { formatOrderStatusTelegram } from '../notification-settings/telegram-messages';
+import { moneyString } from '../catalog/money';
 
 const TX_OPTIONS = {
   maxWait: 5_000,
@@ -64,6 +67,7 @@ export class OrderEngineService {
     private readonly shipping: ShippingCalculator,
     private readonly gateway: RazorpayOnlineGateway,
     private readonly saleRecognition: OrderSaleRecognitionService,
+    private readonly notifications: NotificationSettingsService,
   ) {}
 
   async createOrder(input: CreateOrderEngineInput, tx: object): Promise<OrderRecord> {
@@ -305,7 +309,22 @@ export class OrderEngineService {
         );
       }
       return this.reload(tx, input.tenantId, order.id);
-    }, TX_OPTIONS);
+    }, TX_OPTIONS).then((record) => {
+      this.notifications.schedule(
+        input.tenantId,
+        'ORDER_STATUS_CHANGED',
+        formatOrderStatusTelegram({
+          orderNumber: record.orderNumber,
+          status: record.status,
+          paymentStatus: record.paymentStatus,
+          cancelReason: record.cancelReason,
+          customerName: record.customer?.name,
+          total: moneyString(record.total),
+          currency: record.currency,
+        }),
+      );
+      return record;
+    });
   }
 
   async transitionStatus(input: {
@@ -368,7 +387,21 @@ export class OrderEngineService {
         tx,
       );
       return this.reload(tx, input.tenantId, order.id);
-    }, TX_OPTIONS);
+    }, TX_OPTIONS).then((record) => {
+      this.notifications.schedule(
+        input.tenantId,
+        'ORDER_STATUS_CHANGED',
+        formatOrderStatusTelegram({
+          orderNumber: record.orderNumber,
+          status: record.status,
+          paymentStatus: record.paymentStatus,
+          customerName: record.customer?.name,
+          total: moneyString(record.total),
+          currency: record.currency,
+        }),
+      );
+      return record;
+    });
   }
 
   toDetail(order: OrderRecord) {

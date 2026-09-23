@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { StorefrontProductListItem, StorefrontVariant } from '@jersey-commerce/types';
 import { cn } from '@jersey-commerce/ui';
+import { sortUniqueSizes } from '@jersey-commerce/utils';
 import { PriceDisplay } from './price-display';
 import { ProductImage } from './product-image';
 import { availabilityLabel } from '../../lib/format';
@@ -72,7 +73,7 @@ export function ProductCard({
     }
   }
 
-  const sizes = [...new Set((variants ?? []).map((item) => item.size).filter((value): value is string => Boolean(value)))];
+  const sizes = sortUniqueSizes((variants ?? []).map((item) => item.size));
 
   return (
     <HoverLift>

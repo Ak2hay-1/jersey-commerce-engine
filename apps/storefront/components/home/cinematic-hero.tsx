@@ -12,6 +12,7 @@ import type {
   StorefrontVariant,
 } from '@jersey-commerce/types';
 import { cn } from '@jersey-commerce/ui';
+import { sortUniqueSizes } from '@jersey-commerce/utils';
 import { ProductImage } from '../catalog/product-image';
 import { Magnetic } from '../motion/magnetic';
 import { MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
@@ -35,7 +36,7 @@ function socialEntries(links: StorefrontSocialLinks): Array<[string, string]> {
 }
 
 function sizesFromVariants(variants: StorefrontVariant[]): string[] {
-  return [...new Set(variants.map((item) => item.size).filter((value): value is string => Boolean(value)))];
+  return sortUniqueSizes(variants.map((item) => item.size));
 }
 
 function parseHex(hex: string): [number, number, number] {

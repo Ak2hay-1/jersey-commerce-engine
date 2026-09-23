@@ -36,6 +36,7 @@ import { CustomOrdersModule } from './custom-orders/custom-orders.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { AuthSettingsModule } from './auth-settings/auth-settings.module';
 import { PaymentSettingsModule } from './payment-settings/payment-settings.module';
+import { NotificationSettingsModule } from './notification-settings/notification-settings.module';
 import { ShippingSettingsModule } from './shipping/shipping-settings.module';
 import { ShippingModule } from './shipping/shipping.module';
 
@@ -93,6 +94,7 @@ import { ShippingModule } from './shipping/shipping.module';
     PromoCodesModule,
     AuthSettingsModule,
     PaymentSettingsModule,
+    NotificationSettingsModule,
     ShippingSettingsModule,
     ShippingModule,
   ],

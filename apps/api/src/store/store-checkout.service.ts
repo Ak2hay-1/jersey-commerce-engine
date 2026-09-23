@@ -32,6 +32,8 @@ import { assertPromoApplicable } from '../promo-codes/promo-code.engine';
 import { PromoCodesService } from '../promo-codes/promo-codes.service';
 import { ShippingSettingsService } from '../shipping/shipping-settings.service';
 import { StoreShippingService } from '../shipping/store-shipping.service';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { formatOrderCreatedTelegram } from '../notification-settings/telegram-messages';
 
 const TX_OPTIONS = {
   maxWait: 5_000,
@@ -53,6 +55,7 @@ export class StoreCheckoutService {
     private readonly promoCodes: PromoCodesService,
     private readonly shippingSettings: ShippingSettingsService,
     private readonly storeShipping: StoreShippingService,
+    private readonly notifications: NotificationSettingsService,
   ) {}
 
   async quote(tenantId: string, token: string | undefined, fulfillmentMethod: FulfillmentMethod = 'DELIVERY'): Promise<CheckoutQuote> {
@@ -272,85 +275,85 @@ export class StoreCheckoutService {
 
       const orderAccessToken = createOpaqueToken('order_');
 
-      return await this.prisma.$transaction(async (tx) => {
-        const lockedCart = await asTx(tx).$queryRaw<Array<{ id: string; status: string }>>`
-          SELECT id, status FROM carts WHERE id = ${cart.id} AND tenant_id = ${tenantId} FOR UPDATE
-        `;
-        if (!lockedCart[0] || lockedCart[0].status !== 'ACTIVE') {
-          throw new ConflictException('This cart has already been checked out.');
-        }
-        await this.audit.log(
-          {
-            action: AUDIT_ACTIONS.CHECKOUT_STARTED,
-            tenantId,
-            entity: 'Cart',
-            entityId: cart.id,
-            metadata: { publicId: cart.publicId, source: 'WEBSITE' },
-            ipAddress: meta?.ipAddress,
-            userAgent: meta?.userAgent,
-          },
-          tx,
-        );
-        if (idempotencyKey) {
-          await this.claimIdempotency(tx, tenantId, idempotencyKey, fingerprint, cart.id);
-        }
-        const customer = await this.customers.resolveForOrder(
-          tenantId,
-          {
-            customerId,
-            name: dto.customer?.name ?? dto.shippingAddress?.fullName,
-            phone: dto.customer?.phone ?? dto.shippingAddress?.phone,
-            email: dto.customer?.email,
-            address: dto.shippingAddress?.addressLine1,
-            city: dto.shippingAddress?.city,
-            state: dto.shippingAddress?.state,
-            postalCode: dto.shippingAddress?.postalCode,
-          },
-          undefined,
-          tx,
-        );
-        let discountType: 'NONE' | 'FIXED' | 'PERCENTAGE' = 'NONE';
-        let discountValue = money(0);
-        if (cart.promoCode) {
-          const merchandise = cart.items.reduce(
-            (sum, item) => sum.add(money(item.productVariant.sellingPrice.toString()).mul(item.quantity)),
-            money(0),
+      const result = await this.prisma.$transaction(async (tx) => {
+          const lockedCart = await asTx(tx).$queryRaw<Array<{ id: string; status: string }>>`
+            SELECT id, status FROM carts WHERE id = ${cart.id} AND tenant_id = ${tenantId} FOR UPDATE
+          `;
+          if (!lockedCart[0] || lockedCart[0].status !== 'ACTIVE') {
+            throw new ConflictException('This cart has already been checked out.');
+          }
+          await this.audit.log(
+            {
+              action: AUDIT_ACTIONS.CHECKOUT_STARTED,
+              tenantId,
+              entity: 'Cart',
+              entityId: cart.id,
+              metadata: { publicId: cart.publicId, source: 'WEBSITE' },
+              ipAddress: meta?.ipAddress,
+              userAgent: meta?.userAgent,
+            },
+            tx,
           );
-          const resolved = assertPromoApplicable(cart.promoCode, merchandise);
-          discountType = resolved.discountType;
-          discountValue = resolved.discountValue;
-          await this.promoCodes.consume(tx, tenantId, cart.promoCode.id);
-        }
-        const order = await this.engine.createOrder(
-          {
+          if (idempotencyKey) {
+            await this.claimIdempotency(tx, tenantId, idempotencyKey, fingerprint, cart.id);
+          }
+          const customer = await this.customers.resolveForOrder(
             tenantId,
-            source: 'WEBSITE',
-            customerId: customer.id,
-            fulfillmentMethod,
-            notes: dto.notes,
-            discountType,
-            discountValue,
-            promoCodeId: cart.promoCodeId,
-            shippingAddress: dto.shippingAddress,
-            shippingAmountOverride,
-            paymentMethod,
-            accessTokenHash: hashOpaqueToken(orderAccessToken),
-            items: cart.items.map((item) => ({
-              productVariantId: item.productVariantId,
-              quantity: item.quantity,
-            })),
-            meta,
-          },
-          tx,
-        );
-        await this.carts.markConverted(tx, tenantId, cart.id, order.id);
-        if (idempotencyKey) {
-          await asTx(tx).checkoutIdempotency.update({
-            where: { tenantId_keyHash: { tenantId, keyHash: hashOpaqueToken(idempotencyKey) } },
-            data: { orderId: order.id },
-          });
-        }
-        const access = this.tokens.signCustomerAccessToken({ customerId: customer.id, tenantId });
+            {
+              customerId,
+              name: dto.customer?.name ?? dto.shippingAddress?.fullName,
+              phone: dto.customer?.phone ?? dto.shippingAddress?.phone,
+              email: dto.customer?.email,
+              address: dto.shippingAddress?.addressLine1,
+              city: dto.shippingAddress?.city,
+              state: dto.shippingAddress?.state,
+              postalCode: dto.shippingAddress?.postalCode,
+            },
+            undefined,
+            tx,
+          );
+          let discountType: 'NONE' | 'FIXED' | 'PERCENTAGE' = 'NONE';
+          let discountValue = money(0);
+          if (cart.promoCode) {
+            const merchandise = cart.items.reduce(
+              (sum, item) => sum.add(money(item.productVariant.sellingPrice.toString()).mul(item.quantity)),
+              money(0),
+            );
+            const resolved = assertPromoApplicable(cart.promoCode, merchandise);
+            discountType = resolved.discountType;
+            discountValue = resolved.discountValue;
+            await this.promoCodes.consume(tx, tenantId, cart.promoCode.id);
+          }
+          const order = await this.engine.createOrder(
+            {
+              tenantId,
+              source: 'WEBSITE',
+              customerId: customer.id,
+              fulfillmentMethod,
+              notes: dto.notes,
+              discountType,
+              discountValue,
+              promoCodeId: cart.promoCodeId,
+              shippingAddress: dto.shippingAddress,
+              shippingAmountOverride,
+              paymentMethod,
+              accessTokenHash: hashOpaqueToken(orderAccessToken),
+              items: cart.items.map((item) => ({
+                productVariantId: item.productVariantId,
+                quantity: item.quantity,
+              })),
+              meta,
+            },
+            tx,
+          );
+          await this.carts.markConverted(tx, tenantId, cart.id, order.id);
+          if (idempotencyKey) {
+            await asTx(tx).checkoutIdempotency.update({
+              where: { tenantId_keyHash: { tenantId, keyHash: hashOpaqueToken(idempotencyKey) } },
+              data: { orderId: order.id },
+            });
+          }
+          const access = this.tokens.signCustomerAccessToken({ customerId: customer.id, tenantId });
         return {
           order: toOrderDetail(order),
           cart: { id: cart.publicId, status: 'CONVERTED' as const },
@@ -358,6 +361,8 @@ export class StoreCheckoutService {
           orderAccessToken,
         };
       }, TX_OPTIONS);
+      this.notifications.schedule(tenantId, 'ORDER_CREATED', formatOrderCreatedTelegram(result.order));
+      return result;
     } finally {
       try {
         await this.redis.getClient().del(lockKey);
@@ -411,7 +416,10 @@ export class StoreCheckoutService {
         tx,
       );
       return toOrderDetail(order);
-    }, TX_OPTIONS);
+    }, TX_OPTIONS).then((order) => {
+      this.notifications.schedule(actor.tenantId, 'ORDER_CREATED', formatOrderCreatedTelegram(order));
+      return order;
+    });
   }
 
   private fingerprint(value: unknown): string {

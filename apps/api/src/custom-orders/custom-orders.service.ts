@@ -48,6 +48,8 @@ import {
   validateCustomOrderFile,
 } from './custom-order-files';
 import { toDetail, toPublic, toSummary } from './custom-order.mapper';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { formatCustomOrderTelegram } from '../notification-settings/telegram-messages';
 import type {
   CancelCustomOrderDto,
   CreateCustomOrderDto,
@@ -88,6 +90,7 @@ export class CustomOrdersService {
     private readonly processor: PaymentProcessor,
     private readonly localStorage: LocalObjectStorage,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly notifications: NotificationSettingsService,
   ) {}
 
   async findAll(tenantId: string, query: CustomOrderQueryDto) {
@@ -167,7 +170,7 @@ export class CustomOrdersService {
     meta?: RequestMeta,
   ) {
     this.assertInquiryContact(dto);
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const customer = await this.customers.resolveForOrder(
         tenantId,
         { name: dto.name, phone: dto.phone, email: dto.email },
@@ -191,11 +194,23 @@ export class CustomOrdersService {
       );
       return toPublic(await this.loadById(tx, tenantId, created.id));
     });
+    this.notifications.schedule(
+      tenantId,
+      'CUSTOM_ORDER_CREATED',
+      formatCustomOrderTelegram({
+        orderNumber: created.orderNumber,
+        teamName: created.teamName,
+        customerName: dto.name,
+        phone: dto.phone,
+        type: created.type,
+      }),
+    );
+    return created;
   }
 
   async create(actor: AuthPrincipal, dto: CreateCustomOrderDto, meta?: RequestMeta) {
     this.assertInquiryContact(dto);
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const customer = await this.customers.resolveForOrder(
         actor.tenantId,
         { customerId: dto.customerId, name: dto.name, phone: dto.phone, email: dto.email },
@@ -225,6 +240,18 @@ export class CustomOrdersService {
       );
       return toDetail(await this.loadById(tx, actor.tenantId, created.id));
     });
+    this.notifications.schedule(
+      actor.tenantId,
+      'CUSTOM_ORDER_CREATED',
+      formatCustomOrderTelegram({
+        orderNumber: created.orderNumber,
+        teamName: created.teamName,
+        customerName: created.customer?.name ?? dto.name,
+        phone: created.customer?.phone ?? dto.phone,
+        type: created.type,
+      }),
+    );
+    return created;
   }
 
   async update(actor: AuthPrincipal, id: string, dto: UpdateCustomOrderDto, meta?: RequestMeta) {

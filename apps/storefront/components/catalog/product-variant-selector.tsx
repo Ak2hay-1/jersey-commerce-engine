@@ -2,6 +2,7 @@
 
 import { cn } from '@jersey-commerce/ui';
 import type { StorefrontVariant } from '@jersey-commerce/types';
+import { sortUniqueSizes } from '@jersey-commerce/utils';
 import { availabilityLabel } from '../../lib/format';
 
 export function ProductVariantSelector({
@@ -13,7 +14,7 @@ export function ProductVariantSelector({
   selectedId?: string;
   onSelect: (variant: StorefrontVariant) => void;
 }): React.JSX.Element {
-  const sizes = [...new Set(variants.map((variant) => variant.size).filter((value): value is string => Boolean(value)))];
+  const sizes = sortUniqueSizes(variants.map((variant) => variant.size));
   const colours = [...new Set(variants.map((variant) => variant.colour).filter((value): value is string => Boolean(value)))];
   const selected = variants.find((variant) => variant.id === selectedId);
 

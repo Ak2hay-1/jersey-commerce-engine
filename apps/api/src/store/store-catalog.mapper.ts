@@ -18,6 +18,7 @@ import type {
   StorefrontPaymentMethods,
 } from '@jersey-commerce/types';
 import { DEFAULT_STOREFRONT_CHROME, DEFAULT_STOREFRONT_FOOTER, HOMEPAGE_SECTION_TYPES } from '@jersey-commerce/types';
+import { sortUniqueSizes } from '@jersey-commerce/utils';
 import { availableQuantity } from '../inventory/inventory-math';
 import { toCategorySummary, toImageDto } from '../catalog/catalog.mapper';
 import { moneyString } from '../catalog/money';
@@ -172,7 +173,7 @@ export function toStorefrontProductDetail(
   const priced = [...active].sort((a, b) => a.sellingPrice.toFixed(2).localeCompare(b.sellingPrice.toFixed(2), 'en'));
   const lowest = priced[0];
   const highest = priced[priced.length - 1];
-  const sizes = [...new Set(active.map((variant) => variant.size).filter((value): value is string => Boolean(value)))];
+  const sizes = sortUniqueSizes(active.map((variant) => variant.size));
   const colours = [...new Set(active.map((variant) => variant.color).filter((value): value is string => Boolean(value)))];
   return {
     id: product.id,
@@ -205,7 +206,7 @@ export function emptyFacets(): StorefrontCatalogFacets {
 }
 
 export function toFacets(variants: FacetVariant[], brands: Array<string | null>): StorefrontCatalogFacets {
-  const sizes = [...new Set(variants.map((variant) => variant.size).filter((value): value is string => Boolean(value)))].sort();
+  const sizes = sortUniqueSizes(variants.map((variant) => variant.size));
   const colours = [...new Set(variants.map((variant) => variant.color).filter((value): value is string => Boolean(value)))].sort();
   const uniqueBrands = [...new Set(brands.filter((value): value is string => Boolean(value)))].sort();
   const prices = variants.map((variant) => variant.sellingPrice.toFixed(2)).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));

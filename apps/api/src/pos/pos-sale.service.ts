@@ -30,6 +30,8 @@ import { PosCartService } from './pos-cart.service';
 import { PosRefundService } from './pos-refund.service';
 import { PosSessionService } from './pos-session.service';
 import type { CancelSaleDto, CompleteSaleDto, PosSaleQueryDto } from './dto/sale.dto';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { formatPosSaleTelegram } from '../notification-settings/telegram-messages';
 
 const saleInclude = {
   customer: { select: { id: true, name: true, phone: true } },
@@ -52,11 +54,12 @@ export class PosSaleService {
     private readonly payments: PaymentsService,
     private readonly receipts: ReceiptService,
     private readonly refunds: PosRefundService,
+    private readonly notifications: NotificationSettingsService,
   ) {}
 
   async complete(actor: AuthPrincipal, dto: CompleteSaleDto) {
     const tenantId = actor.tenantId;
-    return this.prisma.$transaction(
+    const sale = await this.prisma.$transaction(
       async (raw) => {
         const tx = asTx(raw);
         const open = await this.sessions.requireOpenForUser(tenantId, actor.userId, tx);
@@ -322,6 +325,17 @@ export class PosSaleService {
         maxWait: 5000,
       },
     );
+    this.notifications.schedule(
+      tenantId,
+      'POS_SALE',
+      formatPosSaleTelegram({
+        invoiceNumber: sale.invoiceNumber,
+        total: sale.total,
+        customerName: sale.customer?.name ?? null,
+        itemCount: sale.items.length,
+      }),
+    );
+    return sale;
   }
 
   async findAll(actor: AuthPrincipal, query: PosSaleQueryDto) {

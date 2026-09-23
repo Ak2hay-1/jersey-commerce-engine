@@ -149,6 +149,10 @@ export {
   type UpdatePaymentSettingsInput,
 } from './payment-settings';
 export {
+  type NotificationSettings,
+  type UpdateNotificationSettingsInput,
+} from './notification-settings';
+export {
   type ShippingSettings,
   type UpdateShippingSettingsInput,
   type ShippingRateOption,

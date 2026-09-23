@@ -13,6 +13,9 @@ import { PaymentsService } from '../payments/payments.service';
 import { PaymentSettingsService } from '../payment-settings/payment-settings.service';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
+import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
+import { formatPaymentConfirmedTelegram } from '../notification-settings/telegram-messages';
+import { moneyString } from '../catalog/money';
 import type {
   CreatePaymentIntentInput,
   PaymentGateway,
@@ -58,6 +61,7 @@ export class RazorpayOnlineGateway implements PaymentGateway {
     private readonly payments: PaymentsService,
     private readonly paymentSettings: PaymentSettingsService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationSettingsService,
   ) {}
 
   async createPaymentIntent(input: CreatePaymentIntentInput, tx: object): Promise<PaymentIntentResult> {
@@ -226,8 +230,18 @@ export class RazorpayOnlineGateway implements PaymentGateway {
       razorpay_signature: string;
     },
   ): Promise<{ success: true; paymentId: string; orderNumber: string | null }> {
-    return this.prisma.$transaction(async (tx) => {
-      const result = await this.verifyPayment(
+    const prior = await this.prisma.payment.findFirst({
+      where: {
+        tenantId,
+        provider: this.providerKey,
+        OR: [{ reference: input.razorpay_order_id }, { reference: input.razorpay_payment_id }],
+      },
+      select: { status: true },
+    });
+    const alreadyCompleted = prior?.status === PaymentStatus.COMPLETED;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const verified = await this.verifyPayment(
         {
           tenantId,
           paymentId: '',
@@ -237,15 +251,46 @@ export class RazorpayOnlineGateway implements PaymentGateway {
         tx,
       );
       const payment = await asTx(tx).payment.findFirst({
-        where: { id: result.paymentId, tenantId },
-        include: { order: { select: { orderNumber: true } } },
+        where: { id: verified.paymentId, tenantId },
+        include: {
+          order: {
+            select: {
+              orderNumber: true,
+              currency: true,
+              customer: { select: { name: true } },
+            },
+          },
+        },
       });
       return {
         success: true as const,
-        paymentId: result.paymentId,
+        paymentId: verified.paymentId,
         orderNumber: payment?.order?.orderNumber ?? null,
+        amount: payment ? moneyString(payment.amount) : undefined,
+        currency: payment?.order?.currency ?? 'INR',
+        customerName: payment?.order?.customer?.name ?? null,
       };
     });
+
+    if (!alreadyCompleted) {
+      this.notifications.schedule(
+        tenantId,
+        'PAYMENT_CONFIRMED',
+        formatPaymentConfirmedTelegram({
+          orderNumber: result.orderNumber,
+          paymentId: result.paymentId,
+          amount: result.amount,
+          currency: result.currency,
+          customerName: result.customerName,
+        }),
+      );
+    }
+
+    return {
+      success: true,
+      paymentId: result.paymentId,
+      orderNumber: result.orderNumber,
+    };
   }
 
   async verifyPayment(input: VerifyPaymentInput, tx?: object): Promise<PaymentIntentResult> {
