@@ -11,10 +11,6 @@ type Search = {
   search?: string;
   categorySlug?: string;
   size?: string;
-  colour?: string;
-  brand?: string;
-  minPrice?: string;
-  maxPrice?: string;
   sort?: string;
   page?: string;
 };
@@ -39,10 +35,6 @@ export default async function ProductsPage({
         search: query.search,
         categorySlug: query.categorySlug,
         size: query.size,
-        colour: query.colour,
-        brand: query.brand,
-        minPrice: query.minPrice,
-        maxPrice: query.maxPrice,
         sort: query.sort,
         page: query.page ? Number(query.page) : 1,
         pageSize: 24,
@@ -54,8 +46,8 @@ export default async function ProductsPage({
   return (
     <div className="mx-auto max-w-store store-gutter py-8 md:py-10">
       <div className="mb-8 md:mb-10">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Catalog</p>
-        <h1 className="mt-2 break-words font-heading text-[clamp(1.85rem,8vw,3.75rem)] uppercase tracking-tight md:text-6xl">
+        <p className="text-sm font-medium text-muted-foreground">Catalog</p>
+        <h1 className="mt-2 break-words text-[clamp(1.85rem,6vw,3rem)] font-semibold tracking-tight">
           {query.search ? `Results for “${query.search}”` : 'All products'}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">{result.meta.totalItems} pieces</p>

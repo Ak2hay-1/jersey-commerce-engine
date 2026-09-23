@@ -3,24 +3,58 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
-import { apiRequest } from '@/lib/api';
-import { formatMoney, statusLabel } from '@/lib/format';
+import { apiRequest, readAccessToken } from '@/lib/api';
+import { getApiUrl } from '@/lib/env';
+import { formatDateTime, formatMoney, statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
 import { DataTable } from '@/components/data-table';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
 import { useRouteParam } from '@/lib/use-route-param';
 
+interface CustomOrderFile {
+  id: string;
+  originalFilename: string;
+  mimeType: string;
+  fileSize: number;
+  kind: string;
+  uploadedAt: string;
+}
+
+interface CustomOrderNote {
+  id: string;
+  body: string;
+  createdBy: { id: string; name: string };
+  createdAt: string;
+}
+
+interface CustomOrderTimelineItem {
+  id: string;
+  type: string;
+  title: string;
+  detail: string | null;
+  createdAt: string;
+}
+
 interface CustomOrderDetail {
   id: string;
   orderNumber: string;
   status: string;
   type: string;
+  teamName: string | null;
+  description: string | null;
+  preferredJerseyType: string | null;
+  preferredColours: string | null;
+  customizationRequirements: string | null;
+  notes: string | null;
+  estimatedQuantity: number;
+  requestedDeliveryDate: string | null;
   total: string;
   depositPaid: string;
   balanceDue: string;
-  customer: { name: string };
+  customer: { name: string; phone: string | null; email: string | null };
   items: Array<{ id: string; playerName: string | null; size: string | null; quantity: number; total: string }>;
+  files: CustomOrderFile[];
 }
 
 const STATUSES = [
@@ -44,6 +78,8 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
   const router = useRouter();
   const auth = useAuth();
   const [row, setRow] = useState<CustomOrderDetail | null>(null);
+  const [timeline, setTimeline] = useState<CustomOrderTimelineItem[]>([]);
+  const [notesList, setNotesList] = useState<CustomOrderNote[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -63,6 +99,19 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
     const next = await apiRequest<CustomOrderDetail>(`/custom-orders/${id}`);
     setRow(next);
     setStatus(next.status);
+    if (next.estimatedQuantity) {
+      setQuantity(String(next.estimatedQuantity));
+    }
+    const [timelineResult, notesResult] = await Promise.all([
+      apiRequest<{ items: CustomOrderTimelineItem[] } | CustomOrderTimelineItem[]>(`/custom-orders/${id}/timeline`).catch(
+        () => ({ items: [] as CustomOrderTimelineItem[] }),
+      ),
+      apiRequest<{ items: CustomOrderNote[] } | CustomOrderNote[]>(`/custom-orders/${id}/notes`).catch(
+        () => ({ items: [] as CustomOrderNote[] }),
+      ),
+    ]);
+    setTimeline(Array.isArray(timelineResult) ? timelineResult : (timelineResult.items ?? []));
+    setNotesList(Array.isArray(notesResult) ? notesResult : (notesResult.items ?? []));
   }
 
   useEffect(() => {
@@ -154,6 +203,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
         body: JSON.stringify({ body: noteBody.trim() }),
       });
       setNoteBody('');
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to add note');
     } finally {
@@ -174,6 +224,28 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
       throw err;
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function downloadFile(file: CustomOrderFile): Promise<void> {
+    try {
+      const token = readAccessToken();
+      const response = await fetch(`${getApiUrl()}/api/v1/custom-orders/${id}/files/${file.id}`, {
+        headers: token ? { authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Unable to download file');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.originalFilename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to download file');
     }
   }
 
@@ -232,13 +304,58 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
     <div className="space-y-4">
       <PageHeader
         title={row.orderNumber}
-        description={`${row.customer.name} · ${row.type}`}
+        description={`${row.customer.name} · ${statusLabel(row.type)}`}
         actions={<Badge variant="secondary">{statusLabel(row.status)}</Badge>}
       />
       <FormError>{error}</FormError>
       <p className="text-sm">
         Total {formatMoney(row.total)} · Deposit {formatMoney(row.depositPaid)} · Balance {formatMoney(row.balanceDue)}
       </p>
+
+      <Card>
+        <CardContent className="grid gap-3 p-4 md:grid-cols-2">
+          <p className="text-sm font-medium md:col-span-2">Enquiry details</p>
+          <Detail label="Customer" value={row.customer.name} />
+          <Detail label="Phone" value={row.customer.phone} />
+          <Detail label="Email" value={row.customer.email} />
+          <Detail label="Team" value={row.teamName} />
+          <Detail label="Quantity" value={row.estimatedQuantity ? String(row.estimatedQuantity) : null} />
+          <Detail label="Type" value={statusLabel(row.type)} />
+          <Detail label="Preferred style" value={row.preferredJerseyType} />
+          <Detail label="Preferred colours" value={row.preferredColours} />
+          <Detail label="Delivery date" value={row.requestedDeliveryDate ? formatDateTime(row.requestedDeliveryDate) : null} />
+          <div className="md:col-span-2">
+            <Detail label="Description" value={row.description} />
+          </div>
+          <div className="md:col-span-2">
+            <Detail label="Customization requirements" value={row.customizationRequirements} />
+          </div>
+          <div className="md:col-span-2">
+            <Detail label="Customer notes" value={row.notes} />
+          </div>
+          {row.files.length > 0 ? (
+            <div className="md:col-span-2">
+              <p className="text-xs text-muted-foreground">Design / reference files</p>
+              <ul className="mt-1 space-y-1">
+                {row.files.map((file) => (
+                  <li key={file.id}>
+                    <button
+                      type="button"
+                      className="text-sm text-primary underline-offset-2 hover:underline"
+                      onClick={() => void downloadFile(file)}
+                    >
+                      {file.originalFilename}
+                    </button>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {file.kind} · {Math.max(1, Math.round(file.fileSize / 1024))} KB
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {auth.can('customOrders.update') ? (
@@ -315,6 +432,35 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
                 Add note
               </Button>
             </form>
+            {notesList.length > 0 ? (
+              <ul className="mt-4 space-y-2 border-t border-border pt-3">
+                {notesList.map((note) => (
+                  <li key={note.id} className="text-sm">
+                    <p>{note.body}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {note.createdBy.name} · {formatDateTime(note.createdAt)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {timeline.length > 0 ? (
+        <Card>
+          <CardContent className="p-4">
+            <p className="mb-3 text-sm font-medium">Timeline</p>
+            <ul className="space-y-2">
+              {timeline.map((event) => (
+                <li key={event.id} className="border-b border-border/60 pb-2 text-sm last:border-0">
+                  <p className="font-medium">{event.title}</p>
+                  {event.detail ? <p className="text-muted-foreground">{event.detail}</p> : null}
+                  <p className="text-xs text-muted-foreground">{formatDateTime(event.createdAt)}</p>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       ) : null}
@@ -340,6 +486,15 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
           { key: 'total', header: 'Total', render: (item) => formatMoney(item.total) },
         ]}
       />
+    </div>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-0.5 whitespace-pre-wrap break-words text-sm">{value?.trim() || '—'}</p>
     </div>
   );
 }

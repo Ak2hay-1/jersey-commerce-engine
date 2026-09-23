@@ -78,55 +78,56 @@ export function ProductCard({
   return (
     <HoverLift>
       <article className="product-tile group">
-        <div className="product-tile-media relative overflow-hidden bg-muted">
+        <div className="product-tile-media relative overflow-hidden border border-foreground/10 bg-muted">
           <Link
             href={`/products/${product.slug}`}
             className="block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <motion.div
               className="origin-center"
-              whileHover={reduced ? undefined : { scale: 1.04 }}
-              transition={{ duration: 0.55, ease: MOTION_EASE }}
+              whileHover={reduced ? undefined : { scale: 1.03 }}
+              transition={{ duration: 0.5, ease: MOTION_EASE }}
             >
               <ProductImage
                 src={product.primaryImage?.url}
                 alt={product.primaryImage?.altText ?? product.name}
-                className="aspect-[3/4] w-full object-cover"
+                className={cn('aspect-[3/4] w-full object-cover', out && 'opacity-55')}
               />
             </motion.div>
           </Link>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-1/3 bg-gradient-to-t from-black/55 to-transparent" />
           {out ? (
-            <span className="absolute left-3 top-3 z-[2] bg-background/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider">
+            <span className="absolute left-3 top-3 z-[2] border border-foreground/20 bg-background/95 px-2.5 py-1 text-[11px] font-medium tracking-wide">
               {availabilityLabel(product.availability, null)}
             </span>
           ) : null}
-          <div className="product-tile-actions absolute inset-x-0 bottom-0 z-[2] flex transition-transform duration-300 ease-out">
+          <div className="product-tile-actions absolute inset-x-0 bottom-0 z-[2] flex gap-px p-2 transition-transform duration-300 ease-out">
             <Link
               href={`/products/${product.slug}`}
-              className="flex-1 cursor-pointer bg-background/90 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] sm:py-3 sm:tracking-[0.2em]"
+              className="flex-1 cursor-pointer bg-background/95 py-2.5 text-center text-xs font-medium tracking-wide backdrop-blur-sm sm:py-3"
             >
               View
             </Link>
             <button
               type="button"
-              className="flex-1 cursor-pointer bg-foreground py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-background disabled:opacity-50 sm:py-3 sm:tracking-[0.2em]"
+              className="flex-1 cursor-pointer bg-foreground py-2.5 text-center text-xs font-medium tracking-wide text-background disabled:opacity-50 sm:py-3"
               disabled={out || pending}
               onClick={() => void onAdd()}
             >
-              {pending ? 'Adding' : 'Add to cart'}
+              {pending ? 'Adding…' : 'Add to cart'}
             </button>
           </div>
           <AnimatePresence>
             {picking ? (
               <motion.div
                 key="size-picker"
-                className="absolute inset-x-0 bottom-0 z-[3] bg-background/95 p-3"
+                className="absolute inset-x-0 bottom-0 z-[3] border-t border-foreground/10 bg-background/95 p-3 backdrop-blur-sm"
                 initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
                 animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
                 exit={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
                 transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
               >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Select size</p>
+                <p className="text-xs font-medium text-muted-foreground">Select size</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {sizes.map((size) => {
                     const unavailable = !(variants ?? []).some(
@@ -139,7 +140,7 @@ export function ProductCard({
                         disabled={unavailable || pending}
                         onClick={() => void pickSize(size)}
                         className={cn(
-                          'min-h-9 min-w-9 cursor-pointer border border-foreground/20 px-2 py-1 text-xs uppercase transition-colors hover:border-foreground',
+                          'min-h-9 min-w-9 cursor-pointer border border-foreground/20 px-2 py-1 text-xs transition-colors hover:border-foreground',
                           unavailable && 'cursor-not-allowed opacity-40',
                         )}
                       >
@@ -152,12 +153,12 @@ export function ProductCard({
             ) : null}
           </AnimatePresence>
         </div>
-        <div className="space-y-1 pt-3">
-          {product.brand ? <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{product.brand}</p> : null}
+        <div className="space-y-1.5 pt-3">
+          {product.brand ? <p className="text-xs text-muted-foreground">{product.brand}</p> : null}
           <h3>
             <Link
               href={`/products/${product.slug}`}
-              className="product-tile-title cursor-pointer font-heading text-base uppercase leading-tight tracking-wide sm:text-xl"
+              className="product-tile-title cursor-pointer text-base font-medium leading-snug tracking-tight sm:text-lg"
             >
               {product.name}
             </Link>

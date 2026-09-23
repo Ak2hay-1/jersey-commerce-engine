@@ -107,18 +107,20 @@ export function StoreHeader(): React.JSX.Element {
             aria-label={brand}
           >
             {store.theme.logo ? (
-              <Image
-                src={store.theme.logo}
-                alt={brand}
-                width={120}
-                height={40}
-                className="h-8 w-auto max-w-[40vw] object-contain sm:max-w-none"
-                priority
-              />
+              <span className="inline-flex items-center rounded-sm border border-white/10 bg-black px-2.5 py-1.5">
+                <Image
+                  src={store.theme.logo}
+                  alt={brand}
+                  width={120}
+                  height={40}
+                  className="h-7 w-auto max-w-[40vw] object-contain sm:h-8 sm:max-w-none"
+                  priority
+                />
+              </span>
             ) : (
               <span
                 className={cn(
-                  'flex flex-col leading-none font-heading text-lg font-bold uppercase italic tracking-[0.12em]',
+                  'flex flex-col text-lg font-semibold tracking-tight',
                   homeOverStage ? 'text-white' : 'text-foreground',
                 )}
               >
@@ -142,7 +144,7 @@ export function StoreHeader(): React.JSX.Element {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] transition-colors',
+                  'rounded-full px-4 py-2 text-sm font-medium tracking-wide transition-colors',
                   active
                     ? homeOverStage
                       ? 'bg-white text-black'

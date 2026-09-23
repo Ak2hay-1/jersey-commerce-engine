@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
 import { headers } from 'next/headers';
 import './globals.css';
-import { instrument, inter } from '../lib/fonts';
+import { headingFace, inter } from '../lib/fonts';
 import { serverTenantOptions } from '../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../lib/cached-store';
 import { fallbackStore } from '../lib/fallback-store';
@@ -73,7 +73,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${instrument.variable} min-h-dvh overflow-x-clip bg-background antialiased`}
+        className={`${inter.variable} ${headingFace.variable} min-h-dvh overflow-x-clip bg-background antialiased`}
         style={theme as CSSProperties}
       >
         <a className="skip-link" href="#main">

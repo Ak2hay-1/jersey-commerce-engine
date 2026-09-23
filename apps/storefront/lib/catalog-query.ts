@@ -2,15 +2,11 @@ export type CatalogSearch = {
   search?: string;
   categorySlug?: string;
   size?: string;
-  colour?: string;
-  brand?: string;
-  minPrice?: string;
-  maxPrice?: string;
   sort?: string;
   page?: string | number;
 };
 
-const KEYS = ['search', 'categorySlug', 'size', 'colour', 'brand', 'minPrice', 'maxPrice', 'sort'] as const;
+const KEYS = ['search', 'categorySlug', 'size', 'sort'] as const;
 
 export function catalogQueryString(query: CatalogSearch, page?: number): string {
   const params = new URLSearchParams();

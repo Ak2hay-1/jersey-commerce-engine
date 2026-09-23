@@ -12,7 +12,9 @@ import {
   EMPTY_ENQUIRY,
   ENQUIRY_STEPS,
   enquiryToFormData,
+  firstInvalidEnquiryStep,
   validateEnquiryDraft,
+  validateEnquiryStep,
   type EnquiryDraft,
 } from '../../lib/enquiry';
 
@@ -39,12 +41,23 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
 
   const stepLabel = ENQUIRY_STEPS[step] ?? ENQUIRY_STEPS[0];
   const progress = useMemo(() => ((step + 1) / ENQUIRY_STEPS.length) * 100, [step]);
+  const typeLabel = TYPES.find((item) => item.value === draft.type)?.label ?? draft.type;
+
+  function goNext() {
+    const message = validateEnquiryStep(step, draft);
+    if (message) {
+      setError(message);
+      return;
+    }
+    setError(null);
+    setStep((value) => value + 1);
+  }
 
   async function submit() {
     const message = validateEnquiryDraft(draft);
     if (message) {
       setError(message);
-      setStep(0);
+      setStep(firstInvalidEnquiryStep(draft));
       return;
     }
     setSubmitting(true);
@@ -61,10 +74,15 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
 
   return (
     <div className="border border-border bg-card p-4 shadow-sm sm:p-6">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+      <p className="text-sm font-medium text-accent">
         Step {step + 1} of {ENQUIRY_STEPS.length}
       </p>
-      <h2 className="mt-2 break-words font-heading text-2xl uppercase tracking-wide sm:text-3xl">{stepLabel}</h2>
+      <h2 className="mt-2 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{stepLabel}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {step === 5
+          ? 'Check everything below, then send your enquiry to the store.'
+          : 'Fill in this step, then continue. You can go back anytime.'}
+      </p>
       <div className="mt-4 h-1 bg-muted">
         <div className="h-1 bg-accent transition-all" style={{ width: `${progress}%` }} />
       </div>
@@ -80,10 +98,10 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
             <Field label="Your name" required>
               <Input value={draft.name} onChange={(event) => setField('name', event.target.value)} autoComplete="name" />
             </Field>
-            <Field label="Phone">
+            <Field label="Phone" hint="Phone or email required">
               <Input value={draft.phone} onChange={(event) => setField('phone', event.target.value)} autoComplete="tel" />
             </Field>
-            <Field label="Email">
+            <Field label="Email" hint="Phone or email required">
               <Input type="email" value={draft.email} onChange={(event) => setField('email', event.target.value)} autoComplete="email" />
             </Field>
           </>
@@ -115,6 +133,7 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
                 className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.description}
                 onChange={(event) => setField('description', event.target.value)}
+                placeholder="What do you need made?"
               />
             </Field>
           </>
@@ -137,14 +156,17 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
               />
             </Field>
             {config.customizationOptions.length ? (
-              <ul className="grid gap-2 text-sm text-muted-foreground">
-                {config.customizationOptions.map((option) => (
-                  <li key={option.id}>
-                    <span className="font-medium text-foreground">{option.name}</span>
-                    {option.description ? ` — ${option.description}` : ''}
-                  </li>
-                ))}
-              </ul>
+              <div>
+                <p className="text-sm font-medium">Available options from the store</p>
+                <ul className="mt-2 grid gap-2 text-sm text-muted-foreground">
+                  {config.customizationOptions.map((option) => (
+                    <li key={option.id}>
+                      <span className="font-medium text-foreground">{option.name}</span>
+                      {option.description ? ` — ${option.description}` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
           </>
         ) : null}
@@ -157,7 +179,15 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
               multiple
               onChange={(event) => setFiles(Array.from(event.target.files ?? []).slice(0, 5))}
             />
-            {files.length ? <p className="mt-2 text-xs text-muted-foreground">{files.length} file(s) selected</p> : null}
+            {files.length ? (
+              <ul className="mt-2 list-inside list-disc text-xs text-muted-foreground">
+                {files.map((file) => (
+                  <li key={`${file.name}-${file.size}`}>{file.name}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground">Optional — up to 5 files.</p>
+            )}
           </Field>
         ) : null}
 
@@ -182,21 +212,33 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
             <Row label="Contact" value={[draft.phone, draft.email].filter(Boolean).join(' · ')} />
             <Row label="Team" value={draft.teamName} />
             <Row label="Quantity" value={draft.quantity} />
-            <Row label="Type" value={TYPES.find((item) => item.value === draft.type)?.label} />
+            <Row label="Type" value={typeLabel} />
+            <Row label="Description" value={draft.description} />
+            <Row label="Preferred style" value={draft.preferredJerseyType} />
             <Row label="Colours" value={draft.preferredColours} />
-            <Row label="Files" value={files.length ? `${files.length} attached` : 'None'} />
+            <Row label="Customization" value={draft.customizationRequirements} />
+            <Row label="Required date" value={draft.requiredDate} />
+            <Row label="Notes" value={draft.notes} />
+            <Row label="Files" value={files.length ? files.map((file) => file.name).join(', ') : 'None'} />
           </dl>
         ) : null}
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">
         {step > 0 ? (
-          <Button type="button" variant="outline" onClick={() => setStep((value) => value - 1)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setError(null);
+              setStep((value) => value - 1);
+            }}
+          >
             Back
           </Button>
         ) : null}
         {step < ENQUIRY_STEPS.length - 1 ? (
-          <Button type="button" onClick={() => setStep((value) => value + 1)}>
+          <Button type="button" onClick={goNext}>
             Continue
           </Button>
         ) : (
@@ -209,12 +251,24 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="grid gap-1 text-sm">
       <span className="font-medium">
         {label}
-        {required ? <span className="text-destructive"> *</span> : <span className="text-muted-foreground"> (optional)</span>}
+        {required ? <span className="text-destructive"> *</span> : null}
+        {!required && hint ? <span className="font-normal text-muted-foreground"> — {hint}</span> : null}
+        {!required && !hint ? <span className="font-normal text-muted-foreground"> (optional)</span> : null}
       </span>
       {children}
     </label>
@@ -224,8 +278,8 @@ function Field({ label, required, children }: { label: string; required?: boolea
 function Row({ label, value }: { label: string; value?: string }) {
   return (
     <div className="flex justify-between gap-4 border-b border-border/70 py-2">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 break-words text-right">{value || '—'}</dd>
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words text-right">{value?.trim() || '—'}</dd>
     </div>
   );
 }

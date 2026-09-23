@@ -38,16 +38,37 @@ export const EMPTY_ENQUIRY: EnquiryDraft = {
 };
 
 export function validateEnquiryDraft(draft: EnquiryDraft): string | null {
-  if (!draft.name.trim()) {
-    return 'Name is required.';
+  return validateEnquiryStep(0, draft) ?? validateEnquiryStep(1, draft);
+}
+
+/** Returns an error message for the given step, or null if that step is valid. */
+export function validateEnquiryStep(step: number, draft: EnquiryDraft): string | null {
+  if (step === 0) {
+    if (!draft.name.trim()) {
+      return 'Name is required.';
+    }
+    if (!draft.phone.trim() && !draft.email.trim()) {
+      return 'Provide a phone number or email.';
+    }
+    return null;
   }
-  if (!draft.phone.trim() && !draft.email.trim()) {
-    return 'Provide a phone number or email.';
-  }
-  if (draft.quantity && (!/^[1-9]\d*$/.test(draft.quantity) || Number(draft.quantity) > 10_000)) {
-    return 'Quantity must be a positive whole number.';
+  if (step === 1) {
+    if (draft.quantity && (!/^[1-9]\d*$/.test(draft.quantity) || Number(draft.quantity) > 10_000)) {
+      return 'Quantity must be a positive whole number.';
+    }
+    return null;
   }
   return null;
+}
+
+/** First step that fails validation (for jumping after submit). */
+export function firstInvalidEnquiryStep(draft: EnquiryDraft): number {
+  for (let step = 0; step < ENQUIRY_STEPS.length - 1; step += 1) {
+    if (validateEnquiryStep(step, draft)) {
+      return step;
+    }
+  }
+  return 0;
 }
 
 export function enquiryToFormData(draft: EnquiryDraft, files: File[]): FormData {

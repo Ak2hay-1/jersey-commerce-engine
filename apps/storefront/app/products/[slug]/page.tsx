@@ -73,7 +73,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
 
   return (
     <div className="mx-auto max-w-store store-gutter py-8 pb-24 md:py-10 md:pb-10">
-      <nav className="mb-6 break-words text-[11px] uppercase tracking-[0.16em] text-muted-foreground md:mb-8" aria-label="Breadcrumb">
+      <nav className="mb-6 break-words text-sm text-muted-foreground md:mb-8" aria-label="Breadcrumb">
         {crumbs.map((crumb, index) => (
           <span key={crumb.href}>
             {index > 0 ? ' / ' : null}
@@ -84,8 +84,8 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
         <ProductGallery images={product.images} name={product.name} />
         <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-          {product.brand ? <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{product.brand}</p> : null}
-          <h1 className="break-words font-heading text-3xl uppercase tracking-tight md:text-5xl">{product.name}</h1>
+          {product.brand ? <p className="text-sm text-muted-foreground">{product.brand}</p> : null}
+          <h1 className="break-words text-3xl font-semibold tracking-tight md:text-5xl">{product.name}</h1>
           {product.shortDescription ? <p className="text-muted-foreground">{product.shortDescription}</p> : null}
           <ProductDetailActions product={product} currency={store.tenant.currency} />
           {product.description ? (
@@ -96,7 +96,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
       </div>
       {product.related.length > 0 ? (
         <section className="mt-20">
-          <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">You might also like</h2>
+          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">You might also like</h2>
           <div className="mt-8">
             <ProductGrid products={product.related} currency={store.tenant.currency} />
           </div>

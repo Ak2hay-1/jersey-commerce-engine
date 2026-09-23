@@ -35,91 +35,56 @@ export function CatalogFilters({ facets }: { facets: StorefrontCatalogFacets }):
     <div>
       <button
         type="button"
-        className="flex min-h-11 w-full items-center justify-between border border-foreground/15 px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.16em] lg:hidden"
+        className="flex min-h-11 w-full items-center justify-between border border-foreground/15 px-4 py-3 text-left text-sm font-medium tracking-wide lg:hidden"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
         Filters & sort
         <span aria-hidden="true">{open ? '–' : '+'}</span>
       </button>
-    <form className={cn('grid gap-4', open ? 'mt-4 border border-foreground/10 p-4 lg:mt-0 lg:border-0 lg:p-0' : 'max-lg:hidden')} onSubmit={(event) => event.preventDefault()}>
-      <p className="hidden text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground lg:block">Filter</p>
-      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
-        Search
-        <Input
-          defaultValue={params.get('search') ?? ''}
-          placeholder="Name, SKU, brand"
-          onBlur={(event) => setParam('search', event.target.value.trim())}
-        />
-      </label>
-      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
-        Sort
-        <select
-          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
-          value={params.get('sort') ?? 'featured'}
-          onChange={(event) => setParam('sort', event.target.value)}
-        >
-          {SORTS.map((sort) => (
-            <option key={sort.value} value={sort.value}>
-              {sort.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
-        Size
-        <select
-          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
-          value={params.get('size') ?? ''}
-          onChange={(event) => setParam('size', event.target.value)}
-        >
-          <option value="">All sizes</option>
-          {facets.sizes.map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
-        Colour
-        <select
-          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
-          value={params.get('colour') ?? ''}
-          onChange={(event) => setParam('colour', event.target.value)}
-        >
-          <option value="">All colours</option>
-          {facets.colours.map((colour) => (
-            <option key={colour} value={colour}>
-              {colour}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
-        Brand
-        <select
-          className="h-11 border border-input bg-background px-2 text-base font-normal normal-case md:text-sm"
-          value={params.get('brand') ?? ''}
-          onChange={(event) => setParam('brand', event.target.value)}
-        >
-          <option value="">All brands</option>
-          {facets.brands.map((brand) => (
-            <option key={brand} value={brand}>
-              {brand}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
-        Min price
-        <Input defaultValue={params.get('minPrice') ?? ''} inputMode="decimal" onBlur={(event) => setParam('minPrice', event.target.value)} />
-      </label>
-      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wider">
-        Max price
-        <Input defaultValue={params.get('maxPrice') ?? ''} inputMode="decimal" onBlur={(event) => setParam('maxPrice', event.target.value)} />
-      </label>
-    </form>
+      <form
+        className={cn('grid gap-4', open ? 'mt-4 border border-foreground/10 p-4 lg:mt-0 lg:border-0 lg:p-0' : 'max-lg:hidden')}
+        onSubmit={(event) => event.preventDefault()}
+      >
+        <p className="hidden text-sm font-medium text-muted-foreground lg:block">Filter</p>
+        <label className="grid gap-1 text-sm font-medium">
+          Search
+          <Input
+            defaultValue={params.get('search') ?? ''}
+            placeholder="Name, SKU, brand"
+            onBlur={(event) => setParam('search', event.target.value.trim())}
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-medium">
+          Sort
+          <select
+            className="h-11 border border-input bg-background px-2 text-base font-normal md:text-sm"
+            value={params.get('sort') ?? 'featured'}
+            onChange={(event) => setParam('sort', event.target.value)}
+          >
+            {SORTS.map((sort) => (
+              <option key={sort.value} value={sort.value}>
+                {sort.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-medium">
+          Size
+          <select
+            className="h-11 border border-input bg-background px-2 text-base font-normal md:text-sm"
+            value={params.get('size') ?? ''}
+            onChange={(event) => setParam('size', event.target.value)}
+          >
+            <option value="">All sizes</option>
+            {facets.sizes.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+      </form>
     </div>
   );
 }

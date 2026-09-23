@@ -15,9 +15,6 @@ import { headers } from 'next/headers';
 type Params = { slug?: string[] };
 type Search = {
   size?: string;
-  colour?: string;
-  minPrice?: string;
-  maxPrice?: string;
   sort?: string;
   page?: string;
   search?: string;
@@ -71,9 +68,6 @@ export default async function CategoryPage({
         categorySlug: category.slug,
         search: query.search,
         size: query.size,
-        colour: query.colour,
-        minPrice: query.minPrice,
-        maxPrice: query.maxPrice,
         sort: query.sort,
         page: query.page ? Number(query.page) : 1,
         pageSize: 24,
@@ -93,13 +87,13 @@ export default async function CategoryPage({
           <ProductImage src={category.image} alt="" className="h-48 w-full object-cover md:h-72" sizes="100vw" priority />
           <div className="absolute inset-0 bg-black/45" />
           <div className="absolute inset-x-0 bottom-0 mx-auto max-w-store store-gutter py-6 text-white md:py-8">
-            <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-6xl">{category.name}</h1>
+            <h1 className="break-words text-3xl font-semibold tracking-tight md:text-5xl">{category.name}</h1>
             {category.description ? <p className="mt-2 max-w-2xl text-white/80">{category.description}</p> : null}
           </div>
         </div>
       ) : (
         <div className="mx-auto max-w-store store-gutter pt-10">
-          <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">{category.name}</h1>
+          <h1 className="break-words text-3xl font-semibold tracking-tight md:text-4xl">{category.name}</h1>
           {category.description ? <p className="mt-2 text-muted-foreground">{category.description}</p> : null}
         </div>
       )}
@@ -107,7 +101,7 @@ export default async function CategoryPage({
         {category.children.length > 0 ? (
           <div className="mb-8 flex flex-wrap gap-2">
             {category.children.map((child) => (
-              <a key={child.id} href={`/category/${slug.join('/')}/${child.slug}`} className="border border-border px-3 py-2 text-sm uppercase tracking-wide hover:border-foreground">
+              <a key={child.id} href={`/category/${slug.join('/')}/${child.slug}`} className="border border-border px-3 py-2 text-sm tracking-wide hover:border-foreground">
                 {child.name}
               </a>
             ))}

@@ -51,7 +51,7 @@ export function BrandPreloader(): React.JSX.Element | null {
         >
           {store.theme.logo ? (
             <motion.div
-              className="px-6"
+              className="rounded-sm border border-white/10 bg-black px-8 py-6"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
@@ -62,13 +62,13 @@ export function BrandPreloader(): React.JSX.Element | null {
                 alt={store.tenant.name}
                 width={240}
                 height={240}
-                className="mx-auto h-32 w-auto object-contain md:h-40"
+                className="mx-auto h-28 w-auto object-contain md:h-36"
                 priority
               />
             </motion.div>
           ) : (
             <motion.p
-              className="font-heading text-5xl uppercase tracking-[0.18em] md:text-7xl"
+              className="text-4xl font-semibold tracking-tight md:text-6xl"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}

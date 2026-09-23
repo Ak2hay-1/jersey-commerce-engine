@@ -85,7 +85,9 @@ Orders never write `inventories` or `inventory_movements` directly.
 
 Jerzyfy can charge FREE or FIXED storefront shipping, or `DELHIVERY` live carrier rates. Courier ops use `ShippingSettings` (encrypted API token, warehouse/pickup, COD) and a 1:1 `Shipment` on the order (AWB, label, tracking).
 
-- Admin: Settings → Shipping; order detail → Create Delhivery shipment when READY
+- Admin: Settings → Shipping; order detail → Create Delhivery shipment when READY (manual retry)
+- When staff set a **DELIVERY** order to **READY**, the API auto-creates a Delhivery shipment (soft-fail: if credentials/warehouse/address are missing, the order stays READY for the manual button)
+- Successful auto-create advances the order to **SHIPPED** (same as the manual action)
 - Storefront: pincode serviceability, rate options, COD when enabled
 - Webhook: `POST /api/v1/webhooks/delhivery` (optional `X-Delhivery-Secret`)
 - Guest receipts: checkout returns `orderAccessToken` (cookie `jce_order_access`) for full order detail without login

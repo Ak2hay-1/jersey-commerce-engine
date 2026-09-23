@@ -3,8 +3,8 @@ import { catalogHref, catalogQueryString } from './catalog-query';
 
 describe('catalog query', () => {
   it('keeps backend filter params instead of downloading the catalog', () => {
-    expect(catalogQueryString({ search: 'india', size: 'M', colour: 'Red', sort: 'price-asc' })).toBe(
-      '?search=india&size=M&colour=Red&sort=price-asc',
+    expect(catalogQueryString({ search: 'india', size: 'M', sort: 'price-asc' })).toBe(
+      '?search=india&size=M&sort=price-asc',
     );
   });
 

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException, UnauthorizedException, forwardRef } from '@nestjs/common';
 import { Prisma } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPaginationArgs, toPaginationMeta } from '../common/dto/pagination-query.dto';
@@ -11,12 +11,17 @@ import { hashOpaqueToken } from '../common/crypto/token-hash';
 import { OrderEngineService } from './order-engine.service';
 import { orderInclude, toOrderDetail, toOrderSummary, type OrderRecord } from './order.mapper';
 import type { AdminOrderQueryDto, CancelOrderDto, UpdateOrderStatusDto } from './dto/order.dto';
+import { ShipmentsService } from '../shipping/shipments.service';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly engine: OrderEngineService,
+    @Inject(forwardRef(() => ShipmentsService))
+    private readonly shipments: ShipmentsService,
   ) {}
 
   async findAll(tenantId: string, query: AdminOrderQueryDto) {
@@ -104,6 +109,16 @@ export class OrdersService {
       actor,
       meta,
     });
+    if (dto.status === 'READY' && updated.fulfillmentMethod === 'DELIVERY' && !updated.shipment) {
+      try {
+        return await this.shipments.createForOrder(actor, order.id, meta);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        this.logger.warn(
+          `Auto Delhivery shipment skipped for order ${updated.orderNumber}: ${message}`,
+        );
+      }
+    }
     return toOrderDetail(updated);
   }
 
