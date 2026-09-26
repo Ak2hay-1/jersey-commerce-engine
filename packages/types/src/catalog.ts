@@ -1,4 +1,4 @@
-import type { CatalogStatus, VariantStatus } from './enums';
+import type { CatalogStatus, ProductSalesChannel, VariantStatus } from './enums';
 import type { PaginationMeta } from './api';
 
 export type MoneyString = string;
@@ -45,6 +45,13 @@ export interface ProductVariantDto {
   status: VariantStatus;
 }
 
+export interface WarehouseSummary {
+  id: string;
+  name: string;
+  city: string | null;
+  isActive: boolean;
+}
+
 export interface ProductListItem {
   id: string;
   name: string;
@@ -52,6 +59,9 @@ export interface ProductListItem {
   brand: string | null;
   status: CatalogStatus;
   featured: boolean;
+  salesChannel: ProductSalesChannel;
+  warehouseId: string | null;
+  warehouse: WarehouseSummary | null;
   category: CategorySummary | null;
   primaryImage: ProductImageDto | null;
   lowestPrice: MoneyString | null;
@@ -70,6 +80,9 @@ export interface ProductDetail {
   brand: string | null;
   status: CatalogStatus;
   featured: boolean;
+  salesChannel: ProductSalesChannel;
+  warehouseId: string | null;
+  warehouse: WarehouseSummary | null;
   seoTitle: string | null;
   seoDescription: string | null;
   category: CategorySummary | null;

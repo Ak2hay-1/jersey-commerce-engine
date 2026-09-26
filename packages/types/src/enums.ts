@@ -29,6 +29,9 @@ export type PromoDiscountType = (typeof PROMO_DISCOUNT_TYPES)[number];
 export const CATALOG_STATUSES = ['DRAFT', 'ACTIVE', 'ARCHIVED'] as const;
 export type CatalogStatus = (typeof CATALOG_STATUSES)[number];
 
+export const PRODUCT_SALES_CHANNELS = ['ONLINE_AND_POS', 'POS_ONLY'] as const;
+export type ProductSalesChannel = (typeof PRODUCT_SALES_CHANNELS)[number];
+
 export const VARIANT_STATUSES = ['ACTIVE', 'INACTIVE'] as const;
 export type VariantStatus = (typeof VARIANT_STATUSES)[number];
 

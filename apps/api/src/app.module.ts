@@ -39,6 +39,7 @@ import { PaymentSettingsModule } from './payment-settings/payment-settings.modul
 import { NotificationSettingsModule } from './notification-settings/notification-settings.module';
 import { ShippingSettingsModule } from './shipping/shipping-settings.module';
 import { ShippingModule } from './shipping/shipping.module';
+import { WarehousesModule } from './warehouses/warehouses.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { ShippingModule } from './shipping/shipping.module';
     NotificationSettingsModule,
     ShippingSettingsModule,
     ShippingModule,
+    WarehousesModule,
   ],
   controllers: [AppController],
 })

@@ -91,7 +91,7 @@ export class SalesReportService {
     const { page, pageSize, skip, take } = toPaginationArgs(query);
     const filters = this.lineFilters(actor.tenantId, range.from, range.to, query);
     const docs = this.recognizedDocuments(filters);
-    const [totals, countRows, items] = await Promise.all([
+    const [totals, countRows, items, byDayRows, byChannel, byProduct] = await Promise.all([
       this.profitabilityTotals(actor, query),
       this.prisma.$queryRaw<Array<{ count: number }>>`SELECT COUNT(*)::int AS count FROM (${docs}) AS docs`,
       this.prisma.$queryRaw<SaleRow[]>`
@@ -99,6 +99,17 @@ export class SalesReportService {
         ORDER BY created_at DESC
         OFFSET ${skip} LIMIT ${take}
       `,
+      this.prisma.$queryRaw<Array<{ bucket: Date; revenue: unknown; order_count: number }>>`
+        SELECT DATE_TRUNC('day', created_at AT TIME ZONE ${range.timeZone}) AS bucket,
+               COALESCE(SUM(revenue), 0) AS revenue,
+               COUNT(*)::int AS order_count
+        FROM (${docs}) AS docs
+        GROUP BY 1
+        ORDER BY 1 DESC
+        LIMIT 31
+      `,
+      this.salesByChannel(actor, query),
+      this.topProducts(actor, { ...query, take: 15, sort: 'revenue' }),
     ]);
     return {
       range: dto,
@@ -126,6 +137,17 @@ export class SalesReportService {
         };
       }),
       meta: toPaginationMeta(page, pageSize, rawCount(countRows[0]?.count)),
+      byDay: byDayRows.map((row) => {
+        const bucket = new Date(row.bucket);
+        return {
+          date: bucket.toISOString(),
+          label: this.bucketLabel(bucket, 'daily', range.timeZone),
+          revenue: rawMoneyString(row.revenue),
+          orderCount: rawCount(row.order_count),
+        };
+      }),
+      byChannel,
+      byProduct,
     };
   }
 

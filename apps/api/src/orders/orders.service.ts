@@ -109,7 +109,11 @@ export class OrdersService {
       actor,
       meta,
     });
-    if (dto.status === 'READY' && updated.fulfillmentMethod === 'DELIVERY' && !updated.shipment) {
+    if (
+      (dto.status === 'CONFIRMED' || dto.status === 'READY') &&
+      updated.fulfillmentMethod === 'DELIVERY' &&
+      (!updated.shipments || updated.shipments.length === 0)
+    ) {
       try {
         return await this.shipments.createForOrder(actor, order.id, meta);
       } catch (error) {

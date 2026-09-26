@@ -21,7 +21,7 @@ export function LimitedEditionBand({
 
   return (
     <section className="relative overflow-hidden">
-      <CoverflowStage products={products} currency={currency} heading="Featured Products" />
+      <CoverflowStage products={products} currency={currency} heading="Limited Edition" />
       <div className="home-light-band brand-marquee overflow-hidden py-8" aria-hidden>
         <div className={`brand-marquee-track ${reduced ? 'is-static' : ''}`}>
           {Array.from({ length: 8 }).map((_, index) => (

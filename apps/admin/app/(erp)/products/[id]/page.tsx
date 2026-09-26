@@ -113,6 +113,9 @@ export default function ProductDetailPage(): React.JSX.Element {
   const [categoryId, setCategoryId] = useState('');
   const [status, setStatus] = useState('ACTIVE');
   const [featured, setFeatured] = useState(false);
+  const [salesChannel, setSalesChannel] = useState<'ONLINE_AND_POS' | 'POS_ONLY'>('ONLINE_AND_POS');
+  const [warehouseId, setWarehouseId] = useState('');
+  const [warehouses, setWarehouses] = useState<Array<{ id: string; name: string; isActive: boolean }>>([]);
   const [shortDescription, setShortDescription] = useState('');
   const [description, setDescription] = useState('');
   const [angleFiles, setAngleFiles] = useState<Partial<Record<AngleSlot, File>>>({});
@@ -167,6 +170,8 @@ export default function ProductDetailPage(): React.JSX.Element {
     setCategoryId(row.category?.id ?? '');
     setStatus(row.status);
     setFeatured(row.featured);
+    setSalesChannel(row.salesChannel ?? 'ONLINE_AND_POS');
+    setWarehouseId(row.warehouseId ?? '');
     setShortDescription(row.shortDescription ?? '');
     setDescription(row.description ?? '');
     setVariants(row.variants.length ? row.variants.map(fromApi) : [emptyVariant()]);
@@ -178,6 +183,13 @@ export default function ProductDetailPage(): React.JSX.Element {
     ).then((result) => {
       setCategories(Array.isArray(result) ? result : (result.items ?? []));
     });
+    void apiRequest<{ items: Array<{ id: string; name: string; isActive: boolean }> } | Array<{ id: string; name: string; isActive: boolean }>>(
+      '/warehouses',
+    )
+      .then((result) => {
+        setWarehouses(Array.isArray(result) ? result : (result.items ?? []));
+      })
+      .catch(() => setWarehouses([]));
     if (!isNew) {
       loadProduct(id).catch((err: Error) => setError(err.message));
     }
@@ -326,6 +338,8 @@ export default function ProductDetailPage(): React.JSX.Element {
             categoryId: categoryId || null,
             status,
             featured,
+            salesChannel,
+            warehouseId: warehouseId || null,
             shortDescription: shortDescription.trim() || undefined,
             description: description.trim() || undefined,
             variants: variantPayload.map(({ id: _id, ...rest }) => rest),
@@ -344,6 +358,8 @@ export default function ProductDetailPage(): React.JSX.Element {
           categoryId: categoryId || null,
           status,
           featured,
+          salesChannel,
+          warehouseId: warehouseId || null,
           shortDescription: shortDescription.trim() || undefined,
           description: description.trim() || undefined,
         }),
@@ -486,6 +502,35 @@ export default function ProductDetailPage(): React.JSX.Element {
             <div className="flex items-end gap-2 pb-1">
               <input id="featured" type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
               <Label htmlFor="featured">Featured on storefront</Label>
+            </div>
+            <div>
+              <Label htmlFor="salesChannel">Sell channel</Label>
+              <select
+                id="salesChannel"
+                className={selectClassName}
+                value={salesChannel}
+                onChange={(e) => setSalesChannel(e.target.value as 'ONLINE_AND_POS' | 'POS_ONLY')}
+              >
+                <option value="ONLINE_AND_POS">Online + POS</option>
+                <option value="POS_ONLY">POS only (offline)</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="warehouse">Warehouse / pickup</Label>
+              <select
+                id="warehouse"
+                className={selectClassName}
+                value={warehouseId}
+                onChange={(e) => setWarehouseId(e.target.value)}
+              >
+                <option value="">Default / unset</option>
+                {warehouses.map((warehouse) => (
+                  <option key={warehouse.id} value={warehouse.id} disabled={!warehouse.isActive}>
+                    {warehouse.name}
+                    {!warehouse.isActive ? ' (inactive)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="short">Short description</Label>

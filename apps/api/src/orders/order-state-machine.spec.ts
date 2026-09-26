@@ -9,6 +9,11 @@ describe('order state machine', () => {
     expect(canTransitionOrderStatus('SHIPPED', 'COMPLETED')).toBe(true);
   });
 
+  it('allows auto-ship shortcuts from CONFIRMED or PROCESSING', () => {
+    expect(canTransitionOrderStatus('CONFIRMED', 'SHIPPED')).toBe(true);
+    expect(canTransitionOrderStatus('PROCESSING', 'SHIPPED')).toBe(true);
+  });
+
   it('rejects skipped or reversed transitions', () => {
     expect(canTransitionOrderStatus('COMPLETED', 'PROCESSING')).toBe(false);
     expect(canTransitionOrderStatus('CANCELLED', 'CONFIRMED')).toBe(false);

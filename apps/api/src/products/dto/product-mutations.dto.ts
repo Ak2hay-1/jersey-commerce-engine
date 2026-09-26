@@ -13,7 +13,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { CATALOG_STATUSES, VARIANT_STATUSES } from '@jersey-commerce/types';
+import { CATALOG_STATUSES, PRODUCT_SALES_CHANNELS, VARIANT_STATUSES } from '@jersey-commerce/types';
 
 const MONEY_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
 const WEIGHT_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d{1,3})?$/;
@@ -150,6 +150,17 @@ export class CreateProductDto {
   @IsBoolean()
   featured?: boolean;
 
+  @ApiPropertyOptional({ enum: PRODUCT_SALES_CHANNELS })
+  @IsOptional()
+  @IsIn([...PRODUCT_SALES_CHANNELS])
+  salesChannel?: (typeof PRODUCT_SALES_CHANNELS)[number];
+
+  @ApiPropertyOptional({ description: 'Warehouse / Delhivery pickup origin for this product' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  warehouseId?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -219,6 +230,17 @@ export class UpdateProductDto {
   @IsOptional()
   @IsBoolean()
   featured?: boolean;
+
+  @ApiPropertyOptional({ enum: PRODUCT_SALES_CHANNELS })
+  @IsOptional()
+  @IsIn([...PRODUCT_SALES_CHANNELS])
+  salesChannel?: (typeof PRODUCT_SALES_CHANNELS)[number];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  warehouseId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

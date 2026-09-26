@@ -229,7 +229,13 @@ export class RazorpayOnlineGateway implements PaymentGateway {
       razorpay_payment_id: string;
       razorpay_signature: string;
     },
-  ): Promise<{ success: true; paymentId: string; orderNumber: string | null }> {
+  ): Promise<{
+    success: true;
+    paymentId: string;
+    orderId: string | null;
+    orderNumber: string | null;
+    fulfillmentMethod: string | null;
+  }> {
     const prior = await this.prisma.payment.findFirst({
       where: {
         tenantId,
@@ -255,8 +261,10 @@ export class RazorpayOnlineGateway implements PaymentGateway {
         include: {
           order: {
             select: {
+              id: true,
               orderNumber: true,
               currency: true,
+              fulfillmentMethod: true,
               customer: { select: { name: true } },
             },
           },
@@ -265,7 +273,9 @@ export class RazorpayOnlineGateway implements PaymentGateway {
       return {
         success: true as const,
         paymentId: verified.paymentId,
+        orderId: payment?.order?.id ?? null,
         orderNumber: payment?.order?.orderNumber ?? null,
+        fulfillmentMethod: payment?.order?.fulfillmentMethod ?? null,
         amount: payment ? moneyString(payment.amount) : undefined,
         currency: payment?.order?.currency ?? 'INR',
         customerName: payment?.order?.customer?.name ?? null,
@@ -289,7 +299,9 @@ export class RazorpayOnlineGateway implements PaymentGateway {
     return {
       success: true,
       paymentId: result.paymentId,
+      orderId: result.orderId,
       orderNumber: result.orderNumber,
+      fulfillmentMethod: result.fulfillmentMethod,
     };
   }
 

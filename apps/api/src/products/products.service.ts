@@ -34,12 +34,14 @@ import { InventoryService } from '../inventory/inventory.service';
 
 const listInclude = {
   category: true,
+  warehouse: true,
   images: { orderBy: { sortOrder: 'asc' as const } },
   variants: { select: { sellingPrice: true }, orderBy: { sellingPrice: 'asc' as const } },
 } satisfies Prisma.ProductInclude;
 
 const detailInclude = {
   category: true,
+  warehouse: true,
   images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }] },
   variants: { orderBy: [{ size: 'asc' as const }, { color: 'asc' as const }] },
 } satisfies Prisma.ProductInclude;
@@ -77,6 +79,9 @@ export class ProductsService {
     }
     const tenantId = this.tenantContext.currentTenantId;
     const categoryId = await this.assertCategory(dto.categoryId);
+    if (dto.warehouseId) {
+      await this.assertWarehouse(dto.warehouseId);
+    }
     const slug = await this.allocateProductSlug(tenantId, dto.slug ?? slugify(dto.name));
     const occupiedSkus = await this.occupiedSkus(tenantId);
     const occupiedBarcodes = await this.occupiedBarcodes(tenantId);
@@ -96,6 +101,8 @@ export class ProductsService {
             categoryId,
             status: dto.status ?? CatalogStatus.DRAFT,
             featured: dto.featured ?? false,
+            salesChannel: dto.salesChannel ?? 'ONLINE_AND_POS',
+            warehouseId: dto.warehouseId ?? null,
             seoTitle: normalizeOptionalText(dto.seoTitle),
             seoDescription: normalizeOptionalText(dto.seoDescription),
           },
@@ -182,6 +189,9 @@ export class ProductsService {
     const tenantId = this.tenantContext.currentTenantId;
     const existing = await this.requireProduct(id);
     const categoryId = dto.categoryId === undefined ? existing.categoryId : await this.assertCategory(dto.categoryId);
+    if (dto.warehouseId) {
+      await this.assertWarehouse(dto.warehouseId);
+    }
     let slug = existing.slug;
     if (dto.slug && dto.slug !== existing.slug) {
       slug = await this.allocateProductSlug(tenantId, dto.slug, existing.id);
@@ -199,6 +209,8 @@ export class ProductsService {
           categoryId,
           status: dto.status,
           featured: dto.featured,
+          salesChannel: dto.salesChannel,
+          warehouseId: dto.warehouseId === undefined ? undefined : dto.warehouseId,
           seoTitle: dto.seoTitle === undefined ? undefined : normalizeOptionalText(dto.seoTitle),
           seoDescription: dto.seoDescription === undefined ? undefined : normalizeOptionalText(dto.seoDescription),
         },
@@ -662,6 +674,17 @@ export class ProductsService {
       throw new BadRequestException('Category was not found in this store.');
     }
     return category.id;
+  }
+
+  private async assertWarehouse(warehouseId: string): Promise<string> {
+    const warehouse = await this.prisma.warehouse.findFirst({
+      where: { id: warehouseId, tenantId: this.tenantContext.currentTenantId, isActive: true },
+      select: { id: true },
+    });
+    if (!warehouse) {
+      throw new BadRequestException('Warehouse was not found in this store.');
+    }
+    return warehouse.id;
   }
 
   private async occupiedSkus(tenantId: string, excludeVariantId?: string): Promise<Set<string>> {

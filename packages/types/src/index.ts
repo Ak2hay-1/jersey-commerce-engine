@@ -13,6 +13,7 @@ export {
   BACKUP_RUN_STATUSES,
   BACKUP_RUN_TRIGGERS,
   CATALOG_STATUSES,
+  PRODUCT_SALES_CHANNELS,
   INVENTORY_MOVEMENT_TYPES,
   ORDER_SOURCES,
   ORDER_STATUSES,
@@ -77,6 +78,7 @@ export {
   type BackupRunStatus,
   type BackupRunTrigger,
   type CatalogStatus,
+  type ProductSalesChannel,
   type DiscountType,
   type CartStatus,
   type FulfillmentMethod,
@@ -221,7 +223,13 @@ export {
   type ProductListItem,
   type ProductSort,
   type ProductVariantDto,
+  type WarehouseSummary,
 } from './catalog';
+export {
+  type CreateWarehouseInput,
+  type UpdateWarehouseInput,
+  type WarehouseDto,
+} from './warehouses';
 export {
   type AuthMeResponse,
   type AuthTokenResponse,

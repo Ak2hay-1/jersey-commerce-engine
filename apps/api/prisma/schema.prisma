@@ -37,6 +37,12 @@ enum CatalogStatus {
   ARCHIVED
 }
 
+/// Where a product may be sold. POS_ONLY hides it from the online storefront.
+enum ProductSalesChannel {
+  ONLINE_AND_POS
+  POS_ONLY
+}
+
 enum VariantStatus {
   ACTIVE
   INACTIVE
@@ -398,6 +404,7 @@ model Tenant {
   authSettings       AuthSettings?
   paymentSettings    PaymentSettings?
   shippingSettings   ShippingSettings?
+  warehouses         Warehouse[]
   notificationSettings NotificationSettings?
   tags               Tag[]
   customerTags       CustomerTag[]
@@ -603,34 +610,68 @@ model Category {
 }
 
 model Product {
-  id               String        @id @default(cuid())
-  tenantId         String        @map("tenant_id")
+  id               String              @id @default(cuid())
+  tenantId         String              @map("tenant_id")
   name             String
   slug             String
   description      String?
-  shortDescription String?       @map("short_description")
+  shortDescription String?             @map("short_description")
   brand            String?
-  categoryId       String?       @map("category_id")
-  status           CatalogStatus @default(DRAFT)
-  featured         Boolean       @default(false)
-  seoTitle         String?       @map("seo_title")
-  seoDescription   String?       @map("seo_description")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  categoryId       String?             @map("category_id")
+  status           CatalogStatus       @default(DRAFT)
+  featured         Boolean             @default(false)
+  /// ONLINE_AND_POS = storefront + POS; POS_ONLY = offline / POS register only.
+  salesChannel     ProductSalesChannel @default(ONLINE_AND_POS) @map("sales_channel")
+  /// Shipping origin for Delhivery pickup (not multi-location stock).
+  warehouseId      String?             @map("warehouse_id")
+  seoTitle         String?             @map("seo_title")
+  seoDescription   String?             @map("seo_description")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
-  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  category Category?        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  variants ProductVariant[]
-  images   ProductImage[]
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  category  Category?        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  warehouse Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  variants  ProductVariant[]
+  images    ProductImage[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, categoryId])
   @@index([tenantId, featured])
+  @@index([tenantId, salesChannel])
+  @@index([tenantId, warehouseId])
   @@index([tenantId, brand])
   @@index([tenantId, name])
   @@map("products")
+}
+
+/// Physical pickup / shipping origin. Stock remains one pool per variant.
+model Warehouse {
+  id                      String   @id @default(cuid())
+  tenantId                String   @map("tenant_id")
+  name                    String
+  phone                   String?
+  address                 String?
+  city                    String?
+  state                   String?
+  postalCode              String?  @map("postal_code")
+  country                 String   @default("IN")
+  /// Registered Delhivery pickup location name / id.
+  delhiveryPickupLocation String?  @map("delhivery_pickup_location")
+  isActive                Boolean  @default(true) @map("is_active")
+  sortOrder               Int      @default(0) @map("sort_order")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  products  Product[]
+  shipments Shipment[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("warehouses")
 }
 
 model ProductVariant {
@@ -880,11 +921,12 @@ model ShippingSettings {
   @@map("shipping_settings")
 }
 
-/// Carrier shipment linked 1:1 with an ecommerce Order.
+/// Carrier shipment linked to an ecommerce Order (1:N when items ship from multiple warehouses).
 model Shipment {
   id                     String           @id @default(cuid())
   tenantId               String           @map("tenant_id")
-  orderId                String           @unique @map("order_id")
+  orderId                String           @map("order_id")
+  warehouseId            String?          @map("warehouse_id")
   provider               ShipmentProvider @default(DELHIVERY)
   waybill                String?
   trackingUrl            String?          @map("tracking_url")
@@ -898,11 +940,14 @@ model Shipment {
   createdAt              DateTime         @default(now()) @map("created_at")
   updatedAt              DateTime         @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  order  Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  order     Order      @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
+  @@index([tenantId, orderId])
   @@index([tenantId, waybill])
+  @@index([warehouseId])
   @@map("shipments")
 }
 
@@ -1440,7 +1485,7 @@ model Order {
   items           OrderItem[]
   payments        Payment[]
   shippingAddress OrderShippingAddress?
-  shipment        Shipment?
+  shipments       Shipment[]
   convertedCart   Cart?                  @relation("CartConvertedOrder")
   promoCode       PromoCode?             @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   checkoutKeys    CheckoutIdempotency[]

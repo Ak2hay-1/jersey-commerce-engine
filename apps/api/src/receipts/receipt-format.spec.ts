@@ -1,4 +1,10 @@
-import { renderReceiptHtml, type ReceiptPayload } from './receipt-format';
+import {
+  buildWhatsAppReceiptText,
+  formatReceiptDateTime,
+  renderReceiptHtml,
+  truncateSku,
+  type ReceiptPayload,
+} from './receipt-format';
 
 const payload: ReceiptPayload = {
   business: {
@@ -66,5 +72,17 @@ describe('thermal receipt html', () => {
     expect(html).toContain('Recv 1000.00');
     expect(html).toContain('Chg 101.00');
     expect(html).not.toContain('<img');
+    expect(html).toContain('India Cricket Jersey · L / Blue');
+    expect(html).toContain(formatReceiptDateTime(payload.transaction.datetime));
+    expect(html).not.toContain('2026-08-15T12:00:00.000Z');
+  });
+
+  it('truncates long SKUs and builds WhatsApp text', () => {
+    expect(truncateSku('SHORT')).toBe('SHORT');
+    expect(truncateSku('ABCDEFGHIJKLMNOPQRSTUVWXYZ123456')).toMatch(/…$/);
+    const text = buildWhatsAppReceiptText(payload);
+    expect(text).toContain('INV-000001');
+    expect(text).toContain('India Cricket Jersey');
+    expect(text).toContain('899.00');
   });
 });

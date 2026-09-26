@@ -11,7 +11,12 @@ function itemMeta(item: OrderDetail['items'][number]): string {
 
 export function OrderDetailsPanel({ order }: { order: OrderDetail }): React.JSX.Element {
   const address = order.shippingAddress;
-  const shipment = order.shipment;
+  const shipments = order.shipments?.length
+    ? order.shipments
+    : order.shipment
+      ? [order.shipment]
+      : [];
+
 
   return (
     <div className="space-y-4">
@@ -134,30 +139,36 @@ export function OrderDetailsPanel({ order }: { order: OrderDetail }): React.JSX.
         <p className="text-sm text-muted-foreground">No payments recorded yet.</p>
       )}
 
-      {shipment ? (
+      {shipments.length > 0 ? (
         <Card>
-          <CardContent className="space-y-2 p-4 text-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Shipment</p>
-            <p>
-              {shipment.provider}
-              {shipment.waybill ? ` · AWB ${shipment.waybill}` : ''}
+          <CardContent className="space-y-4 p-4 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {shipments.length > 1 ? 'Shipments' : 'Shipment'}
             </p>
-            {shipment.providerStatus ? <p>Status: {shipment.providerStatus}</p> : null}
-            {shipment.codAmount && Number(shipment.codAmount) > 0 ? (
-              <p>COD collect: {formatMoney(shipment.codAmount, order.currency)}</p>
-            ) : null}
-            <div className="flex flex-wrap gap-3">
-              {shipment.trackingUrl ? (
-                <a className="underline" href={shipment.trackingUrl} target="_blank" rel="noreferrer">
-                  Track
-                </a>
-              ) : null}
-              {shipment.labelUrl ? (
-                <a className="underline" href={shipment.labelUrl} target="_blank" rel="noreferrer">
-                  Label
-                </a>
-              ) : null}
-            </div>
+            {shipments.map((row) => (
+              <div key={row.id} className="space-y-1 border-t border-border pt-3 first:border-0 first:pt-0">
+                <p>
+                  {row.provider}
+                  {row.waybill ? ` · AWB ${row.waybill}` : ''}
+                </p>
+                {row.providerStatus ? <p>Status: {row.providerStatus}</p> : null}
+                {row.codAmount && Number(row.codAmount) > 0 ? (
+                  <p>COD collect: {formatMoney(row.codAmount, order.currency)}</p>
+                ) : null}
+                <div className="flex flex-wrap gap-3">
+                  {row.trackingUrl ? (
+                    <a className="underline" href={row.trackingUrl} target="_blank" rel="noreferrer">
+                      Track
+                    </a>
+                  ) : null}
+                  {row.labelUrl ? (
+                    <a className="underline" href={row.labelUrl} target="_blank" rel="noreferrer">
+                      Label
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       ) : null}

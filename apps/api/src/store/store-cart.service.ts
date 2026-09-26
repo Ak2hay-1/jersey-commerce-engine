@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { CatalogStatus, VariantStatus } from '../prisma/client';
+import { CatalogStatus, ProductSalesChannel, VariantStatus } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
@@ -224,6 +224,9 @@ export class StoreCartService {
     }
     if (variant.product.status !== CatalogStatus.ACTIVE) {
       throw new BadRequestException('Product is not active.');
+    }
+    if (variant.product.salesChannel === ProductSalesChannel.POS_ONLY) {
+      throw new BadRequestException('This product is available in-store only.');
     }
     if (variant.status !== VariantStatus.ACTIVE) {
       throw new BadRequestException('Product variant is not active.');

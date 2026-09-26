@@ -11,7 +11,7 @@ const ITEMS = [
   },
   {
     title: 'Find the perfect fit',
-    body: 'Oversized tees are cut for a dropped shoulder and a longer hem. Size down for a closer fit. Jerseys follow a regular athletic replica silhouette — stick to your usual size.',
+    body: 'Our jerseys follow a regular athletic replica fit — true to size for most fans. Prefer a looser street look? Size up. Between sizes? Choose the larger size for comfort across the chest and shoulders.',
   },
   {
     title: 'Shipping & returns',

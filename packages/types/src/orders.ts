@@ -79,6 +79,7 @@ export interface OrderSummary {
 export interface OrderShipmentDto {
   id: string;
   provider: 'DELHIVERY';
+  warehouseId?: string | null;
   waybill: string | null;
   trackingUrl: string | null;
   labelUrl: string | null;
@@ -102,7 +103,9 @@ export interface OrderDetail extends OrderSummary {
   items: OrderItemDto[];
   payments: OrderPaymentDto[];
   tracking: OrderTrackingStep[];
+  /** @deprecated Prefer `shipments`; first shipment for backward compatibility. */
   shipment?: OrderShipmentDto | null;
+  shipments?: OrderShipmentDto[];
   paymentIntent?: {
     paymentId: string;
     status: PaymentStatus;

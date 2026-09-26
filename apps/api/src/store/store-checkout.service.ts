@@ -5,7 +5,7 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { CatalogStatus, Prisma, VariantStatus } from '../prisma/client';
+import { CatalogStatus, Prisma, ProductSalesChannel, VariantStatus } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { asTx } from '../prisma/as-tx';
 import { AuditService } from '../audit/audit.service';
@@ -112,6 +112,15 @@ export class StoreCheckoutService {
         issues.push({
           code: 'ITEM_UNAVAILABLE',
           message: `${product.name} is no longer available.`,
+          itemId: item.publicId,
+          productName: product.name,
+        });
+        continue;
+      }
+      if (product.salesChannel === ProductSalesChannel.POS_ONLY) {
+        issues.push({
+          code: 'ITEM_UNAVAILABLE',
+          message: `${product.name} is available in-store only.`,
           itemId: item.publicId,
           productName: product.name,
         });

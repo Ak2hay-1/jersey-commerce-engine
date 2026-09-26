@@ -47,6 +47,7 @@ export const ERP_NAV: ErpNavSection[] = [
     label: 'Inventory',
     items: [
       { href: '/inventory', label: 'Stock', permission: 'inventory.read', portal: 'erp' },
+      { href: '/warehouses', label: 'Warehouses', permission: 'inventory.read', portal: 'erp' },
       { href: '/inventory/movements', label: 'Movements', permission: 'inventory.read', portal: 'erp' },
       { href: '/inventory/low-stock', label: 'Low Stock', permission: 'inventory.read', portal: 'erp' },
     ],

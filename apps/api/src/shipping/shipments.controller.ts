@@ -19,7 +19,7 @@ export class ShipmentsController {
   @ApiBearerAuth('access-token')
   @TenantScoped()
   @RequirePermissions('orders.update')
-  @ApiOperation({ summary: 'Create a Delhivery shipment for a READY delivery order' })
+  @ApiOperation({ summary: 'Create Delhivery shipment(s) for a confirmed delivery order' })
   create(@CurrentUser() actor: AuthPrincipal, @Param('id') id: string, @Req() request: Request) {
     return this.shipments.createForOrder(actor, id, requestMeta(request));
   }

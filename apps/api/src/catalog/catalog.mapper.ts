@@ -4,7 +4,9 @@ import type {
   ProductDetail,
   ProductImageDto,
   ProductListItem,
+  ProductSalesChannel,
   ProductVariantDto,
+  WarehouseSummary,
 } from '@jersey-commerce/types';
 import type { CatalogStatus, VariantStatus } from '../prisma/client';
 import { decimalString, moneyString } from '../catalog/money';
@@ -16,6 +18,13 @@ type CategoryRecord = {
   parentId: string | null;
   status: CatalogStatus;
   sortOrder: number;
+};
+
+type WarehouseRecord = {
+  id: string;
+  name: string;
+  city: string | null;
+  isActive: boolean;
 };
 
 type ImageRecord = {
@@ -102,6 +111,15 @@ export function toVariantDto(variant: VariantRecord): ProductVariantDto {
   };
 }
 
+export function toWarehouseSummary(warehouse: WarehouseRecord): WarehouseSummary {
+  return {
+    id: warehouse.id,
+    name: warehouse.name,
+    city: warehouse.city,
+    isActive: warehouse.isActive,
+  };
+}
+
 export function toProductListItem(
   product: {
     id: string;
@@ -110,9 +128,12 @@ export function toProductListItem(
     brand: string | null;
     status: CatalogStatus;
     featured: boolean;
+    salesChannel: ProductSalesChannel;
+    warehouseId: string | null;
     createdAt: Date;
     updatedAt: Date;
     category: CategoryRecord | null;
+    warehouse: WarehouseRecord | null;
     images: ImageRecord[];
     variants: Array<Pick<VariantRecord, 'sellingPrice'>>;
   },
@@ -126,6 +147,9 @@ export function toProductListItem(
     brand: product.brand,
     status: product.status,
     featured: product.featured,
+    salesChannel: product.salesChannel,
+    warehouseId: product.warehouseId,
+    warehouse: product.warehouse ? toWarehouseSummary(product.warehouse) : null,
     category: product.category ? toCategorySummary(product.category) : null,
     primaryImage: primary ? toImageDto(primary) : null,
     lowestPrice: prices[0] ?? null,
@@ -146,11 +170,14 @@ export function toProductDetail(
     brand: string | null;
     status: CatalogStatus;
     featured: boolean;
+    salesChannel: ProductSalesChannel;
+    warehouseId: string | null;
     seoTitle: string | null;
     seoDescription: string | null;
     createdAt: Date;
     updatedAt: Date;
     category: CategoryRecord | null;
+    warehouse: WarehouseRecord | null;
     images: ImageRecord[];
     variants: VariantRecord[];
   },
@@ -164,6 +191,9 @@ export function toProductDetail(
     brand: product.brand,
     status: product.status,
     featured: product.featured,
+    salesChannel: product.salesChannel,
+    warehouseId: product.warehouseId,
+    warehouse: product.warehouse ? toWarehouseSummary(product.warehouse) : null,
     seoTitle: product.seoTitle,
     seoDescription: product.seoDescription,
     category: product.category ? toCategorySummary(product.category) : null,

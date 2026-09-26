@@ -18,7 +18,7 @@ export const orderInclude = {
   items: { orderBy: { id: 'asc' as const } },
   payments: { orderBy: { createdAt: 'asc' as const } },
   shippingAddress: true,
-  shipment: true,
+  shipments: { orderBy: { createdAt: 'asc' as const } },
 } satisfies Prisma.OrderInclude;
 
 export type OrderRecord = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
@@ -74,13 +74,11 @@ function toPayment(payment: OrderRecord['payments'][number]): OrderPaymentDto {
   };
 }
 
-function toShipment(shipment: OrderRecord['shipment']): OrderShipmentDto | null {
-  if (!shipment) {
-    return null;
-  }
+function toShipmentDto(shipment: OrderRecord['shipments'][number]): OrderShipmentDto {
   return {
     id: shipment.id,
     provider: 'DELHIVERY',
+    warehouseId: shipment.warehouseId,
     waybill: shipment.waybill,
     trackingUrl: shipment.trackingUrl,
     labelUrl: shipment.labelUrl,
@@ -152,7 +150,8 @@ export function toOrderDetail(order: OrderRecord, paymentIntent?: OrderDetail['p
     items: order.items.map(toItem),
     payments,
     tracking: toOrderTracking(order),
-    shipment: toShipment(order.shipment),
+    shipments: order.shipments.map(toShipmentDto),
+    shipment: order.shipments[0] ? toShipmentDto(order.shipments[0]) : null,
     paymentIntent:
       paymentIntent ??
       (latest

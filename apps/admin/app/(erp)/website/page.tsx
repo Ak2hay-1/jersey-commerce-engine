@@ -728,6 +728,13 @@ export default function WebsitePage(): React.JSX.Element {
                   })}
                 </div>
                 <div className="space-y-2">
+                  <Label>Latest drop heading</Label>
+                  <Input
+                    value={latest?.heading ?? ''}
+                    disabled={!canEdit}
+                    placeholder="Latest kits"
+                    onChange={(event) => patchSection('new-arrivals', { heading: event.target.value })}
+                  />
                   <Label>Latest drop products</Label>
                   <select
                     multiple
@@ -748,6 +755,13 @@ export default function WebsitePage(): React.JSX.Element {
                   </select>
                 </div>
                 <div className="space-y-2">
+                  <Label>Featured products heading</Label>
+                  <Input
+                    value={featured?.heading ?? ''}
+                    disabled={!canEdit}
+                    placeholder="Featured jerseys"
+                    onChange={(event) => patchSection('featured-products', { heading: event.target.value })}
+                  />
                   <Label>Featured products</Label>
                   <select
                     multiple

@@ -227,8 +227,8 @@ export default function OrderDetailPage(): React.JSX.Element {
   const canShip =
     auth.can('orders.update') &&
     order.fulfillmentMethod === 'DELIVERY' &&
-    order.status === 'READY' &&
-    !order.shipment;
+    ['CONFIRMED', 'PROCESSING', 'READY'].includes(order.status) &&
+    !(order.shipments?.length || order.shipment);
 
   return (
     <div className="space-y-4">
@@ -258,7 +258,7 @@ export default function OrderDetailPage(): React.JSX.Element {
               {shipping ? 'Creating…' : 'Create Delhivery shipment'}
             </Button>
           ) : null}
-          {order.shipment ? (
+          {order.shipments?.length || order.shipment ? (
             <Button type="button" variant="outline" disabled={shipping} onClick={() => void onRefreshShipment()}>
               Refresh tracking
             </Button>

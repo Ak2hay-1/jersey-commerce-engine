@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Inject, Post, UseGuards, forwardRef } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
@@ -6,6 +6,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { TenantId } from '../common/decorators/tenant-id.decorator';
 import { StoreTenantGuard } from './store-tenant.guard';
 import { RazorpayOnlineGateway } from '../orders/razorpay-online.gateway';
+import { ShipmentsService } from '../shipping/shipments.service';
 
 class CreateRazorpayOrderDto {
   @ApiProperty({ description: 'Amount in paise (minimum 100)', example: 50000 })
@@ -52,7 +53,11 @@ class VerifyRazorpayPaymentDto {
 @UseGuards(StoreTenantGuard)
 @ApiHeader({ name: 'X-Tenant-Slug', required: false })
 export class StoreRazorpayController {
-  constructor(private readonly razorpay: RazorpayOnlineGateway) {}
+  constructor(
+    private readonly razorpay: RazorpayOnlineGateway,
+    @Inject(forwardRef(() => ShipmentsService))
+    private readonly shipments: ShipmentsService,
+  ) {}
 
   @Post('create-order')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
@@ -68,7 +73,15 @@ export class StoreRazorpayController {
   @Post('verify-payment')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @ApiOperation({ summary: 'Verify Razorpay payment signature and mark the order paid' })
-  verifyPayment(@TenantId() tenantId: string, @Body() dto: VerifyRazorpayPaymentDto) {
-    return this.razorpay.verifyCheckoutPayment(tenantId, dto);
+  async verifyPayment(@TenantId() tenantId: string, @Body() dto: VerifyRazorpayPaymentDto) {
+    const result = await this.razorpay.verifyCheckoutPayment(tenantId, dto);
+    if (result.orderId && result.fulfillmentMethod === 'DELIVERY') {
+      await this.shipments.tryAutoCreateForOrder(tenantId, result.orderId);
+    }
+    return {
+      success: result.success,
+      paymentId: result.paymentId,
+      orderNumber: result.orderNumber,
+    };
   }
 }

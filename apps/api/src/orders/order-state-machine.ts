@@ -3,8 +3,8 @@ import type { FulfillmentMethod, OrderStatus } from '@jersey-commerce/types';
 
 const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PROCESSING', 'CANCELLED'],
-  PROCESSING: ['READY', 'CANCELLED'],
+  CONFIRMED: ['PROCESSING', 'SHIPPED', 'CANCELLED'],
+  PROCESSING: ['READY', 'SHIPPED', 'CANCELLED'],
   READY: ['SHIPPED', 'COMPLETED', 'CANCELLED'],
   SHIPPED: ['COMPLETED', 'RETURNED'],
   COMPLETED: ['RETURNED', 'REFUNDED'],

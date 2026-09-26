@@ -785,6 +785,27 @@ a, button, [role='button'] {
   display: none;
 }
 
+.drop-nav {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in oklab, white 28%, transparent);
+  color: white;
+  transition: background-color 160ms ease, opacity 160ms ease, border-color 160ms ease;
+}
+
+.drop-nav:hover:not(:disabled) {
+  background: color-mix(in oklab, white 12%, transparent);
+  border-color: color-mix(in oklab, white 48%, transparent);
+}
+
+.drop-nav:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-ken-burns,
   .skeleton-shimmer,

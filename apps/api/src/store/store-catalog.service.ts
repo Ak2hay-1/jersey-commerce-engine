@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { ProductSort } from '@jersey-commerce/types';
-import { CatalogStatus, Prisma, VariantStatus } from '../prisma/client';
+import { CatalogStatus, Prisma, ProductSalesChannel, VariantStatus } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPaginationArgs, toPaginationMeta } from '../common/dto/pagination-query.dto';
 import { parseMoney } from '../catalog/money';
@@ -11,6 +11,12 @@ import {
   toStorefrontProductDetail,
 } from './store-catalog.mapper';
 import type { StoreCatalogQueryDto } from './dto/store-catalog-query.dto';
+
+/** Active products visible on the online storefront (excludes POS-only). */
+const storefrontProductWhere = {
+  status: CatalogStatus.ACTIVE,
+  salesChannel: ProductSalesChannel.ONLINE_AND_POS,
+} as const;
 
 const listInclude = {
   category: true,
@@ -37,7 +43,7 @@ const categoryInclude = {
     where: { status: CatalogStatus.ACTIVE },
     orderBy: [{ sortOrder: 'asc' as const }, { name: 'asc' as const }],
   },
-  _count: { select: { products: { where: { status: CatalogStatus.ACTIVE } } } },
+  _count: { select: { products: { where: { ...storefrontProductWhere } } } },
 } satisfies Prisma.CategoryInclude;
 
 @Injectable()
@@ -126,7 +132,7 @@ export class StoreCatalogService {
 
   async getProductBySlug(tenantId: string, slug: string) {
     const product = await this.prisma.product.findFirst({
-      where: { tenantId, slug, status: CatalogStatus.ACTIVE },
+      where: { tenantId, slug, ...storefrontProductWhere },
       include: detailInclude,
     });
     if (!product) {
@@ -136,7 +142,7 @@ export class StoreCatalogService {
       ? await this.prisma.product.findMany({
           where: {
             tenantId,
-            status: CatalogStatus.ACTIVE,
+            ...storefrontProductWhere,
             categoryId: product.categoryId,
             id: { not: product.id },
           },
@@ -244,7 +250,7 @@ export class StoreCatalogService {
 
   async featured(tenantId: string, take = 8) {
     const items = await this.prisma.product.findMany({
-      where: { tenantId, status: CatalogStatus.ACTIVE, featured: true },
+      where: { tenantId, ...storefrontProductWhere, featured: true },
       include: listInclude,
       orderBy: [{ createdAt: 'desc' }],
       take,
@@ -254,7 +260,7 @@ export class StoreCatalogService {
 
   async newest(tenantId: string, take = 8) {
     const items = await this.prisma.product.findMany({
-      where: { tenantId, status: CatalogStatus.ACTIVE },
+      where: { tenantId, ...storefrontProductWhere },
       include: listInclude,
       orderBy: [{ createdAt: 'desc' }],
       take,
@@ -287,7 +293,7 @@ export class StoreCatalogService {
     }
     const ranked = [...scored.entries()].sort((a, b) => b[1] - a[1]).slice(0, take).map(([id]) => id);
     const products = await this.prisma.product.findMany({
-      where: { tenantId, status: CatalogStatus.ACTIVE, id: { in: ranked } },
+      where: { tenantId, ...storefrontProductWhere, id: { in: ranked } },
       include: listInclude,
     });
     const byId = new Map(products.map((item) => [item.id, item]));
@@ -316,7 +322,7 @@ export class StoreCatalogService {
       return [];
     }
     const products = await this.prisma.product.findMany({
-      where: { tenantId, status: CatalogStatus.ACTIVE, slug: { in: slugs } },
+      where: { tenantId, ...storefrontProductWhere, slug: { in: slugs } },
       include: listInclude,
     });
     const bySlug = new Map(products.map((item) => [item.slug, item]));
@@ -374,7 +380,7 @@ export class StoreCatalogService {
     const categoryIds = await this.resolveCategoryIds(tenantId, query.categoryId, query.categorySlug);
     return {
       tenantId,
-      status: CatalogStatus.ACTIVE,
+      ...storefrontProductWhere,
       ...(query.featured === undefined ? {} : { featured: query.featured }),
       ...(query.brand ? { brand: { equals: query.brand, mode: 'insensitive' } } : {}),
       ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),

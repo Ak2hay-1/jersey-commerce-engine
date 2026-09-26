@@ -167,6 +167,9 @@ export interface SalesReportResult {
   totals: ProfitabilityTotals;
   items: SalesReportRow[];
   meta: PaginationMeta;
+  byDay: Array<{ date: string; label: string; revenue: MoneyString; orderCount: number }>;
+  byChannel: Array<{ source: OrderSource; revenue: MoneyString; count: number }>;
+  byProduct: TopProductRow[];
 }
 
 export interface InventoryReportRow {
