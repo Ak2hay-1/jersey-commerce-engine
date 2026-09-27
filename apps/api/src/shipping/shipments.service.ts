@@ -13,7 +13,13 @@ import type { AuthPrincipal } from '../common/context/request-context';
 import type { RequestMeta } from '../auth/auth-session.service';
 import { OrderEngineService } from '../orders/order-engine.service';
 import { orderInclude, toOrderDetail, type OrderRecord } from '../orders/order.mapper';
-import { DelhiveryClient, type DelhiveryWarehouse } from './delhivery.client';
+import {
+  DelhiveryClient,
+  isUnknownPickupError,
+  type DelhiveryCreateShipmentInput,
+  type DelhiveryCreateShipmentResult,
+  type DelhiveryWarehouse,
+} from './delhivery.client';
 import { ShippingSettingsService } from './shipping-settings.service';
 import { WarehousesService } from '../warehouses/warehouses.service';
 
@@ -78,7 +84,8 @@ export class ShipmentsService {
     if (order.shipments.length > 0) {
       throw new BadRequestException('A shipment already exists for this order.');
     }
-    if (!order.shippingAddress) {
+    const shippingAddress = order.shippingAddress;
+    if (!shippingAddress) {
       throw new BadRequestException('Order has no shipping address.');
     }
     const credentials = await this.shippingSettings.resolveCredentials(actor.tenantId);
@@ -119,7 +126,10 @@ export class ShipmentsService {
     const waybills: string[] = [];
 
     for (const group of groups.values()) {
-      const warehouseRow = await this.warehouses.resolveForProduct(actor.tenantId, group.warehouseId);
+      let warehouseRow = await this.warehouses.resolveForProduct(actor.tenantId, group.warehouseId);
+      if (warehouseRow && !warehouseRow.delhiveryRegisteredAt) {
+        warehouseRow = await this.warehouses.syncToDelhivery(warehouseRow);
+      }
       let warehouse: DelhiveryWarehouse;
       if (warehouseRow) {
         warehouse = this.warehouses.toDelhiveryWarehouse(warehouseRow);
@@ -139,27 +149,53 @@ export class ShipmentsService {
         .join(', ')
         .slice(0, 200);
 
-      const created = await this.delhivery.createShipment(credentials, {
+      const shipmentInput = (origin: DelhiveryWarehouse): DelhiveryCreateShipmentInput => ({
         orderNumber: groups.size > 1 ? `${order.orderNumber}-${group.warehouseKey.slice(0, 6)}` : order.orderNumber,
         paymentMode: isCod ? 'COD' : 'Prepaid',
         codAmount: isCod ? groupTotal : 0,
         weightKg: weight,
         shippingMode: settings?.delhiveryServiceMode ?? 'SURFACE',
-        warehouse,
+        warehouse: origin,
         consignee: {
-          name: order.shippingAddress.fullName,
-          phone: order.shippingAddress.phone,
-          address: [order.shippingAddress.addressLine1, order.shippingAddress.addressLine2]
-            .filter(Boolean)
-            .join(', '),
-          city: order.shippingAddress.city,
-          state: order.shippingAddress.state,
-          postalCode: order.shippingAddress.postalCode,
-          country: order.shippingAddress.country || 'IN',
+          name: shippingAddress.fullName,
+          phone: shippingAddress.phone,
+          address: [shippingAddress.addressLine1, shippingAddress.addressLine2].filter(Boolean).join(', '),
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          postalCode: shippingAddress.postalCode,
+          country: shippingAddress.country || 'IN',
         },
         productsDescription,
         totalAmount: groupTotal,
       });
+
+      let created: DelhiveryCreateShipmentResult;
+      try {
+        created = await this.delhivery.createShipment(credentials, shipmentInput(warehouse));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!isUnknownPickupError(message)) {
+          throw error;
+        }
+        if (warehouseRow) {
+          warehouseRow = await this.warehouses.syncToDelhivery(warehouseRow);
+          warehouse = this.warehouses.toDelhiveryWarehouse(warehouseRow);
+        }
+        try {
+          created = await this.delhivery.createShipment(credentials, shipmentInput(warehouse));
+        } catch (retryError) {
+          const retryMessage = retryError instanceof Error ? retryError.message : String(retryError);
+          if (!isUnknownPickupError(retryMessage)) {
+            throw retryError;
+          }
+          const registerNote = warehouseRow?.delhiveryLastError
+            ? ` Registration attempt: ${warehouseRow.delhiveryLastError}`
+            : '';
+          throw new BadRequestException(
+            `Delhivery has no pickup location named "${warehouse.pickupLocation || warehouse.name}" on the ${credentials.environment} account. ${retryMessage}${registerNote}`,
+          );
+        }
+      }
 
       await this.prisma.shipment.create({
         data: {

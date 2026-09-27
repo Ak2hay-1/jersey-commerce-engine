@@ -8,6 +8,8 @@ export interface WarehouseDto {
   postalCode: string | null;
   country: string;
   delhiveryPickupLocation: string | null;
+  delhiveryRegisteredAt: string | null;
+  delhiveryLastError: string | null;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;

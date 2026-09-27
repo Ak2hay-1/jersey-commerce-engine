@@ -60,12 +60,88 @@ export type DelhiveryRateResult = {
   estimatedDays: string | null;
 };
 
+export type DelhiveryRegisterWarehouseResult = {
+  action: 'created' | 'updated';
+  raw: unknown;
+};
+
+export function delhiveryCountry(country: string | null | undefined): string {
+  const value = (country ?? '').trim();
+  if (!value || value.toUpperCase() === 'IN' || value.toUpperCase() === 'IND') {
+    return 'India';
+  }
+  return value;
+}
+
+export function isUnknownPickupError(message: string): boolean {
+  return /clientwarehouse/i.test(message) || /pickup location.*(not|does not) exist/i.test(message);
+}
+
 @Injectable()
 export class DelhiveryClient {
   private readonly logger = new Logger(DelhiveryClient.name);
 
   baseUrl(environment: DelhiveryEnvironment): string {
     return environment === 'PRODUCTION' ? 'https://track.delhivery.com' : 'https://staging-express.delhivery.com';
+  }
+
+  /** Registers (or updates) a pickup location on the Delhivery account behind the token. */
+  async registerWarehouse(
+    credentials: DelhiveryCredentials,
+    warehouse: DelhiveryWarehouse,
+    email?: string | null,
+  ): Promise<DelhiveryRegisterWarehouseResult> {
+    const name = (warehouse.pickupLocation || warehouse.name).trim();
+    const missing = [
+      ['phone', warehouse.phone],
+      ['address', warehouse.address],
+      ['city', warehouse.city],
+      ['postal code', warehouse.postalCode],
+    ]
+      .filter(([, value]) => !value?.trim())
+      .map(([label]) => label);
+    if (!name || missing.length > 0) {
+      throw new BadRequestException(
+        `Warehouse is missing ${missing.length ? missing.join(', ') : 'a name'} required by Delhivery.`,
+      );
+    }
+    const country = delhiveryCountry(warehouse.country);
+    const createBody: Record<string, string> = {
+      name,
+      phone: warehouse.phone.trim(),
+      address: warehouse.address.trim(),
+      city: warehouse.city.trim(),
+      country,
+      pin: warehouse.postalCode.trim(),
+      return_address: warehouse.address.trim(),
+      return_pin: warehouse.postalCode.trim(),
+      return_city: warehouse.city.trim(),
+      return_state: warehouse.state.trim(),
+      return_country: country,
+    };
+    if (email?.trim()) {
+      createBody.email = email.trim();
+    }
+
+    const base = this.baseUrl(credentials.environment);
+    const created = await this.postJson(`${base}/api/backend/clientwarehouse/create/`, credentials.apiToken, createBody);
+    if (created.ok) {
+      return { action: 'created', raw: created.raw };
+    }
+    if (!/already exist/i.test(created.message)) {
+      throw new BadRequestException(`Delhivery rejected pickup "${name}": ${created.message}`);
+    }
+
+    const edited = await this.postJson(`${base}/api/backend/clientwarehouse/edit/`, credentials.apiToken, {
+      name,
+      address: warehouse.address.trim(),
+      pin: warehouse.postalCode.trim(),
+      phone: warehouse.phone.trim(),
+    });
+    if (!edited.ok) {
+      this.logger.warn(`Delhivery pickup "${name}" exists but edit failed: ${edited.message}`);
+    }
+    return { action: 'updated', raw: edited.raw };
   }
 
   async checkServiceability(
@@ -170,7 +246,7 @@ export class DelhiveryClient {
       pin: input.consignee.postalCode,
       city: input.consignee.city,
       state: input.consignee.state,
-      country: input.consignee.country || 'India',
+      country: delhiveryCountry(input.consignee.country),
       phone: input.consignee.phone,
       order: input.orderNumber,
       payment_mode: input.paymentMode,
@@ -179,7 +255,7 @@ export class DelhiveryClient {
       return_phone: input.warehouse.phone,
       return_add: input.warehouse.address,
       return_state: input.warehouse.state,
-      return_country: input.warehouse.country || 'India',
+      return_country: delhiveryCountry(input.warehouse.country),
       products_desc: input.productsDescription,
       hsn_code: '',
       cod_amount: input.paymentMode === 'COD' ? input.codAmount : 0,
@@ -206,11 +282,11 @@ export class DelhiveryClient {
       JSON.stringify({
         shipments: [shipment],
         pickup_location: {
-          name: input.warehouse.pickupLocation || input.warehouse.name,
+          name: (input.warehouse.pickupLocation || input.warehouse.name).trim(),
           add: input.warehouse.address,
           city: input.warehouse.city,
           pin_code: input.warehouse.postalCode,
-          country: input.warehouse.country || 'India',
+          country: delhiveryCountry(input.warehouse.country),
           phone: input.warehouse.phone,
         },
       }),
@@ -232,7 +308,10 @@ export class DelhiveryClient {
       /* keep text */
     }
     if (!response.ok) {
-      throw new BadRequestException(`Delhivery create shipment failed (${response.status}).`);
+      const detail = (raw as { rmk?: string; Error?: string } | null)?.rmk ?? (raw as { Error?: string } | null)?.Error;
+      throw new BadRequestException(
+        `Delhivery create shipment failed (${response.status})${detail ? `: ${detail}` : '.'}`,
+      );
     }
     const record = raw as {
       packages?: Array<{ waybill?: string; status?: string; refnum?: string; remarks?: string[] }>;
@@ -286,6 +365,50 @@ export class DelhiveryClient {
       throw new BadRequestException('Delhivery packing slip is not available yet.');
     }
     return link;
+  }
+
+  private async postJson(
+    url: string,
+    apiToken: string,
+    body: Record<string, string>,
+  ): Promise<{ ok: boolean; message: string; raw: unknown }> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Token ${apiToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await response.text();
+    let raw: unknown = text;
+    try {
+      raw = JSON.parse(text) as unknown;
+    } catch {
+      /* keep text */
+    }
+    const record = (raw && typeof raw === 'object' ? raw : {}) as {
+      success?: boolean;
+      error?: unknown;
+      message?: unknown;
+      data?: { message?: unknown } | unknown;
+    };
+    const ok = response.ok && record.success !== false && !this.hasError(record.error);
+    const parts = [record.error, record.message, (record.data as { message?: unknown } | undefined)?.message]
+      .flatMap((value) => (Array.isArray(value) ? value : [value]))
+      .filter((value) => value !== undefined && value !== null && String(value).trim() !== '')
+      .map((value) => (typeof value === 'string' ? value : JSON.stringify(value)));
+    const message =
+      parts.join('; ') || (typeof raw === 'string' && raw.trim() ? raw.slice(0, 300) : `HTTP ${response.status}`);
+    return { ok, message, raw };
+  }
+
+  private hasError(value: unknown): boolean {
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    return typeof value === 'string' ? value.trim() !== '' : Boolean(value);
   }
 
   private async getJson<T>(url: string, apiToken: string): Promise<T> {

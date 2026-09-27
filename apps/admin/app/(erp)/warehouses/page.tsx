@@ -30,6 +30,8 @@ export default function WarehousesPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -85,11 +87,15 @@ export default function WarehousesPage(): React.JSX.Element {
       isActive: form.isActive,
       sortOrder: Number(form.sortOrder) || 0,
     };
+    setNotice('');
     try {
-      if (editingId) {
-        await apiRequest(`/warehouses/${editingId}`, { method: 'PATCH', body: JSON.stringify(body) });
-      } else {
-        await apiRequest('/warehouses', { method: 'POST', body: JSON.stringify(body) });
+      const saved = editingId
+        ? await apiRequest<WarehouseDto>(`/warehouses/${editingId}`, { method: 'PATCH', body: JSON.stringify(body) })
+        : await apiRequest<WarehouseDto>('/warehouses', { method: 'POST', body: JSON.stringify(body) });
+      if (saved.delhiveryLastError) {
+        setError(`Saved, but Delhivery registration failed: ${saved.delhiveryLastError}`);
+      } else if (saved.delhiveryRegisteredAt) {
+        setNotice(`Saved and registered on Delhivery as "${saved.delhiveryPickupLocation ?? saved.name}".`);
       }
       resetForm();
       await load();
@@ -97,6 +103,24 @@ export default function WarehousesPage(): React.JSX.Element {
       setError(err instanceof Error ? err.message : 'Unable to save warehouse');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function onSync(id: string): Promise<void> {
+    if (!canManage) {
+      return;
+    }
+    setSyncingId(id);
+    setError('');
+    setNotice('');
+    try {
+      const synced = await apiRequest<WarehouseDto>(`/warehouses/${id}/delhivery-sync`, { method: 'POST' });
+      setNotice(`Registered on Delhivery as "${synced.delhiveryPickupLocation ?? synced.name}".`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delhivery sync failed');
+    } finally {
+      setSyncingId(null);
+      await load();
     }
   }
 
@@ -119,6 +143,7 @@ export default function WarehousesPage(): React.JSX.Element {
         description="Pickup origins for Delhivery. Assign a warehouse on each product. Stock remains a single pool per variant."
       />
       <FormError>{error}</FormError>
+      {notice ? <p className="text-sm text-emerald-600">{notice}</p> : null}
 
       {canManage ? (
         <Card>
@@ -140,10 +165,13 @@ export default function WarehousesPage(): React.JSX.Element {
                 <Input
                   id="wh-pickup"
                   className="mt-1"
-                  placeholder="Registered Delhivery name"
+                  placeholder="Defaults to warehouse name"
                   value={form.delhiveryPickupLocation}
                   onChange={(e) => setForm((c) => ({ ...c, delhiveryPickupLocation: e.target.value }))}
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Unique name. Jerzyfy registers it on Delhivery automatically with the address below.
+                </p>
               </div>
               <div>
                 <Label htmlFor="wh-phone">Phone</Label>
@@ -234,6 +262,25 @@ export default function WarehousesPage(): React.JSX.Element {
             hideOnMobile: true,
             render: (row) => row.delhiveryPickupLocation ?? '—',
           },
+          {
+            key: 'delhivery',
+            header: 'Delhivery',
+            render: (row) =>
+              row.delhiveryRegisteredAt && !row.delhiveryLastError ? (
+                <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  Registered
+                </span>
+              ) : (
+                <div className="space-y-1">
+                  <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                    Not registered
+                  </span>
+                  {row.delhiveryLastError ? (
+                    <p className="max-w-xs text-xs text-destructive">{row.delhiveryLastError}</p>
+                  ) : null}
+                </div>
+              ),
+          },
           { key: 'st', header: 'Status', render: (row) => (row.isActive ? 'Active' : 'Inactive') },
           {
             key: 'actions',
@@ -244,6 +291,16 @@ export default function WarehousesPage(): React.JSX.Element {
                   <button type="button" className="text-xs underline" onClick={() => startEdit(row)}>
                     Edit
                   </button>
+                  {row.isActive ? (
+                    <button
+                      type="button"
+                      className="text-xs underline disabled:opacity-50"
+                      disabled={syncingId === row.id}
+                      onClick={() => void onSync(row.id)}
+                    >
+                      {syncingId === row.id ? 'Syncing…' : 'Sync to Delhivery'}
+                    </button>
+                  ) : null}
                   {row.isActive ? (
                     <button type="button" className="text-xs underline" onClick={() => void onDeactivate(row.id)}>
                       Deactivate

@@ -1,27 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { WarehouseDto } from '@jersey-commerce/types';
+import type { Warehouse } from '../../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
 import type { AuthPrincipal } from '../common/context/request-context';
 import type { CreateWarehouseDto, UpdateWarehouseDto } from './dto/warehouse.dto';
-import type { DelhiveryWarehouse } from '../shipping/delhivery.client';
+import { DelhiveryClient, type DelhiveryWarehouse } from '../shipping/delhivery.client';
+import { ShippingSettingsService } from '../shipping/shipping-settings.service';
 
-function toDto(row: {
-  id: string;
-  name: string;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string;
-  delhiveryPickupLocation: string | null;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-}): WarehouseDto {
+const DELHIVERY_SYNC_FIELDS = ['name', 'phone', 'address', 'city', 'state', 'postalCode', 'country', 'delhiveryPickupLocation'] as const;
+
+function toDto(row: Warehouse): WarehouseDto {
   return {
     id: row.id,
     name: row.name,
@@ -32,6 +22,8 @@ function toDto(row: {
     postalCode: row.postalCode,
     country: row.country,
     delhiveryPickupLocation: row.delhiveryPickupLocation,
+    delhiveryRegisteredAt: row.delhiveryRegisteredAt?.toISOString() ?? null,
+    delhiveryLastError: row.delhiveryLastError,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt.toISOString(),
@@ -41,9 +33,13 @@ function toDto(row: {
 
 @Injectable()
 export class WarehousesService {
+  private readonly logger = new Logger(WarehousesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly delhivery: DelhiveryClient,
+    private readonly shippingSettings: ShippingSettingsService,
   ) {}
 
   async list(tenantId: string): Promise<{ items: WarehouseDto[] }> {
@@ -86,7 +82,7 @@ export class WarehousesService {
       entityId: created.id,
       metadata: { name: created.name, created: true },
     });
-    return toDto(created);
+    return toDto(await this.trySyncToDelhivery(created));
   }
 
   async update(
@@ -125,6 +121,10 @@ export class WarehousesService {
       entityId: updated.id,
       metadata: { fields: Object.keys(dto) },
     });
+    const originChanged = DELHIVERY_SYNC_FIELDS.some((field) => existing[field] !== updated[field]);
+    if (updated.isActive && (originChanged || !updated.delhiveryRegisteredAt)) {
+      return toDto(await this.trySyncToDelhivery(updated));
+    }
     return toDto(updated);
   }
 
@@ -148,6 +148,76 @@ export class WarehousesService {
     return toDto(updated);
   }
 
+  /** Manual sync from admin — surfaces Delhivery's reason on failure. */
+  async syncById(tenantId: string, id: string): Promise<WarehouseDto> {
+    const row = await this.prisma.warehouse.findFirst({ where: { id, tenantId } });
+    if (!row) {
+      throw new NotFoundException('Warehouse not found');
+    }
+    const synced = await this.syncToDelhivery(row);
+    if (!synced.delhiveryRegisteredAt || synced.delhiveryLastError) {
+      throw new BadRequestException(synced.delhiveryLastError ?? 'Delhivery registration failed.');
+    }
+    return toDto(synced);
+  }
+
+  /**
+   * Registers the warehouse as a Delhivery pickup location and records the outcome.
+   * Never throws for Delhivery failures; the error is stored on the row instead.
+   */
+  async syncToDelhivery(row: Warehouse): Promise<Warehouse> {
+    const pickupName = (row.delhiveryPickupLocation?.trim() || row.name.trim()).slice(0, 100);
+    const credentials = await this.shippingSettings.resolveCredentials(row.tenantId);
+    if (!credentials) {
+      return this.prisma.warehouse.update({
+        where: { id: row.id },
+        data: {
+          delhiveryPickupLocation: pickupName,
+          delhiveryLastError: 'Delhivery is not configured. Add credentials in Settings → Shipping.',
+        },
+      });
+    }
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: row.tenantId },
+      select: { contactEmail: true },
+    });
+    try {
+      await this.delhivery.registerWarehouse(
+        credentials,
+        this.toDelhiveryWarehouse({ ...row, delhiveryPickupLocation: pickupName }),
+        tenant?.contactEmail,
+      );
+      return this.prisma.warehouse.update({
+        where: { id: row.id },
+        data: {
+          delhiveryPickupLocation: pickupName,
+          delhiveryRegisteredAt: new Date(),
+          delhiveryLastError: null,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Delhivery registration failed.';
+      this.logger.warn(`Delhivery pickup sync failed for warehouse ${row.id}: ${message}`);
+      return this.prisma.warehouse.update({
+        where: { id: row.id },
+        data: {
+          delhiveryPickupLocation: pickupName,
+          delhiveryRegisteredAt: null,
+          delhiveryLastError: message.slice(0, 500),
+        },
+      });
+    }
+  }
+
+  private async trySyncToDelhivery(row: Warehouse): Promise<Warehouse> {
+    try {
+      return await this.syncToDelhivery(row);
+    } catch (error) {
+      this.logger.warn(`Delhivery pickup sync crashed for warehouse ${row.id}: ${String(error)}`);
+      return row;
+    }
+  }
+
   toDelhiveryWarehouse(row: {
     name: string;
     phone: string | null;
@@ -166,7 +236,7 @@ export class WarehousesService {
       state: row.state ?? '',
       postalCode: row.postalCode ?? '',
       country: row.country || 'IN',
-      pickupLocation: row.delhiveryPickupLocation ?? row.name,
+      pickupLocation: row.delhiveryPickupLocation?.trim() || row.name,
     };
   }
 

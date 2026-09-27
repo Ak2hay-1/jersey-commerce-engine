@@ -47,6 +47,13 @@ export class WarehousesController {
     return this.warehouses.update(tenantId, id, dto, actor);
   }
 
+  @Post(':id/delhivery-sync')
+  @RequirePermissions('inventory.manage')
+  @ApiOperation({ summary: 'Register or update this warehouse as a Delhivery pickup location' })
+  syncToDelhivery(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.warehouses.syncById(tenantId, id);
+  }
+
   @Delete(':id')
   @RequirePermissions('inventory.manage')
   @ApiOperation({ summary: 'Deactivate a warehouse' })
