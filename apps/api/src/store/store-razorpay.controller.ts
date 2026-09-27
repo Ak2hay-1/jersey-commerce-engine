@@ -7,6 +7,7 @@ import { TenantId } from '../common/decorators/tenant-id.decorator';
 import { StoreTenantGuard } from './store-tenant.guard';
 import { RazorpayOnlineGateway } from '../orders/razorpay-online.gateway';
 import { ShipmentsService } from '../shipping/shipments.service';
+import { WhatsappReceiptService } from '../whatsapp/whatsapp-receipt.service';
 
 class CreateRazorpayOrderDto {
   @ApiProperty({ description: 'Amount in paise (minimum 100)', example: 50000 })
@@ -57,6 +58,7 @@ export class StoreRazorpayController {
     private readonly razorpay: RazorpayOnlineGateway,
     @Inject(forwardRef(() => ShipmentsService))
     private readonly shipments: ShipmentsService,
+    private readonly whatsappReceipts: WhatsappReceiptService,
   ) {}
 
   @Post('create-order')
@@ -77,6 +79,9 @@ export class StoreRazorpayController {
     const result = await this.razorpay.verifyCheckoutPayment(tenantId, dto);
     if (result.orderId && result.fulfillmentMethod === 'DELIVERY') {
       await this.shipments.tryAutoCreateForOrder(tenantId, result.orderId);
+    }
+    if (result.orderId) {
+      this.whatsappReceipts.scheduleOrderReceipt(tenantId, result.orderId);
     }
     return {
       success: result.success,

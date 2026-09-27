@@ -153,6 +153,8 @@ export {
 export {
   type NotificationSettings,
   type UpdateNotificationSettingsInput,
+  type WhatsappMessageStatus,
+  type WhatsappReceiptStatus,
 } from './notification-settings';
 export {
   type ShippingSettings,

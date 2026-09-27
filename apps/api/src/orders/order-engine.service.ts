@@ -26,6 +26,7 @@ import type { RequestMeta } from '../auth/auth-session.service';
 import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
 import { formatOrderStatusTelegram } from '../notification-settings/telegram-messages';
 import { moneyString } from '../catalog/money';
+import { WhatsappReceiptService } from '../whatsapp/whatsapp-receipt.service';
 
 const TX_OPTIONS = {
   maxWait: 5_000,
@@ -68,6 +69,7 @@ export class OrderEngineService {
     private readonly gateway: RazorpayOnlineGateway,
     private readonly saleRecognition: OrderSaleRecognitionService,
     private readonly notifications: NotificationSettingsService,
+    private readonly whatsappReceipts: WhatsappReceiptService,
   ) {}
 
   async createOrder(input: CreateOrderEngineInput, tx: object): Promise<OrderRecord> {
@@ -400,6 +402,9 @@ export class OrderEngineService {
           currency: record.currency,
         }),
       );
+      if (input.status === 'CONFIRMED' && record.source !== 'POS') {
+        this.whatsappReceipts.scheduleOrderReceipt(input.tenantId, record.id);
+      }
       return record;
     });
   }

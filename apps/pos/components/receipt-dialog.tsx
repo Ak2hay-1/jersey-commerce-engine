@@ -12,7 +12,7 @@ import {
   Input,
 } from '@jersey-commerce/ui';
 import type { PosReceiptResponse, PosSaleDto, ReceiptPayload } from '@jersey-commerce/types';
-import { getSaleReceipt } from '@/lib/pos-api';
+import { getSaleReceipt, sendSaleWhatsappReceipt } from '@/lib/pos-api';
 
 function digitsOnlyPhone(value: string): string {
   const digits = value.replace(/\D/g, '');
@@ -84,6 +84,9 @@ export function ReceiptDialog({
   const [error, setError] = useState('');
   const [phonePrompt, setPhonePrompt] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [fallbackPhone, setFallbackPhone] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !sale) {
@@ -92,6 +95,8 @@ export function ReceiptDialog({
     setHtml('');
     setPayload(null);
     setError('');
+    setNotice('');
+    setFallbackPhone(null);
     setPhonePrompt(false);
     setPhoneInput(sale.customer?.phone ?? '');
     void getSaleReceipt(sale.id, 'thermal')
@@ -123,7 +128,32 @@ export function ReceiptDialog({
     const url = `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
     setPhonePrompt(false);
+    setFallbackPhone(null);
     setError('');
+  }
+
+  async function sendBill(phone: string): Promise<void> {
+    if (!sale || !payload) {
+      return;
+    }
+    if (digitsOnlyPhone(phone).length < 10) {
+      setError('Enter a valid WhatsApp number (10+ digits).');
+      return;
+    }
+    setSending(true);
+    setError('');
+    setNotice('');
+    setFallbackPhone(null);
+    try {
+      const result = await sendSaleWhatsappReceipt(sale.id, phone);
+      setNotice(`PDF bill sent on WhatsApp to ${result.phone ?? phone}.`);
+      setPhonePrompt(false);
+    } catch (err) {
+      setError(`Could not send automatically: ${err instanceof Error ? err.message : 'unknown error'}`);
+      setFallbackPhone(phone);
+    } finally {
+      setSending(false);
+    }
   }
 
   function onSendWhatsApp(): void {
@@ -132,7 +162,7 @@ export function ReceiptDialog({
     }
     const existing = payload.transaction.customerPhone || phoneInput;
     if (existing && digitsOnlyPhone(existing).length >= 10) {
-      openWhatsApp(existing);
+      void sendBill(existing);
       return;
     }
     setPhonePrompt(true);
@@ -148,6 +178,12 @@ export function ReceiptDialog({
           </DialogDescription>
         </DialogHeader>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {notice ? <p className="text-sm text-emerald-700">{notice}</p> : null}
+        {fallbackPhone ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => openWhatsApp(fallbackPhone)}>
+            Open WhatsApp with text receipt instead
+          </Button>
+        ) : null}
         {html ? (
           <iframe
             ref={iframeRef}
@@ -172,8 +208,8 @@ export function ReceiptDialog({
                 onChange={(event) => setPhoneInput(event.target.value)}
               />
             </div>
-            <Button type="button" onClick={() => openWhatsApp(phoneInput)} disabled={!payload}>
-              Open WhatsApp
+            <Button type="button" onClick={() => void sendBill(phoneInput)} disabled={!payload || sending}>
+              {sending ? 'Sending…' : 'Send bill'}
             </Button>
           </div>
         ) : null}
@@ -182,8 +218,8 @@ export function ReceiptDialog({
             <Button type="button" variant="outline" onClick={printReceipt} disabled={!html}>
               Print
             </Button>
-            <Button type="button" variant="outline" onClick={onSendWhatsApp} disabled={!payload}>
-              Send on WhatsApp
+            <Button type="button" variant="outline" onClick={onSendWhatsApp} disabled={!payload || sending}>
+              {sending ? 'Sending…' : 'Send on WhatsApp'}
             </Button>
           </div>
           <Button

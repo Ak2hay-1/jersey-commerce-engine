@@ -32,6 +32,7 @@ import { PosSessionService } from './pos-session.service';
 import type { CancelSaleDto, CompleteSaleDto, PosSaleQueryDto } from './dto/sale.dto';
 import { NotificationSettingsService } from '../notification-settings/notification-settings.service';
 import { formatPosSaleTelegram } from '../notification-settings/telegram-messages';
+import { WhatsappReceiptService } from '../whatsapp/whatsapp-receipt.service';
 
 const saleInclude = {
   customer: { select: { id: true, name: true, phone: true } },
@@ -55,6 +56,7 @@ export class PosSaleService {
     private readonly receipts: ReceiptService,
     private readonly refunds: PosRefundService,
     private readonly notifications: NotificationSettingsService,
+    private readonly whatsappReceipts: WhatsappReceiptService,
   ) {}
 
   async complete(actor: AuthPrincipal, dto: CompleteSaleDto) {
@@ -335,6 +337,7 @@ export class PosSaleService {
         itemCount: sale.items.length,
       }),
     );
+    this.whatsappReceipts.scheduleSaleReceipt(tenantId, sale.id);
     return sale;
   }
 

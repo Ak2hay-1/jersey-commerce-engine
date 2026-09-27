@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
-import type { OrderDetail, ProductListItem } from '@jersey-commerce/types';
+import type { OrderDetail, ProductListItem, WhatsappReceiptStatus } from '@jersey-commerce/types';
 import { apiRequest, queryString } from '@/lib/api';
 import { formatDateTime, statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
@@ -35,11 +35,38 @@ export default function OrderDetailPage(): React.JSX.Element {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [shipping, setShipping] = useState(false);
+  const [waStatus, setWaStatus] = useState<WhatsappReceiptStatus | null>(null);
+  const [waSending, setWaSending] = useState(false);
+  const [waNotice, setWaNotice] = useState('');
 
   async function load(): Promise<void> {
     const next = await apiRequest<OrderDetail>(`/orders/${id}`);
     setOrder(next);
     setStatus(next.status);
+    void apiRequest<WhatsappReceiptStatus>(`/orders/${id}/whatsapp-receipt`)
+      .then(setWaStatus)
+      .catch(() => setWaStatus(null));
+  }
+
+  async function onSendWhatsappReceipt(): Promise<void> {
+    setWaSending(true);
+    setError('');
+    setWaNotice('');
+    try {
+      const result = await apiRequest<WhatsappReceiptStatus>(`/orders/${id}/whatsapp-receipt`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      setWaStatus(result);
+      setWaNotice(`Bill sent on WhatsApp to ${result.phone ?? 'customer'}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to send WhatsApp receipt');
+      void apiRequest<WhatsappReceiptStatus>(`/orders/${id}/whatsapp-receipt`)
+        .then(setWaStatus)
+        .catch(() => undefined);
+    } finally {
+      setWaSending(false);
+    }
   }
 
   useEffect(() => {
@@ -275,6 +302,32 @@ export default function OrderDetailPage(): React.JSX.Element {
           ) : null}
         </div>
       ) : null}
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+        <span className="font-medium">WhatsApp bill:</span>
+        {waStatus?.status === 'SENT' ? (
+          <Badge variant="secondary">Sent to {waStatus.phone}</Badge>
+        ) : waStatus?.status === 'FAILED' || waStatus?.status === 'SKIPPED' ? (
+          <>
+            <Badge variant="outline">{waStatus.status === 'FAILED' ? 'Failed' : 'Not sent'}</Badge>
+            {waStatus.error ? <span className="text-xs text-destructive">{waStatus.error}</span> : null}
+          </>
+        ) : (
+          <span className="text-muted-foreground">Not sent yet</span>
+        )}
+        {auth.can('orders.update') && order.status !== 'CANCELLED' ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="ml-auto"
+            disabled={waSending}
+            onClick={() => void onSendWhatsappReceipt()}
+          >
+            {waSending ? 'Sending…' : waStatus?.status === 'SENT' ? 'Resend WhatsApp bill' : 'Send WhatsApp bill'}
+          </Button>
+        ) : null}
+        {waNotice ? <span className="w-full text-xs text-emerald-700">{waNotice}</span> : null}
+      </div>
       <OrderDetailsPanel order={order} />
     </div>
   );

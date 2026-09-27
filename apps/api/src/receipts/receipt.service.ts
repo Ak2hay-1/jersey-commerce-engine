@@ -6,7 +6,7 @@ import { renderReceiptHtml, type ReceiptPayload } from './receipt-format';
 import { canViewAllPosData } from '../pos/pos-money';
 import type { AuthPrincipal } from '../common/context/request-context';
 
-const saleReceiptInclude = {
+export const saleReceiptInclude = {
   customer: { select: { id: true, name: true, phone: true } },
   cashier: { select: { id: true, name: true, email: true } },
   tenant: {

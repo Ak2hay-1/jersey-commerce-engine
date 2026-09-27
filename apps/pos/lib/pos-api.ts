@@ -20,6 +20,7 @@ import type {
   RefundPosSaleInput,
   UpdatePosCartInput,
   UpdatePosCartItemInput,
+  WhatsappReceiptStatus,
 } from '@jersey-commerce/types';
 import { apiRequest, isNotFound, queryString } from './api';
 
@@ -131,6 +132,13 @@ export function getSale(id: string): Promise<PosSaleDto> {
 
 export function getSaleReceipt(id: string, format: PosReceiptFormat = 'thermal'): Promise<PosReceiptResponse> {
   return apiRequest(`/pos/sales/${id}/receipt${queryString({ format })}`);
+}
+
+export function sendSaleWhatsappReceipt(id: string, phone?: string): Promise<WhatsappReceiptStatus> {
+  return apiRequest(`/pos/sales/${id}/whatsapp-receipt`, {
+    method: 'POST',
+    body: JSON.stringify(phone ? { phone } : {}),
+  });
 }
 
 export function refundSale(id: string, input: RefundPosSaleInput): Promise<PosSaleDto> {

@@ -406,6 +406,7 @@ model Tenant {
   shippingSettings   ShippingSettings?
   warehouses         Warehouse[]
   notificationSettings NotificationSettings?
+  whatsappMessages     WhatsappMessage[]
   tags               Tag[]
   customerTags       CustomerTag[]
   customerNotes      CustomerNote[]
@@ -887,12 +888,53 @@ model NotificationSettings {
   notifyPaymentConfirmed       Boolean  @default(true) @map("notify_payment_confirmed")
   notifyOrderStatusChanged     Boolean  @default(true) @map("notify_order_status_changed")
   notifyPosSale                Boolean  @default(true) @map("notify_pos_sale")
+  whatsappEnabled              Boolean  @default(false) @map("whatsapp_enabled")
+  msg91AuthKeyEncrypted        String?  @map("msg91_auth_key_encrypted") @db.Text
+  whatsappIntegratedNumber     String?  @map("whatsapp_integrated_number")
+  whatsappTemplateName         String   @default("jerzyfy_receipt") @map("whatsapp_template_name")
+  whatsappTemplateNamespace    String?  @map("whatsapp_template_namespace")
+  whatsappTemplateLanguage     String   @default("en") @map("whatsapp_template_language")
+  whatsappPublicBaseUrl        String?  @map("whatsapp_public_base_url")
+  whatsappSendPosReceipt       Boolean  @default(true) @map("whatsapp_send_pos_receipt")
+  whatsappSendOrderReceipt     Boolean  @default(true) @map("whatsapp_send_order_receipt")
   createdAt                    DateTime @default(now()) @map("created_at")
   updatedAt                    DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@map("notification_settings")
+}
+
+enum WhatsappMessageKind {
+  SALE_RECEIPT
+  ORDER_RECEIPT
+}
+
+enum WhatsappMessageStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+/// Customer WhatsApp receipt deliveries (MSG91). One row per sale / order.
+model WhatsappMessage {
+  id          String                @id @default(cuid())
+  tenantId    String                @map("tenant_id")
+  kind        WhatsappMessageKind
+  referenceId String                @map("reference_id")
+  phone       String?
+  status      WhatsappMessageStatus
+  providerRef String?               @map("provider_ref")
+  error       String?
+  attempts    Int                   @default(1)
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, kind, referenceId])
+  @@index([tenantId, createdAt])
+  @@map("whatsapp_messages")
 }
 
 /// Per-tenant Delhivery / courier settings (encrypted API token).

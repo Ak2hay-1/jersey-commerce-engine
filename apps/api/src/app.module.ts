@@ -40,6 +40,7 @@ import { NotificationSettingsModule } from './notification-settings/notification
 import { ShippingSettingsModule } from './shipping/shipping-settings.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { WarehousesModule } from './warehouses/warehouses.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { WarehousesModule } from './warehouses/warehouses.module';
     ShippingSettingsModule,
     ShippingModule,
     WarehousesModule,
+    WhatsappModule,
   ],
   controllers: [AppController],
 })
