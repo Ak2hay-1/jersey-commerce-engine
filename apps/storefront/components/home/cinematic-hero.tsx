@@ -15,8 +15,6 @@ import { cn } from '@jersey-commerce/ui';
 import { sortUniqueSizes } from '@jersey-commerce/utils';
 import { ProductImage } from '../catalog/product-image';
 import { Magnetic } from '../motion/magnetic';
-import { JerseyStage } from '../three/jersey-stage-lazy';
-import { designFromProduct } from '../three/jersey-design';
 import { MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
 import { useCart } from '../providers/cart-provider';
 import { useStore } from '../providers/store-provider';
@@ -32,8 +30,6 @@ const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   twitter: Twitter,
   youtube: Youtube,
 };
-
-const NO_COLOURS: string[] = [];
 
 function socialEntries(links: StorefrontSocialLinks): Array<[string, string]> {
   return Object.entries(links).filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
@@ -160,7 +156,7 @@ export function CinematicHero({
     : detail
       ? sizesFromVariants(detail.variants)
       : [];
-  const colours = detail?.colours ?? NO_COLOURS;
+  const colours = detail?.colours ?? [];
 
   const matchingVariant = useMemo(() => {
     if (!detail) {
@@ -206,16 +202,6 @@ export function CinematicHero({
   const social = socialEntries(store.website.socialLinks);
   const stageColour = selectedColour ?? colours[0] ?? matchingVariant?.colour ?? null;
   const stageBackground = heroStageBackground(stageColour);
-  const jerseyDesign = useMemo(
-    () =>
-      designFromProduct({
-        name: product?.name,
-        colours,
-        activeColour: stageColour,
-        crest: store.tenant.name,
-      }),
-    [product?.name, colours, stageColour, store.tenant.name],
-  );
 
   async function onCta() {
     if (!matchingVariant || pending) {
@@ -308,43 +294,44 @@ export function CinematicHero({
 
           {/* Center product */}
           <div className="order-2 flex flex-col items-center justify-center lg:order-none">
-            <div className="relative w-full max-w-[24rem] sm:max-w-[30rem]">
-              <div
-                className="pointer-events-none absolute inset-x-[10%] top-[12%] aspect-square rounded-full opacity-60 blur-3xl"
-                style={{ background: `radial-gradient(circle, ${jerseyDesign.primary} 0%, transparent 70%)` }}
-                aria-hidden
-              />
-              <JerseyStage
-                className="mx-auto aspect-[4/5] w-full cursor-grab active:cursor-grabbing"
-                design={jerseyDesign}
-                variant="hero"
-                spinKey={product?.id}
-                accent={jerseyDesign.secondary}
-                fallback={
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                      key={`${product?.id ?? 'empty'}-${imageSrc}`}
-                      className="relative h-full w-full"
-                      initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-                      transition={{ duration: 0.35, ease: MOTION_EASE }}
-                    >
-                      <ProductImage
-                        src={imageSrc}
-                        alt={product?.primaryImage?.altText ?? product?.name ?? 'Featured jersey'}
-                        className="object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.45)]"
-                        sizes="(max-width: 1024px) 80vw, 480px"
-                        priority
-                        fill
-                      />
-                    </motion.div>
-                  </AnimatePresence>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`${product?.id ?? 'empty'}-${imageSrc}`}
+                className="relative w-full max-w-[22rem] sm:max-w-[26rem]"
+                initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
+                animate={
+                  reduced
+                    ? { opacity: 1 }
+                    : { opacity: 1, scale: 1, y: [0, -10, 0] }
                 }
-              />
-            </div>
-            <p className="mt-2 text-center text-xs tracking-[0.04em] text-white/75 sm:text-sm">{tagline}</p>
-            <p className="mt-1 text-center text-[10px] uppercase tracking-[0.24em] text-white/45">Drag to spin the kit</p>
+                exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+                transition={
+                  reduced
+                    ? { duration: 0.2 }
+                    : {
+                        opacity: { duration: 0.35, ease: MOTION_EASE },
+                        scale: { duration: 0.35, ease: MOTION_EASE },
+                        y: { duration: 5.5, repeat: Infinity, ease: 'easeInOut' },
+                      }
+                }
+              >
+                <div className="relative mx-auto aspect-[3/4] w-full">
+                  <ProductImage
+                    src={imageSrc}
+                    alt={product?.primaryImage?.altText ?? product?.name ?? 'Featured jersey'}
+                    className="object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.45)]"
+                    sizes="(max-width: 1024px) 80vw, 420px"
+                    priority
+                    fill
+                  />
+                </div>
+                <div
+                  className="mx-auto mt-2 h-6 w-[55%] rounded-[100%] bg-black/50 blur-xl"
+                  aria-hidden
+                />
+              </motion.div>
+            </AnimatePresence>
+            <p className="mt-4 text-center text-xs tracking-[0.04em] text-white/75 sm:text-sm">{tagline}</p>
           </div>
 
           {/* Right price / sizes */}

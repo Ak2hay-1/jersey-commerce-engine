@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { serverStoreOptions } from '../../../lib/server-options';
 import { cachedBootstrap, cachedProduct, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
-import { ProductMedia } from '../../../components/catalog/product-media';
+import { ProductGallery } from '../../../components/catalog/product-gallery';
 import { ProductDetailActions } from '../../../components/catalog/product-detail-actions';
 import { ProductAccordions } from '../../../components/catalog/product-accordions';
 import { ProductGrid } from '../../../components/catalog/product-grid';
@@ -82,7 +82,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
         ))}
       </nav>
       <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-        <ProductMedia product={product} brand={store.tenant.name?.trim() || 'Jerzyfy'} />
+        <ProductGallery images={product.images} name={product.name} />
         <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
           {product.brand ? <p className="text-sm text-muted-foreground">{product.brand}</p> : null}
           <h1 className="break-words text-3xl font-semibold tracking-tight md:text-5xl">{product.name}</h1>

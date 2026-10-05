@@ -21,8 +21,6 @@ import {
   TrustSection,
 } from '../components/home/homepage-sections';
 import { CinematicHero } from '../components/home/cinematic-hero';
-import { JerseyShowcase } from '../components/home/jersey-showcase';
-import { KitOrbitSection } from '../components/home/kit-orbit-section';
 import { storeApi } from '../lib/api';
 
 function pickBySlugs(items: StorefrontProductListItem[], slugs?: string[]): StorefrontProductListItem[] {
@@ -132,8 +130,6 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           products={products.slice(0, 5)}
           currency={currency}
         />,
-        <JerseyShowcase key="jersey-showcase" brand={brand} />,
-        <KitOrbitSection key="kit-orbit" products={catalogItems.length ? catalogItems : products} />,
       );
       continue;
     }
@@ -222,8 +218,6 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           currency={currency}
         />
       )}
-      {hasHero ? null : <JerseyShowcase brand={brand} />}
-      {hasHero ? null : <KitOrbitSection products={catalogItems.length ? catalogItems : products} />}
       {rendered}
       {!injectedTrending ? <TrendingSection categories={categoriesWithCovers} /> : null}
       {!injectedLimited ? (
