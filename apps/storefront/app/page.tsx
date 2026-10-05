@@ -11,17 +11,17 @@ import {
 } from '../lib/cached-store';
 import {
   CtaSection,
+  EditorialBanner,
   FeaturedCategories,
   FeaturedProducts,
   LatestDrop,
-  LimitedEditionBand,
   PromoBanner,
-  StatementSection,
-  TrendingSection,
   TrustSection,
 } from '../components/home/homepage-sections';
 import { CinematicHero } from '../components/home/cinematic-hero';
 import { storeApi } from '../lib/api';
+
+const PRODUCT_SECTIONS: ReadonlyArray<HomepageSection['type']> = ['featured-products', 'best-sellers', 'new-arrivals'];
 
 function pickBySlugs(items: StorefrontProductListItem[], slugs?: string[]): StorefrontProductListItem[] {
   if (!slugs?.length) {
@@ -78,151 +78,118 @@ export default async function HomePage(): Promise<React.JSX.Element> {
   ]);
 
   const currency = store.tenant.currency;
-  const brand = store.tenant.name?.trim() || 'Jerzyfy';
   const products = featured.length ? featured : (catalog?.items ?? []);
   const catalogItems = catalog?.items ?? [];
+  const imagePool = catalogItems.length ? catalogItems : products;
   const categoriesWithCovers = withCatalogCover(categories, catalogItems);
-  const configured = store.website.homepage.sections;
-  const sections = configured.filter((section: HomepageSection) => section.enabled);
-  const catalogRailsConfigured = configured.some(
-    (section) =>
-      section.type === 'featured-products' ||
-      section.type === 'new-arrivals' ||
-      section.type === 'best-sellers',
+
+  const enabled = store.website.homepage.sections.filter(
+    (section: HomepageSection) => section.enabled && section.type !== 'marquee',
   );
-  const sectionsWithCatalog =
-    catalogRailsConfigured || products.length === 0
-      ? sections
+  const hasProductSection = enabled.some((section) => PRODUCT_SECTIONS.includes(section.type));
+  const withDefaults: HomepageSection[] =
+    hasProductSection || products.length === 0
+      ? enabled
       : [
-          ...sections,
-          { type: 'featured-products' as const, enabled: true, heading: 'Featured kits' },
-          { type: 'new-arrivals' as const, enabled: true, heading: 'Latest kits' },
+          ...enabled,
+          { type: 'featured-products', enabled: true, heading: 'Featured kits' },
+          { type: 'new-arrivals', enabled: true, heading: 'Latest drops' },
         ];
-  const orderedSections = [
-    ...sectionsWithCatalog.filter((section) => section.type === 'hero'),
-    ...sectionsWithCatalog.filter((section) => section.type !== 'hero' && section.type !== 'marquee'),
-  ];
+  const hero = withDefaults.find((section) => section.type === 'hero');
+  const body = withDefaults.filter((section) => section.type !== 'hero');
 
-  const firstCollectionIndex = orderedSections.findIndex(
-    (section) =>
-      section.type === 'featured-products' ||
-      section.type === 'best-sellers' ||
-      section.type === 'new-arrivals',
-  );
+  if (!body.some((section) => section.type === 'featured-categories') && categoriesWithCovers.length > 0) {
+    body.unshift({ type: 'featured-categories', enabled: true, heading: 'Shop by kit' });
+  }
 
+  const hasEditorial = body.some((section) => section.type === 'promo-banner' || section.type === 'statement');
   const rendered: React.ReactNode[] = [];
-  let injectedTrending = false;
-  let injectedLimited = false;
+  let editorialCount = 0;
+  let injectedEditorial = hasEditorial;
 
-  for (let index = 0; index < orderedSections.length; index += 1) {
-    const section = orderedSections[index];
+  function editorialImage(): StorefrontProductListItem | undefined {
+    const pick = imagePool[(editorialCount * 3 + 2) % Math.max(imagePool.length, 1)];
+    editorialCount += 1;
+    return pick;
+  }
+
+  for (let index = 0; index < body.length; index += 1) {
+    const section = body[index];
     if (!section) {
       continue;
     }
     const key = `${section.type}-${index}`;
 
-    if (section.type === 'hero') {
+    if (section.type === 'statement' || section.type === 'promo-banner') {
+      const cover = editorialImage();
       rendered.push(
-        <CinematicHero
+        <PromoBanner
           key={key}
           section={section}
-          fallbackImage={products[0]?.primaryImage}
-          products={products.slice(0, 5)}
-          currency={currency}
+          kicker={section.type === 'statement' ? 'Match day' : 'Premium'}
+          image={cover?.primaryImage?.url}
+          imageAlt={cover?.primaryImage?.altText ?? cover?.name}
+          reverse={editorialCount % 2 === 0}
         />,
       );
-      continue;
-    }
-    if (section.type === 'marquee') {
-      continue;
-    }
-    if (section.type === 'statement') {
-      rendered.push(<StatementSection key={key} section={section} />);
       continue;
     }
     if (section.type === 'featured-categories') {
       const listed = section.categorySlugs?.length
         ? categoriesWithCovers.filter((item) => section.categorySlugs?.includes(item.slug))
-        : categoriesWithCovers.filter((item) => !item.parentId).slice(0, 3);
+        : categoriesWithCovers.filter((item) => !item.parentId);
       rendered.push(<FeaturedCategories key={key} section={section} categories={listed} />);
       continue;
     }
     if (section.type === 'featured-products') {
       const picked = section.productSlugs?.length ? pickBySlugs(catalogItems, section.productSlugs) : [];
-      const listed = picked.length ? picked : products;
-      rendered.push(<FeaturedProducts key={key} section={section} products={listed} currency={currency} />);
-      if (!injectedTrending) {
-        rendered.push(<TrendingSection key="trending" categories={categoriesWithCovers} />);
-        injectedTrending = true;
-      }
-      continue;
-    }
-    if (section.type === 'promo-banner') {
-      rendered.push(<PromoBanner key={key} section={section} />);
-      continue;
-    }
-    if (section.type === 'best-sellers') {
-      const best = await storeApi.bestSellers(options);
+      rendered.push(
+        <FeaturedProducts key={key} section={section} products={picked.length ? picked : products} currency={currency} />,
+      );
+    } else if (section.type === 'best-sellers') {
+      const best = await storeApi.bestSellers(options).catch(() => products);
       rendered.push(<FeaturedProducts key={key} section={section} products={best} currency={currency} />);
-      if (!injectedTrending) {
-        rendered.push(<TrendingSection key="trending" categories={categoriesWithCovers} />);
-        injectedTrending = true;
-      }
-      continue;
-    }
-    if (section.type === 'new-arrivals') {
+    } else if (section.type === 'new-arrivals') {
       const picked = section.productSlugs?.length ? pickBySlugs(catalogItems, section.productSlugs) : [];
-      const newest = picked.length
-        ? picked
-        : await storeApi.newest(options).catch(() => catalogItems);
-      const isOnlyProductRail = index === firstCollectionIndex;
-
-      if (isOnlyProductRail && !injectedTrending) {
-        rendered.push(
-          <FeaturedProducts key={`${key}-collection`} section={section} products={newest} currency={currency} />,
-        );
-        rendered.push(<TrendingSection key="trending" categories={categoriesWithCovers} />);
-        injectedTrending = true;
-      }
-
-      if (!injectedLimited) {
-        rendered.push(
-          <LimitedEditionBand key="limited" products={newest} brand={brand} currency={currency} />,
-        );
-        injectedLimited = true;
-      }
-
-      if (!isOnlyProductRail) {
-        rendered.push(<LatestDrop key={key} section={section} products={newest} currency={currency} />);
-      }
-      continue;
-    }
-    if (section.type === 'trust') {
+      const newest = picked.length ? picked : await storeApi.newest(options).catch(() => catalogItems);
+      rendered.push(<LatestDrop key={key} section={section} products={newest} currency={currency} />);
+    } else if (section.type === 'trust') {
       rendered.push(<TrustSection key={key} section={section} />);
       continue;
-    }
-    if (section.type === 'cta') {
+    } else if (section.type === 'cta') {
       rendered.push(<CtaSection key={key} section={section} />);
+      continue;
+    } else {
+      continue;
+    }
+
+    if (!injectedEditorial && imagePool.length > 0) {
+      const cover = editorialImage();
+      rendered.push(
+        <EditorialBanner
+          key="editorial-default"
+          kicker="Limited edition"
+          heading="Master versions"
+          subheading="Player-spec fabrics, heat-pressed crests and a match-day cut. The kits the pros wear, built for the stands."
+          ctaLabel="Shop master versions"
+          ctaHref="/products?search=master"
+          image={cover?.primaryImage?.url}
+          imageAlt={cover?.primaryImage?.altText ?? cover?.name}
+        />,
+      );
+      injectedEditorial = true;
     }
   }
 
-  const hasHero = orderedSections.some((section) => section.type === 'hero');
-  const newestForLimited = catalogItems.length ? catalogItems : products;
-
   return (
     <div className="home-matchday">
-      {hasHero ? null : (
-        <CinematicHero
-          fallbackImage={products[0]?.primaryImage}
-          products={products.slice(0, 5)}
-          currency={currency}
-        />
-      )}
+      <CinematicHero
+        section={hero}
+        fallbackImage={products[0]?.primaryImage}
+        products={products.slice(0, 5)}
+        currency={currency}
+      />
       {rendered}
-      {!injectedTrending ? <TrendingSection categories={categoriesWithCovers} /> : null}
-      {!injectedLimited ? (
-        <LimitedEditionBand products={newestForLimited} brand={brand} currency={currency} />
-      ) : null}
     </div>
   );
 }

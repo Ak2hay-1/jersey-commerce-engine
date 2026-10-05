@@ -3,7 +3,9 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Button } from '@jersey-commerce/ui';
+import type { ReactNode } from 'react';
+import { Banknote, Check, CreditCard, Lock, Store, Truck } from 'lucide-react';
+import { cn } from '@jersey-commerce/ui';
 import type { CheckoutQuote, FulfillmentMethod, ShippingQuoteResult } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
 import { STORE_COOKIES, writeBrowserCookie } from '../../lib/cookies';
@@ -23,6 +25,57 @@ import { blockingCheckoutIssues } from '../../lib/checkout';
 import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
 
 const STEPS = ['Contact', 'Delivery', 'Payment', 'Confirmation'] as const;
+
+function PanelTitle({ index, children, as: Heading = 'h2' }: { index: number; children: ReactNode; as?: 'h1' | 'h2' }): React.JSX.Element {
+  return (
+    <Heading className="flex items-center gap-3 font-heading text-2xl uppercase tracking-wide">
+      <span className="tabular flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--accent))] font-sans text-xs font-bold text-white">
+        {index}
+      </span>
+      {children}
+    </Heading>
+  );
+}
+
+function OptionCard({
+  selected,
+  icon,
+  title,
+  description,
+  onSelect,
+}: {
+  selected: boolean;
+  icon: ReactNode;
+  title: string;
+  description: string;
+  onSelect: () => void;
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+      className={cn(
+        'flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-[var(--radius)] border px-4 py-3 text-left transition-colors',
+        selected ? 'border-foreground bg-white/[0.06]' : 'border-white/15 hover:border-white/40',
+      )}
+    >
+      <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', selected ? 'bg-foreground text-background' : 'bg-white/[0.06] text-foreground/80')}>
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-xs text-muted-foreground">{description}</span>
+      </span>
+      <span
+        className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full border', selected ? 'border-foreground bg-foreground text-background' : 'border-white/25')}
+        aria-hidden
+      >
+        {selected ? <Check className="h-3 w-3" /> : null}
+      </span>
+    </button>
+  );
+}
 
 export function CheckoutForm(): React.JSX.Element {
   const router = useRouter();
@@ -221,80 +274,95 @@ export function CheckoutForm(): React.JSX.Element {
         : 'Pay & place order';
 
   return (
-    <form onSubmit={placeOrder} className="mx-auto grid max-w-store gap-8 store-gutter py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="space-y-8">
-        <ol className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {STEPS.map((label, index) => {
-            const active = index === step;
-            return (
-              <li key={label} className="relative pb-1">
-                <span className={active ? 'text-foreground' : undefined}>
-                  {index + 1}. {label}
+    <form onSubmit={placeOrder} className="mx-auto max-w-store store-gutter pb-[var(--space-section)] pt-8 md:pt-12">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-display text-[clamp(2.5rem,6vw,4rem)]">Checkout</h1>
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" aria-hidden />
+          Secure checkout
+        </p>
+      </div>
+      <ol className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:gap-3">
+        {STEPS.map((label, index) => {
+          const active = index === step;
+          const done = index < step;
+          return (
+            <li key={label} className="flex items-center gap-2 sm:gap-3">
+              {index > 0 ? <span className="h-px w-4 bg-white/15 sm:w-8" aria-hidden /> : null}
+              <span className={cn('flex items-center gap-2', (active || done) && 'text-foreground')}>
+                <span
+                  className={cn(
+                    'relative flex h-6 w-6 items-center justify-center rounded-full border text-[11px]',
+                    active ? 'border-foreground' : done ? 'border-transparent bg-foreground text-background' : 'border-white/20',
+                  )}
+                >
+                  {done ? <Check className="h-3.5 w-3.5" aria-hidden /> : index + 1}
+                  {active ? (
+                    <motion.span
+                      layoutId="checkout-step-ring"
+                      className="absolute -inset-1 rounded-full border border-[hsl(var(--accent))]"
+                      transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
+                    />
+                  ) : null}
                 </span>
-                {active ? (
-                  <motion.span
-                    layoutId="checkout-step-underline"
-                    className="absolute inset-x-0 bottom-0 h-px bg-foreground"
-                    transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
-                  />
-                ) : null}
-              </li>
-            );
-          })}
-        </ol>
+                <span className={active ? undefined : 'hidden sm:inline'}>{label}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-12">
+      <div className="order-2 space-y-5 lg:order-1">
         {error ? <Alert tone="danger">{error}</Alert> : null}
         {issues.map((issue) => (
           <Alert key={`${issue.code}-${issue.itemId ?? issue.message}`} tone={issue.code === 'PRICE_CHANGED' ? 'warning' : 'danger'}>
             {issue.message}
           </Alert>
         ))}
-        <motion.section className="space-y-3" {...sectionMotion}>
-          <h1 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Contact</h1>
-          <label className="grid gap-1 text-sm">
+        <motion.section className="panel space-y-4 p-5 sm:p-7" {...sectionMotion}>
+          <PanelTitle index={1}>Contact</PanelTitle>
+          <label className="grid gap-1.5 text-sm text-muted-foreground">
             Name
             <Input value={name} onChange={(event) => setName(event.target.value)} required autoComplete="name" onFocus={() => setStep(0)} />
           </label>
-          <label className="grid gap-1 text-sm">
-            Email
-            <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
-          </label>
-          <label className="grid gap-1 text-sm">
-            Phone
-            <Input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" required />
-          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-sm text-muted-foreground">
+              Email
+              <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+            </label>
+            <label className="grid gap-1.5 text-sm text-muted-foreground">
+              Phone
+              <Input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" required />
+            </label>
+          </div>
         </motion.section>
-        <motion.section className="space-y-3" {...sectionMotion}>
-          <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Promo code</h2>
-          <PromoCodeField />
-        </motion.section>
-        <motion.section className="space-y-3" {...sectionMotion}>
-          <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Delivery</h2>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              type="button"
-              className="w-full cursor-pointer sm:w-auto"
-              variant={method === 'DELIVERY' ? 'default' : 'outline'}
-              onClick={() => {
+        <motion.section className="panel space-y-4 p-5 sm:p-7" {...sectionMotion}>
+          <PanelTitle index={2}>Delivery</PanelTitle>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <OptionCard
+              selected={method === 'DELIVERY'}
+              icon={<Truck className="h-5 w-5" />}
+              title="Home delivery"
+              description="Shipped to your door"
+              onSelect={() => {
                 setMethod('DELIVERY');
                 setStep(1);
               }}
-            >
-              Delivery
-            </Button>
-            <Button
-              type="button"
-              className="w-full cursor-pointer sm:w-auto"
-              variant={method === 'STORE_PICKUP' ? 'default' : 'outline'}
-              onClick={() => {
+            />
+            <OptionCard
+              selected={method === 'STORE_PICKUP'}
+              icon={<Store className="h-5 w-5" />}
+              title="Store pickup"
+              description="Collect in person"
+              onSelect={() => {
                 setMethod('STORE_PICKUP');
                 if (paymentMethod === 'COD') {
                   setPaymentMethod('ONLINE');
                 }
                 setStep(1);
               }}
-            >
-              Store pickup
-            </Button>
+            />
           </div>
           <AnimatePresence mode="wait" initial={false}>
             {method === 'DELIVERY' ? (
@@ -308,8 +376,8 @@ export function CheckoutForm(): React.JSX.Element {
               >
                 <AddressForm value={address} onChange={setAddress} />
                 {shippingQuote ? (
-                  <div className="space-y-2 border border-foreground/15 px-3 py-3 text-sm">
-                    <p>
+                  <div className="space-y-3 rounded-[var(--radius)] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+                    <p className={shippingQuote.serviceability.serviceable ? 'text-emerald-300' : 'text-red-300'}>
                       {shippingQuote.serviceability.serviceable
                         ? 'Pincode is serviceable'
                         : shippingQuote.serviceability.message ?? 'Pincode not serviceable'}
@@ -317,15 +385,15 @@ export function CheckoutForm(): React.JSX.Element {
                     {shippingQuote.rates.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {shippingQuote.rates.map((rate) => (
-                          <Button
+                          <button
                             key={rate.mode}
                             type="button"
-                            size="sm"
-                            variant={shippingMode === rate.mode ? 'default' : 'outline'}
+                            className="chip cursor-pointer"
+                            aria-pressed={shippingMode === rate.mode}
                             onClick={() => setShippingMode(rate.mode)}
                           >
                             {rate.mode} · {formatMoney(rate.amount, store.tenant.currency)}
-                          </Button>
+                          </button>
                         ))}
                       </div>
                     ) : null}
@@ -350,56 +418,59 @@ export function CheckoutForm(): React.JSX.Element {
           </AnimatePresence>
         </motion.section>
         <motion.section
-          className="space-y-3"
+          className="panel space-y-4 p-5 sm:p-7"
           {...sectionMotion}
           onFocusCapture={() => setStep(2)}
         >
-          <h2 className="font-heading text-2xl uppercase tracking-wide md:text-3xl">Payment</h2>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <PanelTitle index={3}>Payment</PanelTitle>
+          <div className="grid gap-3 sm:grid-cols-2">
             {canPayOnline ? (
-              <Button
-                type="button"
-                className="w-full cursor-pointer sm:w-auto"
-                variant={paymentMethod === 'ONLINE' ? 'default' : 'outline'}
-                onClick={() => setPaymentMethod('ONLINE')}
-              >
-                Pay online
-              </Button>
+              <OptionCard
+                selected={paymentMethod === 'ONLINE'}
+                icon={<CreditCard className="h-5 w-5" />}
+                title="Pay online"
+                description="UPI, cards, net banking"
+                onSelect={() => setPaymentMethod('ONLINE')}
+              />
             ) : null}
             {canPayCod ? (
-              <Button
-                type="button"
-                className="w-full cursor-pointer sm:w-auto"
-                variant={paymentMethod === 'COD' ? 'default' : 'outline'}
-                onClick={() => setPaymentMethod('COD')}
-              >
-                Cash on delivery
-              </Button>
+              <OptionCard
+                selected={paymentMethod === 'COD'}
+                icon={<Banknote className="h-5 w-5" />}
+                title="Cash on delivery"
+                description="Pay when it arrives"
+                onSelect={() => setPaymentMethod('COD')}
+              />
             ) : null}
           </div>
-          <div className="border border-foreground bg-foreground px-4 py-4 text-background">
-            <p className="text-sm font-semibold uppercase tracking-[0.16em]">
-              {paymentMethod === 'COD' ? 'Cash on delivery' : razorpayEnabled ? 'Pay with Razorpay' : 'Online payment'}
-            </p>
-            <p className="mt-2 text-sm text-background/75">
-              {paymentMethod === 'COD'
-                ? 'Pay the courier when your order arrives. COD is collected by Delhivery.'
-                : razorpayEnabled
-                  ? 'Pay securely with UPI, cards, or net banking. Your order is confirmed once payment succeeds.'
-                  : 'Online checkout is being set up. Contact the store if you need help placing an order.'}
-            </p>
-          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {paymentMethod === 'COD'
+              ? 'Pay the courier when your order arrives. COD is collected by Delhivery.'
+              : razorpayEnabled
+                ? 'Pay securely with UPI, cards, or net banking via Razorpay. Your order is confirmed once payment succeeds.'
+                : 'Online checkout is being set up. Contact the store if you need help placing an order.'}
+          </p>
+          <button
+            type="submit"
+            className="btn btn-lg btn-primary w-full cursor-pointer"
+            disabled={pending || blocking.length > 0 || !checkoutAvailable}
+            onClick={() => setStep(3)}
+          >
+            <Lock className="h-4 w-4" aria-hidden />
+            {checkoutAvailable ? submitLabel : 'Checkout unavailable'}
+          </button>
         </motion.section>
-        <Button
-          type="submit"
-          className="store-cta w-full cursor-pointer rounded-none md:w-auto"
-          disabled={pending || blocking.length > 0 || !checkoutAvailable}
-          onClick={() => setStep(3)}
-        >
-          {checkoutAvailable ? submitLabel : 'Checkout unavailable'}
-        </Button>
       </div>
-      <CheckoutSummary cart={cart} quote={quote} currency={store.tenant.currency} shippingQuote={shippingQuote} />
+      <div className="order-1 lg:order-2">
+        <div className="space-y-5 lg:sticky lg:top-24">
+          <CheckoutSummary cart={cart} quote={quote} currency={store.tenant.currency} shippingQuote={shippingQuote} />
+          <div className="panel p-5">
+            <p className="text-micro mb-3 text-muted-foreground">Promo code</p>
+            <PromoCodeField />
+          </div>
+        </div>
+      </div>
+      </div>
     </form>
   );
 }

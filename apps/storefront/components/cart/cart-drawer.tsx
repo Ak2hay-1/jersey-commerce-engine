@@ -3,12 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Button } from '@jersey-commerce/ui';
-import { X } from 'lucide-react';
+import { ShoppingBag, X } from 'lucide-react';
 import { formatMoney } from '../../lib/format';
 import { useCart } from '../providers/cart-provider';
 import { useStore } from '../providers/store-provider';
 import { CartItemRow } from './cart-item';
+import { FreeDeliveryProgress } from './free-delivery-progress';
 import { MOTION_DRAWER, MOTION_DURATION, MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
 
 export function CartDrawer(): React.JSX.Element {
@@ -25,10 +25,17 @@ export function CartDrawer(): React.JSX.Element {
     }
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+    window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = previous;
+      window.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, setOpen]);
 
   function navigate(href: string) {
     setOpen(false);
@@ -41,7 +48,7 @@ export function CartDrawer(): React.JSX.Element {
         <div className="fixed inset-0 z-[110]" key="cart-drawer">
           <motion.button
             type="button"
-            className="absolute inset-0 cursor-pointer bg-black/45"
+            className="absolute inset-0 cursor-pointer bg-black/60 backdrop-blur-[2px]"
             aria-label="Close cart"
             onClick={() => setOpen(false)}
             initial={{ opacity: 0 }}
@@ -50,7 +57,7 @@ export function CartDrawer(): React.JSX.Element {
             transition={MOTION_TRANSITION}
           />
           <motion.aside
-            className="absolute inset-y-0 right-0 z-10 flex w-full max-w-md flex-col border-l border-border bg-background shadow-drawer pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+            className="absolute inset-y-0 right-0 z-10 flex w-full max-w-md flex-col border-l border-white/10 bg-[hsl(var(--surface-1))] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-drawer"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cart-title"
@@ -60,35 +67,45 @@ export function CartDrawer(): React.JSX.Element {
             exit={reduced ? { opacity: 0 } : { x: '100%' }}
             transition={reduced ? MOTION_TRANSITION : MOTION_DRAWER}
           >
-            <div className="flex items-center justify-between border-b border-border px-5 py-5">
-              <h2 id="cart-title" className="font-heading text-2xl uppercase tracking-[0.12em]">
-                Cart
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <h2 id="cart-title" className="flex items-baseline gap-2 font-heading text-2xl uppercase tracking-wide">
+                Your cart
+                {cart?.itemCount ? <span className="tabular text-sm font-semibold text-muted-foreground">({cart.itemCount})</span> : null}
               </h2>
-              <Button type="button" variant="ghost" size="icon" className="cursor-pointer rounded-none" aria-label="Close cart" onClick={() => setOpen(false)}>
-                <X />
-              </Button>
+              <button type="button" className="icon-btn cursor-pointer border-transparent" aria-label="Close cart" onClick={() => setOpen(false)}>
+                <X className="h-5 w-5" />
+              </button>
             </div>
+            {!empty ? (
+              <div className="border-b border-white/10 px-5 py-4">
+                <FreeDeliveryProgress subtotal={cart.totals.subtotal} currency={currency} />
+              </div>
+            ) : null}
             <div className="flex-1 overflow-y-auto px-5 py-5">
-              {error ? <p className="mb-3 text-sm text-destructive">{error}</p> : null}
+              {error ? <p className="mb-3 text-sm text-red-300">{error}</p> : null}
               {empty ? (
                 <motion.div
-                  className="space-y-4"
+                  className="flex h-full flex-col items-center justify-center gap-4 text-center"
                   initial={reduced ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: MOTION_DURATION, ease: MOTION_EASE, delay: 0.05 }}
                 >
-                  <p className="font-heading text-2xl uppercase">Your cart is empty</p>
-                  <p className="text-sm text-muted-foreground">You might also like the latest drop.</p>
-                  <Button type="button" className="store-pill cursor-pointer rounded-none bg-foreground text-background" onClick={() => navigate('/products')}>
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-[hsl(var(--surface-2))] text-muted-foreground">
+                    <ShoppingBag className="h-7 w-7" />
+                  </span>
+                  <p className="font-display text-3xl">Your cart is empty</p>
+                  <p className="max-w-xs text-sm text-muted-foreground">The latest drops are waiting. Find your kit and come back.</p>
+                  <button type="button" className="btn btn-lg btn-primary mt-2 cursor-pointer" onClick={() => navigate('/products')}>
                     Continue shopping
-                  </Button>
+                  </button>
                 </motion.div>
               ) : (
-                <ul className="space-y-5">
+                <ul className="divide-y divide-white/[0.08]">
                   <AnimatePresence initial={false}>
                     {cart.items.map((item, index) => (
                       <motion.li
                         key={item.id}
+                        className="py-5 first:pt-0 last:pb-0"
                         layout={!reduced}
                         initial={reduced ? false : { opacity: 0, x: 16 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -113,27 +130,22 @@ export function CartDrawer(): React.JSX.Element {
             </div>
             {cart && cart.items.length > 0 ? (
               <motion.div
-                className="relative z-20 space-y-3 border-t border-border bg-background px-5 py-5"
+                className="relative z-20 space-y-3 border-t border-white/10 bg-[hsl(var(--surface-2))] px-5 py-5"
                 initial={reduced ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: MOTION_DURATION, ease: MOTION_EASE, delay: 0.12 }}
               >
-                <div className="flex justify-between text-sm uppercase tracking-[0.12em]">
-                  <span>Subtotal</span>
-                  <span>{formatMoney(cart.totals.subtotal, currency)}</span>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-muted-foreground">Subtotal</span>
+                  <span className="tabular font-heading text-2xl font-bold">{formatMoney(cart.totals.subtotal, currency)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Free delivery on orders above ₹2,000. Shipping calculated at checkout.</p>
-                <Button
-                  type="button"
-                  className="store-pill h-12 w-full cursor-pointer rounded-none bg-foreground text-background hover:bg-foreground/90"
-                  data-cursor="hover"
-                  onClick={() => navigate('/checkout')}
-                >
+                <p className="text-xs text-muted-foreground">Shipping and promo codes are applied at checkout.</p>
+                <button type="button" className="btn btn-lg btn-primary w-full cursor-pointer" data-cursor="hover" onClick={() => navigate('/checkout')}>
                   Checkout
-                </Button>
-                <Button type="button" variant="outline" className="store-pill h-11 w-full cursor-pointer rounded-none" data-cursor="hover" onClick={() => navigate('/cart')}>
+                </button>
+                <button type="button" className="btn btn-secondary w-full cursor-pointer" data-cursor="hover" onClick={() => navigate('/cart')}>
                   View cart
-                </Button>
+                </button>
               </motion.div>
             ) : null}
           </motion.aside>

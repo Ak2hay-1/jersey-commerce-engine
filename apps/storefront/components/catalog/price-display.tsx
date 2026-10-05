@@ -13,27 +13,25 @@ export function PriceDisplay({
   size?: 'sm' | 'md' | 'lg';
 }): React.JSX.Element {
   const formatted = formatMoney(price, currency);
-  const onSale = Boolean(price && discountPercent(price, compareAt));
-  const compareFormatted = onSale && compareAt ? formatMoney(compareAt, currency) : null;
-  const textSize = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-base',
+  const discount = price ? discountPercent(price, compareAt) : null;
+  const compareFormatted = discount && compareAt ? formatMoney(compareAt, currency) : null;
+  const priceSize = {
+    sm: 'text-lg',
+    md: 'text-2xl',
+    lg: 'text-[2rem] md:text-4xl',
   }[size];
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1', textSize)}>
-      {compareFormatted ? (
-        <span className="text-muted-foreground line-through decoration-muted-foreground/70">{compareFormatted}</span>
-      ) : null}
-      <span className={cn('font-medium text-foreground', onSale ? '' : size === 'lg' ? 'text-xl' : '')}>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span className={cn('tabular font-heading font-bold leading-none tracking-wide text-foreground', priceSize)}>
         {formatted || 'Price unavailable'}
       </span>
-      {onSale ? (
-        <span className="rounded-full bg-foreground px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-background">
-          Sale
+      {compareFormatted ? (
+        <span className={cn('tabular text-muted-foreground line-through', size === 'sm' ? 'text-xs' : 'text-base')}>
+          {compareFormatted}
         </span>
       ) : null}
+      {discount ? <span className="badge badge-sale">Save {discount}%</span> : null}
     </div>
   );
 }

@@ -1,15 +1,13 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChevronRight } from 'lucide-react';
 import { storeApi } from '../../../lib/api';
 import { serverStoreOptions } from '../../../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
-import { ProductGrid } from '../../../components/catalog/product-grid';
-import { CatalogFilters } from '../../../components/catalog/catalog-filters';
-import { ProductImage } from '../../../components/catalog/product-image';
-import { EmptyState } from '../../../components/ui/empty-state';
+import { CatalogLayout, type CatalogChip } from '../../../components/catalog/catalog-layout';
 import { JsonLd, breadcrumbJsonLd } from '../../../components/seo/json-ld';
-import { catalogHref } from '../../../lib/catalog-query';
 import { headers } from 'next/headers';
 
 type Params = { slug?: string[] };
@@ -77,67 +75,47 @@ export default async function CategoryPage({
   ]);
   const host = (await headers()).get('host');
   const origin = `${host?.includes('localhost') ? 'http' : 'https'}://${host ?? 'localhost:3000'}`;
+  const basePath = `/category/${slug.join('/')}`;
   const crumbs = [{ name: 'Home', href: '/' }, ...slug.map((part, index) => ({ name: part.replace(/-/g, ' '), href: `/category/${slug.slice(0, index + 1).join('/')}` }))];
-  crumbs[crumbs.length - 1] = { name: category.name, href: `/category/${slug.join('/')}` };
+  crumbs[crumbs.length - 1] = { name: category.name, href: basePath };
+
+  const chips: CatalogChip[] = category.children.length
+    ? [
+        { label: `All ${category.name}`, href: basePath, active: true },
+        ...category.children.map((child) => ({ label: child.name, href: `${basePath}/${child.slug}` })),
+      ]
+    : [];
+
+  const breadcrumb = (
+    <nav className="mb-5 flex flex-wrap items-center gap-1.5 text-xs capitalize text-muted-foreground" aria-label="Breadcrumb">
+      {crumbs.slice(0, -1).map((crumb, index) => (
+        <span key={crumb.href} className="flex items-center gap-1.5">
+          {index > 0 ? <ChevronRight className="h-3 w-3 opacity-60" aria-hidden /> : null}
+          <Link href={crumb.href} className="hover:text-foreground">
+            {crumb.name}
+          </Link>
+        </span>
+      ))}
+    </nav>
+  );
 
   return (
-    <div>
-      {category.image ? (
-        <div className="relative bg-muted">
-          <ProductImage src={category.image} alt="" className="h-48 w-full object-cover md:h-72" sizes="100vw" priority />
-          <div className="absolute inset-0 bg-black/45" />
-          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-store store-gutter py-6 text-white md:py-8">
-            <h1 className="break-words text-3xl font-semibold tracking-tight md:text-5xl">{category.name}</h1>
-            {category.description ? <p className="mt-2 max-w-2xl text-white/80">{category.description}</p> : null}
-          </div>
-        </div>
-      ) : (
-        <div className="mx-auto max-w-store store-gutter pt-10">
-          <h1 className="break-words text-3xl font-semibold tracking-tight md:text-4xl">{category.name}</h1>
-          {category.description ? <p className="mt-2 text-muted-foreground">{category.description}</p> : null}
-        </div>
-      )}
-      <div className="mx-auto max-w-store store-gutter py-8 md:py-10">
-        {category.children.length > 0 ? (
-          <div className="mb-8 flex flex-wrap gap-2">
-            {category.children.map((child) => (
-              <a key={child.id} href={`/category/${slug.join('/')}/${child.slug}`} className="border border-border px-3 py-2 text-sm tracking-wide hover:border-foreground">
-                {child.name}
-              </a>
-            ))}
-          </div>
-        ) : null}
-        <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10">
-          <aside>
-            <CatalogFilters facets={result.facets} />
-          </aside>
-          <div className="space-y-8">
-            {result.items.length === 0 ? (
-              <EmptyState title="No products in this category" description="Try another category or browse the full catalog." actionHref="/products" actionLabel="All products" />
-            ) : (
-              <ProductGrid products={result.items} currency={store.tenant.currency} />
-            )}
-            {result.meta.totalPages > 1 ? (
-              <nav className="flex justify-center gap-4 text-sm" aria-label="Pagination">
-                {result.meta.page > 1 ? (
-                  <a className="underline" href={catalogHref(`/category/${slug.join('/')}`, query, result.meta.page - 1)}>
-                    Previous
-                  </a>
-                ) : null}
-                <span>
-                  Page {result.meta.page} of {result.meta.totalPages}
-                </span>
-                {result.meta.page < result.meta.totalPages ? (
-                  <a className="underline" href={catalogHref(`/category/${slug.join('/')}`, query, result.meta.page + 1)}>
-                    Next
-                  </a>
-                ) : null}
-              </nav>
-            ) : null}
-          </div>
-        </div>
-      </div>
+    <>
+      <CatalogLayout
+        kicker="Collection"
+        title={category.name}
+        description={category.description}
+        image={category.image}
+        chips={chips}
+        result={result}
+        currency={store.tenant.currency}
+        basePath={basePath}
+        query={query}
+        emptyTitle="Nothing here yet"
+        emptyDescription="No kits in this collection right now. Browse the full catalog instead."
+        breadcrumb={breadcrumb}
+      />
       <JsonLd data={breadcrumbJsonLd(crumbs, origin)} />
-    </div>
+    </>
   );
 }

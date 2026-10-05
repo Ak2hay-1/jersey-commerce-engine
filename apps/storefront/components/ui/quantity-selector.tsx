@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, cn } from '@jersey-commerce/ui';
+import { cn } from '@jersey-commerce/ui';
 import { Minus, Plus } from 'lucide-react';
 
 export function QuantitySelector({
@@ -9,40 +9,47 @@ export function QuantitySelector({
   max = 99,
   disabled,
   onChange,
+  size = 'lg',
 }: {
   value: number;
   min?: number;
   max?: number;
   disabled?: boolean;
   onChange: (value: number) => void;
+  size?: 'sm' | 'lg';
 }): React.JSX.Element {
+  const button = cn(
+    'flex cursor-pointer items-center justify-center text-foreground/80 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35',
+    size === 'lg' ? 'h-full w-11' : 'h-full w-9',
+  );
   return (
-    <div className="inline-flex items-center border border-input">
-      <Button
+    <div
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-[var(--radius)] border border-white/15 bg-[hsl(var(--surface-1))]',
+        size === 'lg' ? 'h-[3.25rem]' : 'h-10',
+      )}
+    >
+      <button
         type="button"
-        variant="ghost"
-        size="icon"
-        className="h-10 w-10 rounded-none"
+        className={button}
         aria-label="Decrease quantity"
         disabled={disabled || value <= min}
         onClick={() => onChange(Math.max(min, value - 1))}
       >
         <Minus className="h-4 w-4" />
-      </Button>
-      <span className={cn('min-w-10 text-center text-sm tabular-nums')} aria-live="polite">
+      </button>
+      <span className={cn('tabular text-center text-sm font-semibold', size === 'lg' ? 'min-w-8' : 'min-w-6')} aria-live="polite">
         {value}
       </span>
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="icon"
-        className="h-10 w-10 rounded-none"
+        className={button}
         aria-label="Increase quantity"
         disabled={disabled || value >= max}
         onClick={() => onChange(Math.min(max, value + 1))}
       >
         <Plus className="h-4 w-4" />
-      </Button>
+      </button>
     </div>
   );
 }

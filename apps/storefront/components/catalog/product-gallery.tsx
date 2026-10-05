@@ -2,10 +2,11 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { ChevronLeft, ChevronRight, Expand, X } from 'lucide-react';
 import { cn } from '@jersey-commerce/ui';
 import type { ProductImageDto } from '@jersey-commerce/types';
 import { ProductImage } from './product-image';
-import { MOTION_DRAWER, MOTION_DURATION, MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
+import { MOTION_DRAWER, MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
 
 export function ProductGallery({ images, name }: { images: ProductImageDto[]; name: string }): React.JSX.Element {
   const ordered = useMemo(
@@ -18,9 +19,10 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
   const touchX = useRef<number | null>(null);
   const current = ordered[index] ?? ordered[0];
   const reduced = useReducedMotion();
+  const multiple = ordered.length > 1;
 
   function go(delta: number) {
-    if (ordered.length < 2) {
+    if (!multiple) {
       return;
     }
     setDirection(delta);
@@ -36,7 +38,7 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
   }
 
   if (!current) {
-    return <div className="aspect-[3/4] w-full bg-muted" />;
+    return <div className="aspect-[4/5] w-full rounded-[calc(var(--radius)+4px)] bg-[hsl(var(--surface-1))]" />;
   }
 
   const slideVariants = reduced
@@ -46,15 +48,15 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
         exit: { opacity: 1 },
       }
     : {
-        enter: { opacity: 0, x: direction > 0 ? '8%' : '-8%' },
+        enter: { opacity: 0, x: direction > 0 ? '6%' : '-6%' },
         center: { opacity: 1, x: '0%' },
-        exit: { opacity: 0, x: direction > 0 ? '-6%' : '6%' },
+        exit: { opacity: 0, x: direction > 0 ? '-4%' : '4%' },
       };
 
   return (
-    <div className="space-y-3">
+    <div className={cn('flex flex-col gap-3', multiple && 'md:flex-row-reverse md:items-start')}>
       <div
-        className="relative overflow-hidden bg-muted"
+        className="product-card-media relative aspect-[4/5] w-full min-w-0 flex-1 overflow-hidden rounded-[calc(var(--radius)+4px)]"
         onTouchStart={(event) => {
           touchX.current = event.changedTouches[0]?.clientX ?? null;
         }}
@@ -71,40 +73,68 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
           }
         }}
       >
-        <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
           <motion.div
             key={current.id}
+            className="absolute inset-0"
             custom={direction}
             variants={slideVariants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: reduced ? 0.15 : 0.42, ease: MOTION_EASE }}
+            transition={{ duration: reduced ? 0.15 : 0.4, ease: MOTION_EASE }}
           >
             <button
               type="button"
-              className="block w-full cursor-pointer"
+              className="absolute inset-0 block cursor-zoom-in"
               onClick={() => setZoomed(true)}
               aria-label="Zoom product image"
             >
               <ProductImage
                 src={current.url}
                 alt={current.altText ?? name}
-                className="aspect-[3/4] w-full object-cover md:transition-transform md:duration-700 md:ease-out md:hover:scale-[1.03]"
-                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 58vw"
                 priority
+                fill
               />
             </button>
           </motion.div>
         </AnimatePresence>
-        {ordered.length > 1 ? (
-          <p className="pointer-events-none absolute bottom-3 right-3 bg-background/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]">
-            {index + 1} / {ordered.length}
-          </p>
+
+        <span className="pointer-events-none absolute right-3 top-3 z-[2] flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur">
+          <Expand className="h-4 w-4" aria-hidden />
+        </span>
+
+        {multiple ? (
+          <>
+            <div className="absolute inset-y-0 left-3 z-[2] hidden items-center md:flex">
+              <button type="button" className="icon-btn cursor-pointer border-white/20 bg-black/40 text-white backdrop-blur" aria-label="Previous image" onClick={() => go(-1)}>
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="absolute inset-y-0 right-3 z-[2] hidden items-center md:flex">
+              <button type="button" className="icon-btn cursor-pointer border-white/20 bg-black/40 text-white backdrop-blur" aria-label="Next image" onClick={() => go(1)}>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="absolute inset-x-0 bottom-3 z-[2] flex justify-center gap-1.5 md:hidden" aria-hidden>
+              {ordered.map((image, imageIndex) => (
+                <span
+                  key={image.id}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all duration-300',
+                    imageIndex === index ? 'w-5 bg-white' : 'w-1.5 bg-white/40',
+                  )}
+                />
+              ))}
+            </div>
+          </>
         ) : null}
       </div>
-      {ordered.length > 1 ? (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+
+      {multiple ? (
+        <div className="rail-scroll flex gap-2 overflow-x-auto md:max-h-[min(80vh,46rem)] md:w-20 md:shrink-0 md:flex-col md:overflow-y-auto md:overflow-x-visible">
           {ordered.map((image, imageIndex) => {
             const active = imageIndex === index;
             return (
@@ -115,28 +145,22 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
                 aria-label={`View image ${imageIndex + 1}`}
                 aria-current={active}
                 className={cn(
-                  'relative h-16 w-14 min-h-11 shrink-0 cursor-pointer overflow-hidden border transition-opacity duration-300',
-                  active ? 'border-transparent opacity-100' : 'border-transparent opacity-70 hover:opacity-100',
+                  'relative aspect-[4/5] w-16 shrink-0 cursor-pointer overflow-hidden rounded-md border-2 transition-all duration-300 md:w-full',
+                  active ? 'border-foreground opacity-100' : 'border-transparent opacity-55 hover:opacity-100',
                 )}
               >
-                {active ? (
-                  <motion.span
-                    layoutId="pdp-thumb-ring"
-                    className="pointer-events-none absolute inset-0 z-[1] border border-foreground"
-                    transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
-                  />
-                ) : null}
-                <ProductImage src={image.url} alt={image.altText ?? `${name} ${imageIndex + 1}`} className="h-full w-full object-cover" />
+                <ProductImage src={image.url} alt={image.altText ?? `${name} ${imageIndex + 1}`} className="object-cover" sizes="80px" fill />
               </button>
             );
           })}
         </div>
       ) : null}
+
       <AnimatePresence>
         {zoomed ? (
           <motion.div
             key="zoom-modal"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
             role="dialog"
             aria-modal="true"
             aria-label="Zoomed product image"
@@ -145,7 +169,15 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
             exit={{ opacity: 0 }}
             transition={MOTION_TRANSITION}
           >
-            <button type="button" className="absolute inset-0 cursor-pointer" aria-label="Close zoom" onClick={() => setZoomed(false)} />
+            <button type="button" className="absolute inset-0 cursor-zoom-out" aria-label="Close zoom" onClick={() => setZoomed(false)} />
+            <button
+              type="button"
+              className="icon-btn absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20 cursor-pointer border-white/20 text-white"
+              aria-label="Close"
+              onClick={() => setZoomed(false)}
+            >
+              <X className="h-5 w-5" />
+            </button>
             <motion.div
               className="relative z-10 max-h-[90vh] max-w-full"
               initial={reduced ? { opacity: 1 } : { scale: 0.94, opacity: 0.85 }}
@@ -156,7 +188,7 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
               <ProductImage
                 src={current.url}
                 alt={current.altText ?? name}
-                className="max-h-[90vh] w-auto max-w-full object-contain"
+                className="max-h-[90vh] w-auto max-w-full rounded-lg object-contain"
                 sizes="100vw"
               />
             </motion.div>

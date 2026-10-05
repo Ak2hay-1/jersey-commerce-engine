@@ -3,7 +3,7 @@
 export const JERZYFY_DARK_MATCHDAY = {
   primaryColor: '#F5F5F4',
   secondaryColor: '#A8A29E',
-  accentColor: '#7A1F1F',
+  accentColor: '#D7263D',
   backgroundColor: '#0A0A0A',
   foregroundColor: '#F5F5F4',
 } as const;

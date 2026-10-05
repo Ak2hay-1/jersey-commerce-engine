@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@jersey-commerce/ui';
 import { Input } from '../ui/input';
 import { Alert } from '../ui/alert';
 import { useAuth } from '../providers/auth-provider';
@@ -64,10 +63,10 @@ export function ProfileForm({ mode = 'edit' }: { mode?: ProfileFormMode }): Reac
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto w-full max-w-md space-y-4">
+    <form onSubmit={onSubmit} className="panel w-full max-w-2xl space-y-4 p-5 sm:p-8">
       <div className="space-y-1">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{shopName}</p>
-        <h1 className="font-heading text-3xl uppercase tracking-wide md:text-4xl">
+        <p className="section-kicker">{shopName}</p>
+        <h1 className="font-display pt-1 text-[clamp(2.25rem,5vw,3rem)]">
           {completing ? 'Complete profile' : 'Profile'}
         </h1>
         {completing ? (
@@ -78,37 +77,37 @@ export function ProfileForm({ mode = 'edit' }: { mode?: ProfileFormMode }): Reac
       </div>
       {error ? <Alert tone="danger">{error}</Alert> : null}
       {!completing && saved ? <Alert tone="success">Profile saved.</Alert> : null}
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         Name
         <Input name="name" defaultValue={customer.name} required />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         Email
         <Input name="email" type="email" defaultValue={customer.email ?? ''} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         Phone
         <Input name="phone" defaultValue={customer.phone ?? ''} autoComplete="tel" inputMode="tel" required={completing} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         Address
         <Input name="address" defaultValue={customer.address ?? ''} autoComplete="address-line1" required={completing} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         City
         <Input name="city" defaultValue={customer.city ?? ''} autoComplete="address-level2" required={completing} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         State
         <Input name="state" defaultValue={customer.state ?? ''} autoComplete="address-level1" required={completing} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         Postal code
         <Input name="postalCode" defaultValue={customer.postalCode ?? ''} autoComplete="postal-code" required={completing} />
       </label>
-      <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending}>
+      <button type="submit" className="btn btn-lg btn-primary w-full cursor-pointer" disabled={pending}>
         {pending ? 'Saving…' : completing ? 'Save and continue' : 'Save'}
-      </Button>
+      </button>
     </form>
   );
 }

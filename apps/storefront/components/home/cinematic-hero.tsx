@@ -1,80 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import type {
-  HomepageSection,
-  StorefrontProductDetail,
-  StorefrontProductListItem,
-  StorefrontSocialLinks,
-  StorefrontVariant,
-} from '@jersey-commerce/types';
+import type { HomepageSection, StorefrontProductListItem } from '@jersey-commerce/types';
 import { cn } from '@jersey-commerce/ui';
-import { sortUniqueSizes } from '@jersey-commerce/utils';
 import { ProductImage } from '../catalog/product-image';
-import { Magnetic } from '../motion/magnetic';
 import { MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
-import { useCart } from '../providers/cart-provider';
 import { useStore } from '../providers/store-provider';
-import { storeApi } from '../../lib/api';
 import { DEMO_HERO_IMAGE, resolveDemoMediaUrl } from '../../lib/demo-media';
-import { publicErrorMessage } from '../../lib/errors';
-import { formatMoney } from '../../lib/format';
-import { colorToHex } from '../../lib/swatch';
+import { discountPercent, formatMoney } from '../../lib/format';
 
-const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  instagram: Instagram,
-  facebook: Facebook,
-  twitter: Twitter,
-  youtube: Youtube,
-};
+const SLIDE_INTERVAL_MS = 6500;
 
-function socialEntries(links: StorefrontSocialLinks): Array<[string, string]> {
-  return Object.entries(links).filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
-}
+/** Per-slide stage glows; kept deep so white copy stays readable. */
+const STAGE_GLOWS = ['#1f3a8a', '#8f1d2c', '#0f6b77', '#5b2a86', '#7a5a12'];
 
-function sizesFromVariants(variants: StorefrontVariant[]): string[] {
-  return sortUniqueSizes(variants.map((item) => item.size));
-}
-
-function parseHex(hex: string): [number, number, number] {
-  const raw = hex.replace('#', '').trim();
-  const full =
-    raw.length === 3
-      ? raw
-          .split('')
-          .map((char) => `${char}${char}`)
-          .join('')
-      : raw.padEnd(6, '0').slice(0, 6);
-  return [parseInt(full.slice(0, 2), 16), parseInt(full.slice(2, 4), 16), parseInt(full.slice(4, 6), 16)];
-}
-
-function mixHex(hex: string, target: string, amount: number): string {
-  const [r1, g1, b1] = parseHex(hex);
-  const [r2, g2, b2] = parseHex(target);
-  const t = Math.min(1, Math.max(0, amount));
-  const to = (value: number) => value.toString(16).padStart(2, '0');
-  return `#${to(Math.round(r1 + (r2 - r1) * t))}${to(Math.round(g1 + (g2 - g1) * t))}${to(Math.round(b1 + (b2 - b1) * t))}`;
-}
-
-function relativeLuminance(hex: string): number {
-  const [r, g, b] = parseHex(hex).map((channel) => {
-    const value = channel / 255;
-    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
-}
-
-function heroStageBackground(colourName: string | null): string {
-  const base = colorToHex(colourName || 'navy');
-  const light = relativeLuminance(base) > 0.55;
-  // Keep text readable: lift mid-tones for dark kits, mute very light kits toward charcoal.
-  const center = light ? mixHex(base, '#2a2a2a', 0.55) : mixHex(base, '#ffffff', 0.22);
-  const mid = light ? mixHex(base, '#141414', 0.72) : mixHex(base, '#000000', 0.35);
-  const edge = light ? '#0e0e0e' : mixHex(base, '#000000', 0.72);
-  return `radial-gradient(ellipse 70% 55% at 50% 42%, ${center} 0%, ${mid} 45%, ${edge} 100%)`;
+function stageBackground(index: number): string {
+  const glow = STAGE_GLOWS[index % STAGE_GLOWS.length];
+  return [
+    `radial-gradient(ellipse 55% 65% at 72% 48%, ${glow}cc 0%, ${glow}33 45%, transparent 75%)`,
+    'radial-gradient(ellipse 90% 70% at 20% 100%, rgba(255,255,255,0.05) 0%, transparent 60%)',
+    'linear-gradient(180deg, #080808 0%, #0a0a0a 100%)',
+  ].join(', ');
 }
 
 export function CinematicHero({
@@ -89,57 +38,18 @@ export function CinematicHero({
   currency?: string;
 }): React.JSX.Element {
   const store = useStore();
-  const { addItem, setOpen } = useCart();
   const reduced = useReducedMotion();
-  const section =
-    store.website.homepage.sections.find((item) => item.type === 'hero') ?? sectionProp;
+  const section = store.website.homepage.sections.find((item) => item.type === 'hero') ?? sectionProp;
 
   const slides = useMemo(() => products.slice(0, 5), [products]);
   const [active, setActive] = useState(0);
-  const [detail, setDetail] = useState<StorefrontProductDetail | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [selectedColour, setSelectedColour] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const [paused, setPaused] = useState(false);
   const count = slides.length;
   const product = slides[Math.min(active, Math.max(count - 1, 0))] ?? null;
 
   useEffect(() => {
     setActive(0);
   }, [slides]);
-
-  useEffect(() => {
-    if (!product?.slug) {
-      setDetail(null);
-      return;
-    }
-    let cancelled = false;
-    setDetail(null);
-    setSelectedSize(null);
-    setSelectedColour(null);
-    setError(null);
-    void storeApi
-      .product(product.slug)
-      .then((next) => {
-        if (cancelled) {
-          return;
-        }
-        setDetail(next);
-        const sizes = next.sizes.length ? next.sizes : sizesFromVariants(next.variants);
-        const firstSize = sizes[0] ?? null;
-        setSelectedSize(firstSize);
-        setSelectedColour(next.colours[0] ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setDetail(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [product?.slug]);
 
   const go = useCallback(
     (direction: number) => {
@@ -151,285 +61,173 @@ export function CinematicHero({
     [count],
   );
 
-  const sizes = detail?.sizes.length
-    ? detail.sizes
-    : detail
-      ? sizesFromVariants(detail.variants)
-      : [];
-  const colours = detail?.colours ?? [];
-
-  const matchingVariant = useMemo(() => {
-    if (!detail) {
-      return null;
+  useEffect(() => {
+    if (reduced || paused || count < 2) {
+      return;
     }
-    return (
-      detail.variants.find(
-        (item) =>
-          item.availability !== 'OUT_OF_STOCK' &&
-          (!selectedSize || item.size === selectedSize) &&
-          (!selectedColour || item.colour === selectedColour),
-      ) ??
-      detail.variants.find(
-        (item) => item.availability !== 'OUT_OF_STOCK' && (!selectedSize || item.size === selectedSize),
-      ) ??
-      null
-    );
-  }, [detail, selectedSize, selectedColour]);
-
-  const price = matchingVariant?.sellingPrice ?? detail?.lowestPrice ?? product?.lowestPrice ?? null;
-  const compareAt =
-    matchingVariant?.compareAtPrice ?? detail?.compareAtPrice ?? product?.compareAtPrice ?? null;
+    const timer = window.setTimeout(() => go(1), SLIDE_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [active, count, go, paused, reduced]);
 
   const imageSrc =
-    (selectedColour
-      ? detail?.images.find((image) => image.altText?.toLowerCase().includes(selectedColour.toLowerCase()))
-          ?.url
-      : null) ||
-    detail?.images[0]?.url ||
     resolveDemoMediaUrl(product?.primaryImage?.url) ||
     resolveDemoMediaUrl(section?.image) ||
     resolveDemoMediaUrl(fallbackImage?.url) ||
     DEMO_HERO_IMAGE;
 
-  const headline =
-    section?.heading?.trim() || product?.name || store.tenant.name?.trim() || 'Jerzyfy';
+  const brand = store.tenant.name?.trim() || 'Jerzyfy';
+  const kicker = section?.heading?.trim() || 'Featured kit';
+  const headline = product?.name || section?.heading?.trim() || brand;
   const body =
-    section?.subheading?.trim() ||
-    detail?.shortDescription?.trim() ||
-    'Match-day kits built for the stands, the street, and every kick-off.';
-  const tagline = 'Wear the game. Own the look.';
-  const href = product ? `/products/${product.slug}` : section?.ctaHref || '/products';
-  const social = socialEntries(store.website.socialLinks);
-  const stageColour = selectedColour ?? colours[0] ?? matchingVariant?.colour ?? null;
-  const stageBackground = heroStageBackground(stageColour);
-
-  async function onCta() {
-    if (!matchingVariant || pending) {
-      return;
-    }
-    setPending(true);
-    setError(null);
-    try {
-      await addItem(matchingVariant.id, 1);
-      setOpen(true);
-    } catch (caught) {
-      setError(publicErrorMessage(caught, 'Could not add this item.'));
-    } finally {
-      setPending(false);
-    }
-  }
+    section?.subheading?.trim() || 'Match-day kits built for the stands, the street, and every kick-off.';
+  const price = formatMoney(product?.lowestPrice, currency);
+  const discount = product?.lowestPrice ? discountPercent(product.lowestPrice, product.compareAtPrice) : null;
+  const compareAt = discount && product?.compareAtPrice ? formatMoney(product.compareAtPrice, currency) : null;
+  const productHref = product ? `/products/${product.slug}` : section?.ctaHref || '/products';
 
   return (
-    <section className="home-matchday px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4" aria-label="Homepage hero">
+    <section
+      className="relative isolate overflow-hidden text-white"
+      aria-roledescription="carousel"
+      aria-label="Featured kits"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+    >
       <div
-        className="relative flex min-h-[min(92dvh,56rem)] flex-col overflow-hidden rounded-[1.75rem] text-white transition-[background] duration-700 ease-out sm:rounded-[2rem] lg:min-h-[min(92dvh,58rem)]"
-        style={{ background: stageBackground }}
-      >
-        <div className="relative z-10 grid flex-1 grid-cols-1 gap-8 px-5 pb-8 pt-24 sm:px-8 sm:pt-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-6 lg:px-12 lg:pb-12 lg:pt-28">
-          {/* Left copy */}
-          <div className="order-1 flex flex-col justify-center lg:order-none">
-            {count > 1 ? (
-              <div className="mb-5 flex gap-2">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-white/5 text-white transition-colors hover:bg-white/15"
-                  aria-label="Previous product"
-                  onClick={() => go(-1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/25 bg-white/5 text-white transition-colors hover:bg-white/15"
-                  aria-label="Next product"
-                  onClick={() => go(1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            ) : null}
+        className="absolute inset-0 -z-10 transition-[background] duration-700 ease-out"
+        style={{ background: stageBackground(active) }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-background to-transparent"
+        aria-hidden
+      />
 
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={product?.id ?? 'empty-copy'}
-                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -12 }}
-                transition={MOTION_TRANSITION}
-              >
-                <h1 className="max-w-md text-[clamp(2rem,5.5vw,3.75rem)] font-semibold leading-[1.05] tracking-tight text-white">
-                  {headline}
-                </h1>
-                <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70 sm:text-[15px]">{body}</p>
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="mt-8">
-              {matchingVariant ? (
-                <Magnetic className="inline-block w-fit">
-                  <button
-                    type="button"
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition-transform hover:scale-[1.02]"
-                    disabled={pending}
-                    onClick={() => void onCta()}
-                  >
-                    {pending ? 'Adding…' : 'Get the look'}
-                    <span aria-hidden>→</span>
-                  </button>
-                </Magnetic>
-              ) : (
-                <Magnetic className="inline-block w-fit">
-                  <Link
-                    href={href}
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition-transform hover:scale-[1.02]"
-                  >
-                    {section?.ctaLabel?.trim() || 'Get the look'}
-                    <span aria-hidden>→</span>
-                  </Link>
-                </Magnetic>
-              )}
-              {error ? <p className="mt-3 text-xs text-red-300">{error}</p> : null}
-            </div>
-          </div>
-
-          {/* Center product */}
-          <div className="order-2 flex flex-col items-center justify-center lg:order-none">
+      <div className="mx-auto flex min-h-[min(100svh,58rem)] max-w-store flex-col store-gutter pb-6 pt-20 sm:pt-24 lg:pb-10">
+        <div className="grid flex-1 grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10">
+          {/* Product */}
+          <div className="relative order-1 lg:order-2">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={`${product?.id ?? 'empty'}-${imageSrc}`}
-                className="relative w-full max-w-[22rem] sm:max-w-[26rem]"
-                initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94 }}
-                animate={
-                  reduced
-                    ? { opacity: 1 }
-                    : { opacity: 1, scale: 1, y: [0, -10, 0] }
-                }
-                exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-                transition={
-                  reduced
-                    ? { duration: 0.2 }
-                    : {
-                        opacity: { duration: 0.35, ease: MOTION_EASE },
-                        scale: { duration: 0.35, ease: MOTION_EASE },
-                        y: { duration: 5.5, repeat: Infinity, ease: 'easeInOut' },
-                      }
-                }
+                className="relative mx-auto aspect-[4/5] w-[min(78vw,22rem)] sm:w-[min(60vw,26rem)] lg:w-full lg:max-w-[34rem]"
+                initial={reduced ? { opacity: 0 } : { opacity: 0, x: 40, scale: 0.97 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, x: -30, scale: 0.98 }}
+                transition={{ duration: reduced ? 0.2 : 0.55, ease: MOTION_EASE }}
               >
-                <div className="relative mx-auto aspect-[3/4] w-full">
+                <Link href={productHref} className="absolute inset-0 block cursor-pointer" tabIndex={-1} aria-hidden>
                   <ProductImage
                     src={imageSrc}
                     alt={product?.primaryImage?.altText ?? product?.name ?? 'Featured jersey'}
-                    className="object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.45)]"
-                    sizes="(max-width: 1024px) 80vw, 420px"
+                    className="rounded-[calc(var(--radius)+6px)] object-cover shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)]"
+                    sizes="(max-width: 1024px) 80vw, 540px"
                     priority
                     fill
                   />
-                </div>
-                <div
-                  className="mx-auto mt-2 h-6 w-[55%] rounded-[100%] bg-black/50 blur-xl"
-                  aria-hidden
-                />
+                </Link>
+                {discount ? (
+                  <span className="badge badge-sale absolute left-4 top-4 z-10 px-3 py-1.5 text-xs">−{discount}%</span>
+                ) : null}
               </motion.div>
             </AnimatePresence>
-            <p className="mt-4 text-center text-xs tracking-[0.04em] text-white/75 sm:text-sm">{tagline}</p>
           </div>
 
-          {/* Right price / sizes */}
-          <div className="order-3 flex flex-col justify-center lg:order-none lg:items-end lg:text-right">
+          {/* Copy */}
+          <div className="order-2 flex flex-col items-start lg:order-1">
+            <p className="section-kicker text-white/70">{kicker}</p>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                key={product?.id ?? 'empty-price'}
-                className="w-full max-w-xs lg:ml-auto"
-                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
+                key={product?.id ?? 'empty-copy'}
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -12 }}
                 transition={MOTION_TRANSITION}
+                className="w-full"
               >
-                <p className="text-[clamp(2.5rem,6vw,4rem)] font-semibold leading-none tracking-tight text-white">
-                  {formatMoney(price, currency) || '—'}
-                </p>
-                {compareAt && Number(compareAt) > Number(price ?? 0) ? (
-                  <p className="mt-2 text-lg text-white/45 line-through">{formatMoney(compareAt, currency)}</p>
-                ) : null}
-
-                {sizes.length ? (
-                  <div className="mt-8 lg:mt-10">
-                    <p className="text-sm text-white/65">Choose your size:</p>
-                    <div className="mt-3 flex flex-wrap gap-2 lg:justify-end">
-                      {sizes.map((size) => {
-                        const available = detail?.variants.some(
-                          (item) => item.size === size && item.availability !== 'OUT_OF_STOCK',
-                        );
-                        const selected = selectedSize === size;
-                        return (
-                          <button
-                            key={size}
-                            type="button"
-                            disabled={!available}
-                            className={cn(
-                              'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border text-sm font-semibold transition-colors',
-                              selected
-                                ? 'border-white bg-white text-black'
-                                : 'border-white/25 bg-white/5 text-white hover:bg-white/15',
-                              !available && 'cursor-not-allowed opacity-35',
-                            )}
-                            onClick={() => setSelectedSize(size)}
-                          >
-                            {size}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                {colours.length > 1 ? (
-                  <div className="mt-8 flex flex-wrap gap-3 lg:justify-end">
-                    {colours.map((colour) => {
-                      const selected = selectedColour === colour;
-                      return (
-                        <button
-                          key={colour}
-                          type="button"
-                          aria-label={`Colour ${colour}`}
-                          className={cn(
-                            'relative h-16 w-14 cursor-pointer overflow-hidden rounded-xl border transition-transform',
-                            selected ? 'border-white scale-105' : 'border-white/20 opacity-80 hover:opacity-100',
-                          )}
-                          style={{ backgroundColor: colorToHex(colour) }}
-                          onClick={() => setSelectedColour(colour)}
-                        >
-                          <span className="sr-only">{colour}</span>
-                        </button>
-                      );
-                    })}
+                <h1 className="font-display mt-4 line-clamp-3 max-w-[14ch] text-[clamp(2.6rem,7.5vw,6rem)] text-white">
+                  {headline}
+                </h1>
+                <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/70 sm:text-base">{body}</p>
+                {price ? (
+                  <div className="mt-6 flex items-baseline gap-3">
+                    <span className="tabular font-heading text-3xl font-bold tracking-wide sm:text-4xl">{price}</span>
+                    {compareAt ? <span className="tabular text-base text-white/45 line-through">{compareAt}</span> : null}
                   </div>
                 ) : null}
               </motion.div>
             </AnimatePresence>
+
+            <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <Link href={productHref} className="btn btn-lg btn-primary cursor-pointer">
+                {section?.ctaLabel?.trim() || 'Shop now'}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/products" className="btn btn-lg btn-secondary cursor-pointer border-white/25 text-white">
+                All jerseys
+              </Link>
+            </div>
           </div>
         </div>
 
-        {social.length ? (
-          <div className="absolute bottom-5 left-5 z-10 flex gap-3 sm:bottom-7 sm:left-8">
-            {social.map(([key, url]) => {
-              const Icon = SOCIAL_ICONS[key];
-              if (!Icon) {
-                return null;
-              }
-              return (
-                <a
-                  key={key}
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-white/70 transition-colors hover:text-white"
-                  aria-label={key}
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              );
-            })}
+        {count > 1 ? (
+          <div className="mt-8 flex items-center gap-4 lg:mt-12">
+            <div className="rail-scroll -mx-1 flex flex-1 gap-2 overflow-x-auto px-1 py-1 sm:gap-3" role="tablist" aria-label="Choose featured kit">
+              {slides.map((slide, index) => {
+                const selected = index === active;
+                return (
+                  <button
+                    key={slide.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    aria-label={slide.name}
+                    onClick={() => setActive(index)}
+                    className={cn(
+                      'group relative flex min-w-[3.25rem] shrink-0 cursor-pointer items-center gap-3 overflow-hidden rounded-lg border p-1.5 text-left transition-colors sm:min-w-[13rem] sm:pr-4',
+                      selected ? 'border-white/40 bg-white/10' : 'border-white/10 bg-white/[0.03] hover:border-white/25',
+                    )}
+                  >
+                    <span className="relative h-12 w-10 shrink-0 overflow-hidden rounded-md bg-white/5">
+                      <ProductImage
+                        src={slide.primaryImage?.url}
+                        alt=""
+                        className="object-cover"
+                        sizes="48px"
+                        fill
+                      />
+                    </span>
+                    <span className="hidden min-w-0 sm:block">
+                      <span className={cn('block truncate text-xs font-medium', selected ? 'text-white' : 'text-white/60')}>
+                        {slide.name}
+                      </span>
+                      <span className="tabular mt-0.5 block text-[11px] text-white/45">
+                        {formatMoney(slide.lowestPrice, currency)}
+                      </span>
+                    </span>
+                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-white/10" aria-hidden>
+                      {selected ? (
+                        <span
+                          key={`${active}-${paused ? 'p' : 'r'}`}
+                          className={cn('block h-full bg-[hsl(var(--accent))]', !reduced && !paused && 'hero-progress')}
+                          style={{ ['--hero-interval' as string]: `${SLIDE_INTERVAL_MS}ms` }}
+                        />
+                      ) : null}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="hidden shrink-0 gap-2 sm:flex">
+              <button type="button" className="icon-btn cursor-pointer border-white/20 text-white" aria-label="Previous kit" onClick={() => go(-1)}>
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button type="button" className="icon-btn cursor-pointer border-white/20 text-white" aria-label="Next kit" onClick={() => go(1)}>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         ) : null}
       </div>

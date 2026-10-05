@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { storeApi } from '../../lib/api';
 import { serverStoreOptions } from '../../lib/server-options';
-import { cachedBootstrap, tenantKey } from '../../lib/cached-store';
-import { ProductGrid } from '../../components/catalog/product-grid';
-import { CatalogFilters } from '../../components/catalog/catalog-filters';
-import { EmptyState } from '../../components/ui/empty-state';
-import { catalogHref } from '../../lib/catalog-query';
+import { cachedBootstrap, cachedCategories, tenantKey } from '../../lib/cached-store';
+import { CatalogLayout, type CatalogChip } from '../../components/catalog/catalog-layout';
 
 type Search = {
   search?: string;
@@ -28,8 +25,9 @@ export default async function ProductsPage({
 }): Promise<React.JSX.Element> {
   const query = await searchParams;
   const options = await serverStoreOptions();
-  const [store, result] = await Promise.all([
-    cachedBootstrap(tenantKey(options)),
+  const slug = tenantKey(options);
+  const [store, result, categories] = await Promise.all([
+    cachedBootstrap(slug),
     storeApi.products(
       {
         search: query.search,
@@ -41,46 +39,34 @@ export default async function ProductsPage({
       },
       options,
     ),
+    cachedCategories(slug).catch(() => []),
   ]);
 
+  const chips: CatalogChip[] = [
+    { label: 'All kits', href: '/products', active: !query.categorySlug && !query.search },
+    ...categories
+      .filter((category) => !category.parentId)
+      .map((category) => ({ label: category.name, href: `/category/${category.slug}` })),
+  ];
+
   return (
-    <div className="mx-auto max-w-store store-gutter py-8 md:py-10">
-      <div className="mb-8 md:mb-10">
-        <p className="text-sm font-medium text-muted-foreground">Catalog</p>
-        <h1 className="mt-2 break-words text-[clamp(1.85rem,6vw,3rem)] font-semibold tracking-tight">
-          {query.search ? `Results for “${query.search}”` : 'All products'}
-        </h1>
-        <p className="mt-3 text-sm text-muted-foreground">{result.meta.totalItems} pieces</p>
-      </div>
-      <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10">
-        <aside>
-          <CatalogFilters facets={result.facets} />
-        </aside>
-        <div className="space-y-8">
-          {result.items.length === 0 ? (
-            <EmptyState title="No products found" description="Try another filter or browse the full catalog." actionHref="/products" actionLabel="Clear filters" />
-          ) : (
-            <ProductGrid products={result.items} currency={store.tenant.currency} />
-          )}
-          {result.meta.totalPages > 1 ? (
-            <nav className="flex justify-center gap-4 text-sm" aria-label="Pagination">
-              {result.meta.page > 1 ? (
-                <a className="underline" href={catalogHref('/products', query, result.meta.page - 1)}>
-                  Previous
-                </a>
-              ) : null}
-              <span>
-                Page {result.meta.page} of {result.meta.totalPages}
-              </span>
-              {result.meta.page < result.meta.totalPages ? (
-                <a className="underline" href={catalogHref('/products', query, result.meta.page + 1)}>
-                  Next
-                </a>
-              ) : null}
-            </nav>
-          ) : null}
-        </div>
-      </div>
-    </div>
+    <CatalogLayout
+      kicker={query.search ? 'Search' : 'Catalog'}
+      title={query.search ? `“${query.search}”` : 'All jerseys'}
+      description={
+        query.search ? undefined : 'Club, national, kids and custom football kits — match-day ready.'
+      }
+      chips={chips}
+      result={result}
+      currency={store.tenant.currency}
+      basePath="/products"
+      query={query}
+      emptyTitle={query.search ? 'No matches' : 'No kits found'}
+      emptyDescription={
+        query.search
+          ? `We couldn’t find kits for “${query.search}”. Try a club, country or player name.`
+          : 'Try another filter or browse the full catalog.'
+      }
+    />
   );
 }

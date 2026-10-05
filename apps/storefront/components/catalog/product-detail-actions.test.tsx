@@ -63,7 +63,7 @@ describe('product detail', () => {
     render(<ProductDetailActions product={product} currency="INR" />);
     expect(screen.getByText(/2,499/)).toBeInTheDocument();
     expect(screen.getByText(/2,999/)).toBeInTheDocument();
-    expect(screen.getByText('Sale')).toBeInTheDocument();
+    expect(screen.getByText('Save 17%')).toBeInTheDocument();
   });
 
   it('requires a variant before adding to cart', async () => {

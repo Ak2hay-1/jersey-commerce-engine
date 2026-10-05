@@ -10,10 +10,10 @@ export function ProductGrid({
   currency?: string;
 }): React.JSX.Element {
   return (
-    <Stagger className="grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-4 sm:gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-      {products.map((product) => (
-        <StaggerItem key={product.id}>
-          <ProductCard product={product} currency={currency} />
+    <Stagger className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 md:grid-cols-3 lg:grid-cols-4">
+      {products.map((product, index) => (
+        <StaggerItem key={product.id} className="h-full">
+          <ProductCard product={product} currency={currency} priority={index < 4} />
         </StaggerItem>
       ))}
     </Stagger>

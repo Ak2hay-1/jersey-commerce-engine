@@ -41,32 +41,32 @@ export function AddressForm({
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      <label className="grid gap-1 text-sm md:col-span-2">
+    <div className="grid gap-4 md:grid-cols-2">
+      <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
         Full name
         <Input required autoComplete="name" {...field('fullName')} />
       </label>
-      <label className="grid gap-1 text-sm md:col-span-2">
+      <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
         Phone
         <Input required autoComplete="tel" inputMode="tel" {...field('phone')} />
       </label>
-      <label className="grid gap-1 text-sm md:col-span-2">
+      <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
         Address
         <Input required autoComplete="address-line1" {...field('addressLine1')} />
       </label>
-      <label className="grid gap-1 text-sm md:col-span-2">
+      <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
         Apartment, suite (optional)
         <Input autoComplete="address-line2" {...field('addressLine2')} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         City
         <Input required autoComplete="address-level2" {...field('city')} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         State
         <Input required autoComplete="address-level1" {...field('state')} />
       </label>
-      <label className="grid gap-1 text-sm">
+      <label className="grid gap-1.5 text-sm text-muted-foreground">
         Postal code
         <Input required autoComplete="postal-code" {...field('postalCode')} />
       </label>

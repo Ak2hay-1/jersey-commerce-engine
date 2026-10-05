@@ -22,7 +22,7 @@ describe('category and catalog filters', () => {
     );
     await user.selectOptions(screen.getByLabelText('Sort'), 'newest');
     expect(push).toHaveBeenCalledWith('/products?sort=newest');
-    await user.selectOptions(screen.getByLabelText('Size'), 'M');
+    await user.click(screen.getByRole('button', { name: 'M' }));
     expect(push).toHaveBeenCalledWith('/products?sort=featured&size=M');
   });
 });

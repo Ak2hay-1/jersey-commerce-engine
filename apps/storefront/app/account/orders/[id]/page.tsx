@@ -24,7 +24,7 @@ export default async function AccountOrderPage({ params }: { params: Promise<Par
   const store = await storeApi.bootstrap(options);
   return (
     <div className="space-y-6">
-      <h1 className="break-words font-heading text-3xl uppercase tracking-wide md:text-4xl">Order {order.orderNumber}</h1>
+      <h1 className="font-display break-words text-[clamp(2rem,5vw,3.25rem)]">Order {order.orderNumber}</h1>
       <OrderDetailsPanel order={order} currency={store.tenant.currency} />
     </div>
   );

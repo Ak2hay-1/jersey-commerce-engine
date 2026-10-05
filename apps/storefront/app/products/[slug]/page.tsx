@@ -7,7 +7,8 @@ import { StoreApiError } from '../../../lib/errors';
 import { ProductGallery } from '../../../components/catalog/product-gallery';
 import { ProductDetailActions } from '../../../components/catalog/product-detail-actions';
 import { ProductAccordions } from '../../../components/catalog/product-accordions';
-import { ProductGrid } from '../../../components/catalog/product-grid';
+import { ProductRail } from '../../../components/catalog/product-rail';
+import { ChevronRight } from 'lucide-react';
 import { JsonLd, breadcrumbJsonLd, productJsonLd } from '../../../components/seo/json-ld';
 import { headers } from 'next/headers';
 
@@ -71,36 +72,57 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     { name: product.name, href: `/products/${product.slug}` },
   ];
 
+  const kicker = [product.brand, product.category?.name].filter(Boolean).join(' · ');
+
   return (
-    <div className="mx-auto max-w-store store-gutter py-8 pb-24 md:py-10 md:pb-10">
-      <nav className="mb-6 break-words text-sm text-muted-foreground md:mb-8" aria-label="Breadcrumb">
-        {crumbs.map((crumb, index) => (
-          <span key={crumb.href}>
-            {index > 0 ? ' / ' : null}
-            <Link href={crumb.href}>{crumb.name}</Link>
-          </span>
-        ))}
-      </nav>
-      <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-        <ProductGallery images={product.images} name={product.name} />
-        <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-          {product.brand ? <p className="text-sm text-muted-foreground">{product.brand}</p> : null}
-          <h1 className="break-words text-3xl font-semibold tracking-tight md:text-5xl">{product.name}</h1>
-          {product.shortDescription ? <p className="text-muted-foreground">{product.shortDescription}</p> : null}
-          <ProductDetailActions product={product} currency={store.tenant.currency} />
-          {product.description ? (
-            <div className="max-w-none pt-4 text-sm leading-relaxed text-muted-foreground">{product.description}</div>
-          ) : null}
-          <ProductAccordions />
+    <div className="pb-28 md:pb-0">
+      <div className="mx-auto max-w-store store-gutter pt-5 md:pt-8">
+        <nav className="mb-5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground md:mb-8" aria-label="Breadcrumb">
+          {crumbs.map((crumb, index) => {
+            const last = index === crumbs.length - 1;
+            return (
+              <span key={crumb.href} className="flex min-w-0 items-center gap-1.5">
+                {index > 0 ? <ChevronRight className="h-3 w-3 shrink-0 opacity-60" aria-hidden /> : null}
+                {last ? (
+                  <span className="truncate text-foreground/80" aria-current="page">
+                    {crumb.name}
+                  </span>
+                ) : (
+                  <Link href={crumb.href} className="hover:text-foreground">
+                    {crumb.name}
+                  </Link>
+                )}
+              </span>
+            );
+          })}
+        </nav>
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-14">
+          <div className="lg:col-span-7">
+            <ProductGallery images={product.images} name={product.name} />
+          </div>
+          <div className="lg:col-span-5">
+            <div className="space-y-7 lg:sticky lg:top-24">
+              <div className="space-y-3">
+                {kicker ? <p className="text-micro text-muted-foreground">{kicker}</p> : null}
+                <h1 className="font-display break-words text-[clamp(2.25rem,4.4vw,3.5rem)]">{product.name}</h1>
+                {product.shortDescription ? (
+                  <p className="text-[15px] leading-relaxed text-muted-foreground">{product.shortDescription}</p>
+                ) : null}
+              </div>
+              <ProductDetailActions product={product} currency={store.tenant.currency} />
+              <ProductAccordions description={product.description} />
+            </div>
+          </div>
         </div>
       </div>
       {product.related.length > 0 ? (
-        <section className="mt-20">
-          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">You might also like</h2>
-          <div className="mt-8">
-            <ProductGrid products={product.related} currency={store.tenant.currency} />
-          </div>
-        </section>
+        <ProductRail
+          kicker="Complete the kit"
+          title="You might also like"
+          products={product.related}
+          currency={store.tenant.currency}
+          viewAllHref={product.category ? `/category/${product.category.slug}` : '/products'}
+        />
       ) : null}
       <JsonLd data={productJsonLd(product, origin, store.tenant.currency)} />
       <JsonLd data={breadcrumbJsonLd(crumbs, origin)} />

@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@jersey-commerce/ui';
-import { Button, PasswordInput } from '@jersey-commerce/ui';
+import { PasswordInput } from '@jersey-commerce/ui';
 import { Input } from '../ui/input';
 import { Alert } from '../ui/alert';
 import { useAuth } from '../providers/auth-provider';
@@ -53,15 +53,15 @@ function AuthShell({
   footer?: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="mx-auto w-full max-w-md">
-      <div className="border border-foreground/10 bg-background/90 px-6 py-8 shadow-[0_24px_80px_-48px_hsl(var(--foreground)/0.35)] sm:px-8 sm:py-10">
-        <div className="space-y-2 border-b border-foreground/10 pb-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{shopName}</p>
-          <h1 className="font-heading text-[clamp(2rem,6vw,2.75rem)] uppercase leading-none tracking-wide">{title}</h1>
+    <div className="mx-auto w-full max-w-md py-6 md:py-12">
+      <div className="panel relative overflow-hidden px-6 py-8 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.9)] sm:px-9 sm:py-10">
+        <div className="space-y-2 border-b border-white/10 pb-6">
+          <p className="section-kicker">{shopName}</p>
+          <h1 className="font-display pt-1 text-[clamp(2.25rem,7vw,3rem)]">{title}</h1>
           {subtitle ? <p className="pt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p> : null}
         </div>
         <div className="space-y-5 pt-6">{children}</div>
-        {footer ? <div className="mt-6 border-t border-foreground/10 pt-6 text-sm text-muted-foreground">{footer}</div> : null}
+        {footer ? <div className="mt-6 border-t border-white/10 pt-6 text-sm text-muted-foreground">{footer}</div> : null}
       </div>
     </div>
   );
@@ -98,10 +98,9 @@ function GoogleButton({ pending }: { pending: boolean }): React.JSX.Element | nu
   return (
     <div className="space-y-3">
       {error ? <Alert tone="danger">{error}</Alert> : null}
-      <Button
+      <button
         type="button"
-        variant="outline"
-        className="store-pill h-11 w-full rounded-none border-foreground/25 bg-transparent text-foreground hover:border-foreground hover:bg-foreground hover:text-background"
+        className="btn btn-secondary cursor-pointer h-12 w-full font-sans text-sm font-medium normal-case tracking-normal"
         disabled={pending}
         data-cursor="hover"
         onClick={() => {
@@ -116,7 +115,7 @@ function GoogleButton({ pending }: { pending: boolean }): React.JSX.Element | nu
       >
         <GoogleMark />
         Continue with Google
-      </Button>
+      </button>
     </div>
   );
 }
@@ -134,14 +133,14 @@ function AuthMethodTabs<T extends string>({
     return null;
   }
   return (
-    <div className="grid border border-foreground/15" style={{ gridTemplateColumns: `repeat(${methods.length}, minmax(0, 1fr))` }}>
+    <div className="grid gap-1 rounded-full border border-white/10 bg-[hsl(var(--surface-2))] p-1" style={{ gridTemplateColumns: `repeat(${methods.length}, minmax(0, 1fr))` }}>
       {methods.map((method) => (
         <button
           key={method.id}
           type="button"
           className={cn(
-            'min-h-11 px-2 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors sm:text-[11px]',
-            active === method.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
+            'min-h-10 cursor-pointer rounded-full px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors',
+            active === method.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
           )}
           aria-pressed={active === method.id}
           onClick={() => onChange(method.id)}
@@ -231,14 +230,14 @@ function OtpForm({
     return (
       <form onSubmit={(event) => void confirm(event)} className="space-y-4">
         {error ? <Alert tone="danger">{error}</Alert> : null}
-        <div className="rounded-none border border-foreground/10 bg-foreground/[0.03] px-4 py-3">
+        <div className="rounded-[var(--radius)] border border-white/10 bg-white/[0.03] px-4 py-3">
           <p className="text-sm text-muted-foreground">
             Code sent to <span className="font-medium text-foreground">{maskIdentifier(identifier, channel)}</span>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Expires in about {expiryMinutes} minute{expiryMinutes === 1 ? '' : 's'}.</p>
         </div>
         <label className="grid gap-1.5 text-sm">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">6-digit code</span>
+          <span className="text-micro text-muted-foreground">6-digit code</span>
           <Input
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -250,9 +249,9 @@ function OtpForm({
             required
           />
         </label>
-        <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending || code.length !== 6}>
+        <button type="submit" className="btn btn-lg btn-primary w-full cursor-pointer" disabled={pending || code.length !== 6}>
           {pending ? 'Verifying…' : registering ? 'Verify and continue' : 'Verify and sign in'}
-        </Button>
+        </button>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {resendIn > 0 ? (
             <span className="text-muted-foreground">Resend in {formatCountdown(resendIn)}</span>
@@ -282,7 +281,7 @@ function OtpForm({
             : 'We will text you a one-time code. No password needed.'}
       </p>
       <label className="grid gap-1.5 text-sm">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="text-micro text-muted-foreground">
           {channel === 'email' ? 'Email' : 'Phone'}
         </span>
         <Input
@@ -293,9 +292,9 @@ function OtpForm({
           required
         />
       </label>
-      <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending}>
+      <button type="submit" className="btn btn-lg btn-primary w-full cursor-pointer" disabled={pending}>
         {pending ? 'Sending…' : registering ? 'Send verification code' : 'Send sign-in code'}
-      </Button>
+      </button>
     </form>
   );
 }
@@ -313,16 +312,16 @@ function PasswordLoginForm({
     <form onSubmit={onSubmit} className="space-y-4">
       {error ? <Alert tone="danger">{error}</Alert> : null}
       <label className="grid gap-1.5 text-sm">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Email</span>
+        <span className="text-micro text-muted-foreground">Email</span>
         <Input name="email" type="email" autoComplete="email" required />
       </label>
       <label className="grid gap-1.5 text-sm">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Password</span>
-        <PasswordInput name="password" autoComplete="current-password" className="h-11 rounded-none md:text-sm" required />
+        <span className="text-micro text-muted-foreground">Password</span>
+        <PasswordInput name="password" autoComplete="current-password" className="h-12 rounded-[var(--radius)] border-[hsl(var(--input))] bg-[hsl(var(--surface-1))] md:text-sm" required />
       </label>
-      <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending}>
+      <button type="submit" className="btn btn-lg btn-primary w-full cursor-pointer" disabled={pending}>
         {pending ? 'Signing in…' : 'Sign in'}
-      </Button>
+      </button>
     </form>
   );
 }
@@ -544,24 +543,24 @@ export function RegisterForm(): React.JSX.Element {
           <form onSubmit={(event) => void onPasswordSubmit(event)} className="space-y-4">
             {error ? <Alert tone="danger">{error}</Alert> : null}
             <label className="grid gap-1.5 text-sm">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Name</span>
+              <span className="text-micro text-muted-foreground">Name</span>
               <Input name="name" autoComplete="name" required />
             </label>
             <label className="grid gap-1.5 text-sm">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Email</span>
+              <span className="text-micro text-muted-foreground">Email</span>
               <Input name="email" type="email" autoComplete="email" required />
             </label>
             <label className="grid gap-1.5 text-sm">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Phone (optional)</span>
+              <span className="text-micro text-muted-foreground">Phone (optional)</span>
               <Input name="phone" autoComplete="tel" />
             </label>
             <label className="grid gap-1.5 text-sm">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Password</span>
+              <span className="text-micro text-muted-foreground">Password</span>
               <Input name="password" type="password" autoComplete="new-password" required />
             </label>
-            <Button type="submit" className="store-cta h-11 w-full rounded-none" disabled={pending}>
+            <button type="submit" className="btn btn-lg btn-primary w-full cursor-pointer" disabled={pending}>
               {pending ? 'Creating…' : 'Create account'}
-            </Button>
+            </button>
           </form>
         </>
       ) : null}
