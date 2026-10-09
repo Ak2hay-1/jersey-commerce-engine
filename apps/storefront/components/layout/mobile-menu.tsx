@@ -54,13 +54,13 @@ export function MobileMenu({
       {open ? (
         <motion.div
           key="mobile-menu"
-          className="overflow-hidden border-t border-border bg-background lg:hidden"
+          className="overflow-hidden rounded-b-2xl border-t border-white/10 bg-transparent lg:hidden"
           initial={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
           animate={reduced ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
           exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
           transition={MOTION_TRANSITION}
         >
-          <div className="max-h-[min(80dvh,calc(100dvh-4.5rem))] overflow-y-auto overscroll-contain store-gutter py-4">
+          <div className="max-h-[min(80dvh,calc(100dvh-6rem))] overflow-y-auto overscroll-contain store-gutter py-4">
             <SearchBar onNavigate={onClose} />
             <motion.nav
               className="mt-4 grid gap-1"

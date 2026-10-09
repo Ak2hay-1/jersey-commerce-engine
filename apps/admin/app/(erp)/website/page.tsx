@@ -21,6 +21,7 @@ import { PageHeader } from '@/components/page-header';
 import { useAuth } from '@/lib/auth';
 import { getDefaultTenantSlug, getStorefrontUrl, resolveMediaUrl } from '@/lib/env';
 import { PreviewFrame } from '@/components/storefront-customizer/preview-frame';
+import { LogoField } from '@/components/website/logo-field';
 import {
   CUSTOMIZER_PANELS,
   type CustomizerDraftPayload,
@@ -393,23 +394,13 @@ export default function WebsitePage(): React.JSX.Element {
                 <div className="grid gap-4">
                   <div className="space-y-2">
                     <Label>Shop logo</Label>
-                    {settings?.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={resolveMediaUrl(settings.logo)} alt="" className="h-20 w-20 rounded border object-contain p-2" />
-                    ) : null}
-                    {canEdit ? (
-                      <Input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          if (!file) return;
-                          void uploadWebsiteImage(file)
-                            .then((url) => setSettings((current) => (current ? { ...current, logo: url } : current)))
-                            .catch((err: Error) => setError(err.message));
-                        }}
-                      />
-                    ) : null}
+                    <LogoField
+                      value={settings?.logo}
+                      canEdit={canEdit}
+                      upload={uploadWebsiteImage}
+                      onChange={(url) => setSettings((current) => (current ? { ...current, logo: url } : current))}
+                      onError={(err) => setError(err.message)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Favicon</Label>

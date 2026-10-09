@@ -51,7 +51,7 @@ export function BrandPreloader(): React.JSX.Element | null {
         >
           {store.theme.logo ? (
             <motion.div
-              className="rounded-sm border border-white/10 bg-black px-8 py-6"
+              className="overflow-hidden rounded-2xl border border-white/10 bg-black"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
@@ -62,7 +62,7 @@ export function BrandPreloader(): React.JSX.Element | null {
                 alt={store.tenant.name}
                 width={240}
                 height={240}
-                className="mx-auto h-28 w-auto object-contain md:h-36"
+                className="h-28 w-28 rounded-2xl object-cover md:h-36 md:w-36"
                 priority
               />
             </motion.div>

@@ -208,6 +208,10 @@ h3,
 
 :where(.btn-primary) {
   background: hsl(var(--foreground));
+}
+
+/* Outside :where() so it beats the base `a, button { color: inherit }` reset. */
+.btn-primary {
   color: hsl(var(--background));
 }
 
@@ -217,8 +221,12 @@ h3,
 
 :where(.btn-accent, .store-pill-accent) {
   background: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
   border: 1px solid hsl(var(--accent));
+}
+
+.btn-accent,
+.store-pill-accent {
+  color: hsl(var(--accent-foreground));
 }
 
 .btn-accent:hover:not(:disabled),
@@ -461,6 +469,61 @@ h3,
   background: rgba(10, 10, 10, 0.72);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+}
+
+@property --hero-glow {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1f3a8a;
+}
+
+.hero-stage {
+  transition: --hero-glow 900ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-stage {
+    transition: none;
+  }
+}
+
+.header-panel {
+  position: relative;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(14, 14, 14, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition:
+    background-color 300ms ease,
+    box-shadow 300ms ease,
+    border-color 300ms ease;
+}
+
+.header-panel::after {
+  content: '';
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(215, 38, 61, 0.85), transparent);
+  pointer-events: none;
+}
+
+.header-panel--scrolled {
+  background: rgba(14, 14, 14, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+}
+
+.header-panel .glass-nav-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .glass-nav-pill {

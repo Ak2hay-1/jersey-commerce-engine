@@ -18,7 +18,8 @@
     "@jersey-commerce/utils": "*",
     "next": "^15.4.6",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-easy-crop": "^6.2.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

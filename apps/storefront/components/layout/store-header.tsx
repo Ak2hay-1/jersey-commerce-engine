@@ -40,7 +40,6 @@ export function StoreHeader(): React.JSX.Element {
   const reduced = useReducedMotion();
   const count = cart?.itemCount ?? 0;
   const isHome = pathname === '/';
-  const homeOverStage = isHome && !scrolled;
   const brand = store.tenant.name?.trim() || 'Jerzyfy';
   const nav =
     store.website.chrome?.headerNav?.length
@@ -68,195 +67,155 @@ export function StoreHeader(): React.JSX.Element {
     return () => media.removeEventListener('change', closeDesktop);
   }, []);
 
+  const iconButton = 'text-white hover:bg-white/10 hover:text-white';
+
   return (
     <header
       className={cn(
-        'z-40 transition-[background-color,box-shadow,border-color,padding] duration-300',
-        isHome
-          ? 'fixed inset-x-0 top-0 pt-[env(safe-area-inset-top)]'
-          : 'sticky top-0 pt-[env(safe-area-inset-top)]',
-        isHome
-          ? 'border-b border-transparent bg-transparent'
-          : 'glass-nav-bar border-b border-white/10 shadow-header',
+        'pointer-events-none z-40 px-2 pt-[env(safe-area-inset-top)] sm:px-4',
+        isHome ? 'fixed inset-x-0 top-0' : 'sticky top-0',
       )}
     >
       <div
         className={cn(
-          'mx-auto grid h-14 max-w-store grid-cols-[1fr_auto_1fr] items-center gap-2 store-gutter sm:h-16 sm:gap-3',
-          isHome && 'mt-2 sm:mt-3',
+          'header-panel pointer-events-auto mx-auto mt-2 max-w-store text-white sm:mt-3',
+          scrolled && 'header-panel--scrolled',
         )}
       >
-        <div className="flex min-w-0 items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'h-11 w-11 rounded-full lg:hidden',
-              homeOverStage ? 'text-white hover:bg-white/10' : 'text-foreground',
-            )}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((value) => !value)}
-          >
-            {menuOpen ? <X /> : <Menu />}
-          </Button>
-          <Link
-            href="/"
-            className="flex min-w-0 items-center gap-2"
-            aria-label={brand}
-          >
-            {store.theme.logo ? (
-              <span className="inline-flex items-center rounded-sm border border-white/10 bg-black px-2.5 py-1.5">
-                <Image
-                  src={store.theme.logo}
-                  alt={brand}
-                  width={120}
-                  height={40}
-                  className="h-7 w-auto max-w-[40vw] object-contain sm:h-8 sm:max-w-none"
-                  priority
-                />
-              </span>
-            ) : (
-              <span
-                className={cn(
-                  'flex flex-col text-lg font-semibold tracking-tight',
-                  homeOverStage ? 'text-white' : 'text-foreground',
-                )}
-              >
-                {brand}
-              </span>
-            )}
-          </Link>
-        </div>
-
-        <nav
-          className={cn(
-            'glass-nav-pill hidden items-center gap-1 justify-self-center px-1.5 py-1.5 md:flex',
-            isHome && scrolled && 'glass-nav-pill--elevated',
-          )}
-          aria-label="Primary"
-        >
-          {PILL_NAV.map((item) => {
-            const active = isActivePath(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'rounded-full px-4 py-2 text-sm font-medium tracking-wide transition-colors',
-                  active
-                    ? homeOverStage
-                      ? 'bg-white text-black'
-                      : 'bg-foreground text-background'
-                    : homeOverStage
-                      ? 'text-white/75 hover:bg-white/10 hover:text-white'
-                      : 'text-foreground/75 hover:bg-foreground/10 hover:text-foreground',
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div
-          className={cn(
-            'flex items-center justify-end gap-0.5 sm:gap-1',
-            homeOverStage && 'text-white',
-          )}
-        >
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'h-11 w-11 rounded-full md:h-9 md:w-9',
-              homeOverStage && 'text-white hover:bg-white/10',
-            )}
-            aria-label={searchOpen ? 'Close search' : 'Search'}
-            aria-expanded={searchOpen}
-            onClick={() => setSearchOpen((value) => !value)}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'hidden h-9 w-9 rounded-full sm:inline-flex',
-              homeOverStage && 'text-white hover:bg-white/10',
-            )}
-            aria-label="Wishlist"
-          >
-            <Link href="/products">
-              <Heart className="h-4 w-4" />
+        <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 sm:h-16 sm:gap-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn('h-11 w-11 rounded-full lg:hidden', iconButton)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((value) => !value)}
+            >
+              {menuOpen ? <X /> : <Menu />}
+            </Button>
+            <Link href="/" className="flex min-w-0 items-center gap-2 px-1" aria-label={brand}>
+              {store.theme.logo ? (
+                <span className="block h-10 w-10 shrink-0 overflow-hidden rounded-xl sm:h-11 sm:w-11">
+                  <Image
+                    src={store.theme.logo}
+                    alt={brand}
+                    width={96}
+                    height={96}
+                    className="h-full w-full rounded-xl object-cover"
+                    priority
+                  />
+                </span>
+              ) : (
+                <span className="flex flex-col text-lg font-semibold tracking-tight text-white">
+                  {brand}
+                </span>
+              )}
             </Link>
-          </Button>
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className={cn(
-              'h-11 w-11 rounded-full md:h-9 md:w-9',
-              homeOverStage && 'text-white hover:bg-white/10',
-            )}
-            aria-label={customer ? 'Account' : 'Sign in'}
+          </div>
+
+          <nav
+            className="glass-nav-pill hidden items-center gap-1 justify-self-center px-1.5 py-1.5 md:flex"
+            aria-label="Primary"
           >
-            <Link href={customer ? '/account' : '/auth/login'}>
-              <User className="h-4 w-4" />
-            </Link>
-          </Button>
-          <button
-            type="button"
-            className={cn(
-              'relative inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full md:h-9 md:w-9',
-              homeOverStage && 'text-white hover:bg-white/10',
-            )}
-            aria-label="Open cart"
-            onClick={() => setOpen(true)}
-          >
-            <ShoppingBag className="h-4 w-4" />
-            <AnimatePresence>
-              {count > 0 ? (
-                <motion.span
-                  key="cart-badge"
+            {PILL_NAV.map((item) => {
+              const active = isActivePath(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
                   className={cn(
-                    'absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center overflow-hidden rounded-full px-1 text-[10px] font-bold',
-                    homeOverStage ? 'bg-white text-black' : 'bg-foreground text-background',
+                    'rounded-full px-4 py-2 text-sm font-medium tracking-wide transition-colors',
+                    active
+                      ? 'bg-white text-black'
+                      : 'text-white/75 hover:bg-white/10 hover:text-white',
                   )}
-                  initial={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
-                  animate={reduced ? { opacity: 1 } : { scale: 1, opacity: 1 }}
-                  exit={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
-                  transition={MOTION_TRANSITION}
                 >
-                  <SlidingNumber value={count} />
-                </motion.span>
-              ) : null}
-            </AnimatePresence>
-          </button>
-        </div>
-      </div>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-      <AnimatePresence>
-        {searchOpen ? (
-          <motion.div
-            key="header-search"
-            className={cn(
-              'mx-auto max-w-store border-t store-gutter py-3',
-              isHome ? 'border-white/10 bg-black/40 backdrop-blur-md' : 'border-foreground/10',
-            )}
-            initial={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
-            animate={reduced ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
-            exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
-            transition={MOTION_TRANSITION}
-          >
-            <SearchBar onNavigate={() => setSearchOpen(false)} />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-      <MobileMenu open={menuOpen} navigation={store.navigation} headerNav={nav} onClose={() => setMenuOpen(false)} />
+          <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn('h-11 w-11 rounded-full md:h-9 md:w-9', iconButton)}
+              aria-label={searchOpen ? 'Close search' : 'Search'}
+              aria-expanded={searchOpen}
+              onClick={() => setSearchOpen((value) => !value)}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className={cn('hidden h-9 w-9 rounded-full sm:inline-flex', iconButton)}
+              aria-label="Wishlist"
+            >
+              <Link href="/products">
+                <Heart className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className={cn('h-11 w-11 rounded-full md:h-9 md:w-9', iconButton)}
+              aria-label={customer ? 'Account' : 'Sign in'}
+            >
+              <Link href={customer ? '/account' : '/auth/login'}>
+                <User className="h-4 w-4" />
+              </Link>
+            </Button>
+            <button
+              type="button"
+              className={cn(
+                'relative inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-colors md:h-9 md:w-9',
+                iconButton,
+              )}
+              aria-label="Open cart"
+              onClick={() => setOpen(true)}
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <AnimatePresence>
+                {count > 0 ? (
+                  <motion.span
+                    key="cart-badge"
+                    className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center overflow-hidden rounded-full bg-white px-1 text-[10px] font-bold text-black"
+                    initial={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
+                    animate={reduced ? { opacity: 1 } : { scale: 1, opacity: 1 }}
+                    exit={reduced ? { opacity: 0 } : { scale: 0.55, opacity: 0 }}
+                    transition={MOTION_TRANSITION}
+                  >
+                    <SlidingNumber value={count} />
+                  </motion.span>
+                ) : null}
+              </AnimatePresence>
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {searchOpen ? (
+            <motion.div
+              key="header-search"
+              className="overflow-hidden border-t border-white/10 px-3 py-3 sm:px-4"
+              initial={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
+              animate={reduced ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
+              exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }}
+              transition={MOTION_TRANSITION}
+            >
+              <SearchBar onNavigate={() => setSearchOpen(false)} />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+        <MobileMenu open={menuOpen} navigation={store.navigation} headerNav={nav} onClose={() => setMenuOpen(false)} />
+      </div>
     </header>
   );
 }

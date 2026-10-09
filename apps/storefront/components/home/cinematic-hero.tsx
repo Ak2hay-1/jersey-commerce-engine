@@ -11,20 +11,18 @@ import { MOTION_EASE, MOTION_TRANSITION } from '../motion/presence';
 import { useStore } from '../providers/store-provider';
 import { DEMO_HERO_IMAGE, resolveDemoMediaUrl } from '../../lib/demo-media';
 import { discountPercent, formatMoney } from '../../lib/format';
+import { loadGlowColor } from '../../lib/image-glow';
 
 const SLIDE_INTERVAL_MS = 6500;
 
 /** Per-slide stage glows; kept deep so white copy stays readable. */
 const STAGE_GLOWS = ['#1f3a8a', '#8f1d2c', '#0f6b77', '#5b2a86', '#7a5a12'];
 
-function stageBackground(index: number): string {
-  const glow = STAGE_GLOWS[index % STAGE_GLOWS.length];
-  return [
-    `radial-gradient(ellipse 55% 65% at 72% 48%, ${glow}cc 0%, ${glow}33 45%, transparent 75%)`,
-    'radial-gradient(ellipse 90% 70% at 20% 100%, rgba(255,255,255,0.05) 0%, transparent 60%)',
-    'linear-gradient(180deg, #080808 0%, #0a0a0a 100%)',
-  ].join(', ');
-}
+const STAGE_BACKGROUND = [
+  'radial-gradient(ellipse 55% 65% at 72% 48%, color-mix(in srgb, var(--hero-glow) 80%, transparent) 0%, color-mix(in srgb, var(--hero-glow) 20%, transparent) 45%, transparent 75%)',
+  'radial-gradient(ellipse 90% 70% at 20% 100%, rgba(255,255,255,0.05) 0%, transparent 60%)',
+  'linear-gradient(180deg, color-mix(in srgb, var(--hero-glow) 28%, #080808) 0%, color-mix(in srgb, var(--hero-glow) 12%, #0a0a0a) 60%, #0a0a0a 100%)',
+].join(', ');
 
 export function CinematicHero({
   section: sectionProp,
@@ -47,8 +45,28 @@ export function CinematicHero({
   const count = slides.length;
   const product = slides[Math.min(active, Math.max(count - 1, 0))] ?? null;
 
+  const [glows, setGlows] = useState<Record<string, string>>({});
+
   useEffect(() => {
     setActive(0);
+  }, [slides]);
+
+  useEffect(() => {
+    let cancelled = false;
+    for (const slide of slides) {
+      const src = resolveDemoMediaUrl(slide.primaryImage?.url);
+      if (!src) {
+        continue;
+      }
+      void loadGlowColor(src).then((color) => {
+        if (!cancelled && color) {
+          setGlows((current) => (current[slide.id] === color ? current : { ...current, [slide.id]: color }));
+        }
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [slides]);
 
   const go = useCallback(
@@ -84,10 +102,12 @@ export function CinematicHero({
   const discount = product?.lowestPrice ? discountPercent(product.lowestPrice, product.compareAtPrice) : null;
   const compareAt = discount && product?.compareAtPrice ? formatMoney(product.compareAtPrice, currency) : null;
   const productHref = product ? `/products/${product.slug}` : section?.ctaHref || '/products';
+  const glow = (product && glows[product.id]) || STAGE_GLOWS[active % STAGE_GLOWS.length];
 
   return (
     <section
-      className="relative isolate overflow-hidden text-white"
+      className="hero-stage relative isolate overflow-hidden text-white"
+      style={{ ['--hero-glow' as string]: glow }}
       aria-roledescription="carousel"
       aria-label="Featured kits"
       onMouseEnter={() => setPaused(true)}
@@ -96,8 +116,8 @@ export function CinematicHero({
       onBlurCapture={() => setPaused(false)}
     >
       <div
-        className="absolute inset-0 -z-10 transition-[background] duration-700 ease-out"
-        style={{ background: stageBackground(active) }}
+        className="absolute inset-0 -z-10"
+        style={{ background: STAGE_BACKGROUND }}
         aria-hidden
       />
       <div
@@ -161,7 +181,7 @@ export function CinematicHero({
             </AnimatePresence>
 
             <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <Link href={productHref} className="btn btn-lg btn-primary cursor-pointer">
+              <Link href={productHref} className="btn btn-lg cursor-pointer !bg-white !text-neutral-950 hover:!bg-white/90">
                 {section?.ctaLabel?.trim() || 'Shop now'}
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -211,7 +231,7 @@ export function CinematicHero({
                       {selected ? (
                         <span
                           key={`${active}-${paused ? 'p' : 'r'}`}
-                          className={cn('block h-full bg-[hsl(var(--accent))]', !reduced && !paused && 'hero-progress')}
+                          className={cn('block h-full bg-[color-mix(in_srgb,var(--hero-glow)_70%,white)]', !reduced && !paused && 'hero-progress')}
                           style={{ ['--hero-interval' as string]: `${SLIDE_INTERVAL_MS}ms` }}
                         />
                       ) : null}
