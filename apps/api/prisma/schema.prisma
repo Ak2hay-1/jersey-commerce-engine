@@ -245,6 +245,7 @@ enum CustomOrderType {
   COLLEGE_ORDER
   TOURNAMENT_ORDER
   BULK_ORDER
+  WHOLESALE_ORDER
 }
 
 enum CustomOrderStatus {

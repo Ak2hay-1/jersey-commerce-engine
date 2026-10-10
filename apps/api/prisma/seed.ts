@@ -413,8 +413,8 @@ async function main(): Promise<void> {
     seoTitle: 'Jerzyfy — Football Jerseys',
     seoDescription: 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
     footerConfig: {
-      kicker: 'Match-day identity',
-      heading: 'Football jerseys for the stands, the street, and every kick-off.',
+      kicker: 'Jerzyfy',
+      heading: 'The game never stops. Neither should your style.',
       body: 'Jerzyfy is a football jersey store — club kits, national colours, kids sizes, and custom prints.',
       aboutTitle: 'About us',
       aboutBody: 'Welcome to Jerzyfy. Add your story and product collections from the Admin website settings.',

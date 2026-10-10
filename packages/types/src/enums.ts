@@ -194,6 +194,7 @@ export const CUSTOM_ORDER_TYPES = [
   'COLLEGE_ORDER',
   'TOURNAMENT_ORDER',
   'BULK_ORDER',
+  'WHOLESALE_ORDER',
 ] as const;
 export type CustomOrderType = (typeof CUSTOM_ORDER_TYPES)[number];
 

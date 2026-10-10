@@ -141,8 +141,8 @@ export interface StorefrontFooter {
 }
 
 export const DEFAULT_STOREFRONT_FOOTER: StorefrontFooter = {
-  kicker: 'Crafting your identity',
-  heading: 'Style is a reflection of the journey — on the street and on the pitch.',
+  kicker: 'Jerzyfy',
+  heading: 'The game never stops. Neither should your style.',
   body: '',
   aboutTitle: 'About us',
   aboutBody: '',
@@ -180,6 +180,7 @@ export const DEFAULT_STOREFRONT_CHROME: StorefrontChromeConfig = {
     { href: '/', label: 'Home' },
     { href: '/products', label: 'Shop' },
     { href: '/custom-orders', label: 'Customize' },
+    { href: '/wholesale', label: 'Wholesale' },
   ],
 };
 

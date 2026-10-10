@@ -20,6 +20,7 @@ const PILL_NAV = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Shop' },
   { href: '/custom-orders', label: 'Customize' },
+  { href: '/wholesale', label: 'Wholesale' },
 ] as const;
 
 function isActivePath(pathname: string, href: string): boolean {

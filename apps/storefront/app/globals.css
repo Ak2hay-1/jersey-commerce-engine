@@ -206,7 +206,9 @@ h3,
   font-size: 1.05rem;
 }
 
-:where(.btn-primary) {
+/* `button:where(...)` ties preflight's `button { background-color: transparent }` and wins on source order. */
+:where(.btn-primary),
+button:where(.btn-primary) {
   background: hsl(var(--foreground));
 }
 
@@ -219,7 +221,8 @@ h3,
   background: hsl(var(--foreground) / 0.88);
 }
 
-:where(.btn-accent, .store-pill-accent) {
+:where(.btn-accent, .store-pill-accent),
+button:where(.btn-accent, .store-pill-accent) {
   background: hsl(var(--accent));
   border: 1px solid hsl(var(--accent));
 }

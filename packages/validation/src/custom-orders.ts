@@ -8,6 +8,7 @@ export const customOrderTypeSchema = z.enum([
   'COLLEGE_ORDER',
   'TOURNAMENT_ORDER',
   'BULK_ORDER',
+  'WHOLESALE_ORDER',
 ]);
 
 export const customOrderItemModeSchema = z.enum(['PLAYER_LIST', 'SIZE_QUANTITY']);

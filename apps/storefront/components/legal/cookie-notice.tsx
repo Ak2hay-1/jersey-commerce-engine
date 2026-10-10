@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'jce_cookie_notice_v1';
@@ -38,8 +39,16 @@ export function CookieNotice(): React.JSX.Element | null {
     <div
       role="region"
       aria-label="Cookie notice"
-      className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-2xl flex-col gap-3 rounded-2xl border border-foreground/10 bg-background/95 p-4 text-sm shadow-xl backdrop-blur sm:flex-row sm:items-center sm:gap-5"
+      className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-2xl flex-col gap-3 rounded-2xl border border-foreground/10 bg-background/95 p-4 pr-12 text-sm shadow-xl backdrop-blur sm:flex-row sm:items-center sm:gap-5"
     >
+      <button
+        type="button"
+        className="absolute right-1 top-1 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+        aria-label="Close cookie notice"
+        onClick={dismiss}
+      >
+        <X className="h-4 w-4" aria-hidden />
+      </button>
       <p className="flex-1 leading-relaxed text-muted-foreground">
         We use only essential cookies to keep your cart and sign-in working — no ads or tracking.{' '}
         <Link href="/privacy" className="text-foreground underline underline-offset-4">

@@ -76,6 +76,7 @@ export const ERP_NAV: ErpNavSection[] = [
       { href: '/custom-orders?status=INQUIRY', label: 'Enquiries', permission: 'customOrders.read', portal: 'erp' },
       { href: '/custom-orders?status=QUOTATION', label: 'Quotes', permission: 'customOrders.read', portal: 'erp' },
       { href: '/custom-orders?status=PRODUCTION', label: 'Production', permission: 'customOrders.read', portal: 'erp' },
+      { href: '/custom-orders?type=WHOLESALE_ORDER', label: 'Wholesale', permission: 'customOrders.read', portal: 'erp' },
     ],
   },
   {

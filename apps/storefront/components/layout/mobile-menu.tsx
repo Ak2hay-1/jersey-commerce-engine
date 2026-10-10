@@ -13,8 +13,21 @@ const PRIMARY = [
   { href: '/category/football-jerseys', label: 'Jerseys', id: 'jerseys' },
   { href: '/about', label: 'About', id: 'about' },
   { href: '/custom-orders', label: 'Custom jerseys', id: 'custom' },
+  { href: '/wholesale', label: 'Wholesale', id: 'wholesale' },
   { href: '/account', label: 'Account', id: 'account' },
 ];
+
+const WHOLESALE_LINK = { href: '/wholesale', label: 'Wholesale', id: 'wholesale' };
+
+/** CMS-saved header nav predates Wholesale, so slot it in after Customize when missing. */
+function withWholesale<T extends { href: string; label: string; id: string }>(items: T[]): Array<T | typeof WHOLESALE_LINK> {
+  if (items.some((item) => item.href === WHOLESALE_LINK.href)) {
+    return items;
+  }
+  const customIndex = items.findIndex((item) => item.href === '/custom-orders');
+  const insertAt = customIndex === -1 ? items.length : customIndex + 1;
+  return [...items.slice(0, insertAt), WHOLESALE_LINK, ...items.slice(insertAt)];
+}
 
 export function MobileMenu({
   open,
@@ -30,7 +43,7 @@ export function MobileMenu({
   const reduced = useReducedMotion();
   const primary =
     headerNav?.length
-      ? headerNav.map((item, index) => ({ ...item, id: `nav-${index}` }))
+      ? withWholesale(headerNav.map((item, index) => ({ ...item, id: `nav-${index}` })))
       : PRIMARY;
   const extras = navigation
     .filter((item) => !item.parentId)

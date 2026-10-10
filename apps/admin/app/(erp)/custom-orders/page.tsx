@@ -25,16 +25,32 @@ function CustomOrdersList(): React.JSX.Element {
   const params = useSearchParams();
   const auth = useAuth();
   const status = params.get('status') ?? undefined;
+  const type = params.get('type') ?? undefined;
   const isEnquiryList = status === 'INQUIRY';
-  const title =
-    status === 'INQUIRY' ? 'Enquiries' : status === 'QUOTATION' ? 'Quotes' : status === 'PRODUCTION' ? 'Production' : 'Custom orders';
+  const isWholesaleList = type === 'WHOLESALE_ORDER';
+  const title = isWholesaleList
+    ? 'Wholesale'
+    : status === 'INQUIRY'
+      ? 'Enquiries'
+      : status === 'QUOTATION'
+        ? 'Quotes'
+        : status === 'PRODUCTION'
+          ? 'Production'
+          : 'Custom orders';
+  const extraQuery = status || type ? { ...(status ? { status } : {}), ...(type ? { type } : {}) } : undefined;
   return (
     <ResourceList<CustomOrderRow>
       title={title}
-      description={isEnquiryList ? 'Guest and staff custom-jersey enquiries awaiting a quote.' : undefined}
+      description={
+        isWholesaleList
+          ? 'Wholesale and resale enquiries from the storefront Wholesale page.'
+          : isEnquiryList
+            ? 'Guest and staff custom-jersey enquiries awaiting a quote.'
+            : undefined
+      }
       path="/custom-orders"
-      extraQuery={status ? { status } : undefined}
-      empty={isEnquiryList ? 'No enquiries yet.' : 'No custom orders found.'}
+      extraQuery={extraQuery}
+      empty={isWholesaleList ? 'No wholesale enquiries yet.' : isEnquiryList ? 'No enquiries yet.' : 'No custom orders found.'}
       rowHref={(row) => `/custom-orders/${row.id}`}
       actions={
         auth.can('customOrders.create') ? (

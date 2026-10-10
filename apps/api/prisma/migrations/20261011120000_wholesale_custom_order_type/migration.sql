@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "CustomOrderType" ADD VALUE 'WHOLESALE_ORDER';

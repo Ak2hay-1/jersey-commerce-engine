@@ -8,6 +8,7 @@ const STATIC_PATHS = [
   '',
   '/products',
   '/custom-orders',
+  '/wholesale',
   '/about',
   '/privacy',
   '/terms',

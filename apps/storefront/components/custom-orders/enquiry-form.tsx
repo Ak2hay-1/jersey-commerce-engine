@@ -25,12 +25,24 @@ const TYPES: Array<{ value: string; label: string }> = [
   { value: 'CORPORATE_ORDER', label: 'Corporate' },
   { value: 'TOURNAMENT_ORDER', label: 'Tournament' },
   { value: 'BULK_ORDER', label: 'Bulk order' },
+  { value: 'WHOLESALE_ORDER', label: 'Wholesale' },
 ];
 
-export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicConfig }): React.JSX.Element {
+export function CustomOrderEnquiryForm({
+  config,
+  defaultType,
+  lockType = false,
+}: {
+  config: CustomOrderPublicConfig;
+  defaultType?: string;
+  lockType?: boolean;
+}): React.JSX.Element {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<EnquiryDraft>(EMPTY_ENQUIRY);
+  const [draft, setDraft] = useState<EnquiryDraft>(() =>
+    defaultType ? { ...EMPTY_ENQUIRY, type: defaultType } : EMPTY_ENQUIRY,
+  );
+  const isWholesale = draft.type === 'WHOLESALE_ORDER';
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -109,31 +121,37 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
 
         {step === 1 ? (
           <>
-            <Field label="Team or organization">
+            <Field label={isWholesale ? 'Business / shop name' : 'Team or organization'}>
               <Input value={draft.teamName} onChange={(event) => setField('teamName', event.target.value)} />
             </Field>
-            <Field label="Estimated quantity">
+            <Field label="Estimated quantity" hint={isWholesale ? 'Total pieces across all designs' : undefined}>
               <Input value={draft.quantity} onChange={(event) => setField('quantity', event.target.value)} inputMode="numeric" />
             </Field>
-            <Field label="Jersey type">
-              <select
-                className="flex h-11 w-full border border-input bg-background px-3 text-base md:text-sm"
-                value={draft.type}
-                onChange={(event) => setField('type', event.target.value)}
-              >
-                {TYPES.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            {lockType ? null : (
+              <Field label="Jersey type">
+                <select
+                  className="flex h-11 w-full border border-input bg-background px-3 text-base md:text-sm"
+                  value={draft.type}
+                  onChange={(event) => setField('type', event.target.value)}
+                >
+                  {TYPES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
             <Field label="Description">
               <textarea
                 className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.description}
                 onChange={(event) => setField('description', event.target.value)}
-                placeholder="What do you need made?"
+                placeholder={
+                  isWholesale
+                    ? 'Which clubs, kits, and sizes do you want to stock? Is this a one-off or a repeat order?'
+                    : 'What do you need made?'
+                }
               />
             </Field>
           </>
@@ -210,7 +228,7 @@ export function CustomOrderEnquiryForm({ config }: { config: CustomOrderPublicCo
           <dl className="grid gap-2 text-sm">
             <Row label="Name" value={draft.name} />
             <Row label="Contact" value={[draft.phone, draft.email].filter(Boolean).join(' · ')} />
-            <Row label="Team" value={draft.teamName} />
+            <Row label={isWholesale ? 'Business' : 'Team'} value={draft.teamName} />
             <Row label="Quantity" value={draft.quantity} />
             <Row label="Type" value={typeLabel} />
             <Row label="Description" value={draft.description} />
