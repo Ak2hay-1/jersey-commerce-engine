@@ -21,8 +21,6 @@ const repoRoot = path.resolve(__dirname, '../..');
 const adminRoot = path.join(repoRoot, 'apps/admin');
 const outDir = path.join(adminRoot, 'out');
 const posOut = path.join(repoRoot, 'apps/pos/out');
-const publicRuntime = path.join(adminRoot, 'public', 'runtime-config.js');
-
 const apiUrl = (process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
 if (!apiUrl) {
   console.error('NEXT_PUBLIC_API_URL is required (e.g. https://api.yourshop.com)');
@@ -72,8 +70,6 @@ const storefrontPart = storefrontUrl
   ? `,storefrontUrl:"${storefrontUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
   : '';
 const runtimeBody = `window.__JCE_PUBLIC__={apiUrl:"${apiUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}",portal:"all"${storefrontPart}};\n`;
-fs.writeFileSync(publicRuntime, runtimeBody, 'utf8');
-console.log('[vercel-staff] Wrote', publicRuntime);
 
 run('npm', ['run', 'build:packages']);
 

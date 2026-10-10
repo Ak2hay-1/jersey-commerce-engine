@@ -56,11 +56,35 @@ export class AuditService {
     });
   }
 
-  async findAll(tenantId: string, query: PaginationQueryDto) {
+  async findAll(
+    tenantId: string,
+    query: PaginationQueryDto & { search?: string; entity?: string; entityId?: string; userId?: string },
+  ) {
     const { page, pageSize, skip, take } = toPaginationArgs(query);
-    const where = { tenantId };
+    const search = query.search?.trim();
+    const where: Prisma.AuditLogWhereInput = {
+      tenantId,
+      ...(query.entity ? { entity: query.entity } : {}),
+      ...(query.entityId ? { entityId: query.entityId } : {}),
+      ...(query.userId ? { userId: query.userId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { action: { contains: search, mode: 'insensitive' } },
+              { entity: { contains: search, mode: 'insensitive' } },
+              { entityId: search },
+            ],
+          }
+        : {}),
+    };
     const [items, totalItems] = await this.prisma.$transaction([
-      this.prisma.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
+      this.prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        include: { user: { select: { id: true, name: true, email: true } } },
+      }),
       this.prisma.auditLog.count({ where }),
     ]);
     return { items, meta: toPaginationMeta(page, pageSize, totalItems) };

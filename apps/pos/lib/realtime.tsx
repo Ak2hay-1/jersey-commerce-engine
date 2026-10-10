@@ -13,7 +13,7 @@ import {
 import type { RealtimeEvent } from '@jersey-commerce/types';
 import { openRealtimeSocket } from '@jersey-commerce/utils';
 import { getApiUrl } from './env';
-import { readAccessToken } from './api';
+import { readAccessToken, refreshAccessToken } from './api';
 import { useAuth } from './auth';
 
 type Listener = (event: RealtimeEvent) => void;
@@ -37,15 +37,27 @@ function RealtimeInner({ children }: { children: ReactNode }): React.JSX.Element
       setConnected(false);
       return;
     }
+    let lastRefresh = 0;
+    let disposed = false;
     const handle = openRealtimeSocket({
       apiUrl: getApiUrl(),
-      token,
+      token: readAccessToken,
       onEvent: (event) => {
         listeners.current.forEach((listener) => listener(event));
       },
-      onStatus: setConnected,
+      onStatus: (next) => {
+        setConnected(next);
+        // An expired access token closes the socket; renew it so the next reconnect authenticates.
+        if (!next && !disposed && Date.now() - lastRefresh > 60_000) {
+          lastRefresh = Date.now();
+          void refreshAccessToken().catch(() => undefined);
+        }
+      },
     });
-    return () => handle.close();
+    return () => {
+      disposed = true;
+      handle.close();
+    };
   }, [userId]);
 
   const subscribe = useCallback((listener: Listener) => {

@@ -36,9 +36,16 @@ export const serverEnvSchema = z.object({
   /** Optional env fallback for Razorpay. Prefer Admin → Settings → Payments when set. */
   RAZORPAY_KEY_ID: z.string().optional().default(''),
   RAZORPAY_KEY_SECRET: z.string().optional().default(''),
+  /** Secret configured on the Razorpay dashboard webhook (Settings → Webhooks). Required for payment webhooks. */
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(''),
   /** Optional env fallback for Delhivery. Prefer Admin → Settings → Shipping when set. */
   DELHIVERY_API_TOKEN: z.string().optional().default(''),
   DELHIVERY_ENVIRONMENT: z.string().optional().default('STAGING'),
+  /** Shared with the storefront so the API can trust the forwarded shopper IP (32+ chars). */
+  STOREFRONT_PROXY_SECRET: z.string().optional().default(''),
+  /** Encrypts backup files at rest (AES-256-GCM). Required in production for backups to run. */
+  BACKUP_ENCRYPTION_KEY: z.string().optional().default(''),
+  SENTRY_DSN: z.string().optional().default(''),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

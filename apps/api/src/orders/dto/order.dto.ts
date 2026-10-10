@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsEmail, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
+import { ArrayMinSize, IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 import { DISCOUNT_TYPES, FULFILLMENT_METHODS, ORDER_SOURCES, ORDER_STATUSES, PAYMENT_STATUSES } from '@jersey-commerce/types';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
@@ -147,6 +147,20 @@ export class UpdateOrderStatusDto {
   @ApiProperty({ enum: ORDER_STATUSES })
   @IsIn(ORDER_STATUSES)
   status!: (typeof ORDER_STATUSES)[number];
+
+  @ApiPropertyOptional({
+    description: 'RETURNED only: put returned goods back into sellable stock (default true). False writes them off as damaged.',
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  restock?: boolean;
+
+  @ApiPropertyOptional({ description: 'Reason recorded for RETURNED / REFUNDED transitions.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
 }
 
 export class StaffOrderItemDto {

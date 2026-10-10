@@ -1,8 +1,9 @@
 # Dependencies
 node_modules/
 
-# Environment and secrets
+# Environment and secrets (the example files below are re-included)
 .env
+.env*
 .env.local
 .env.*.local
 .env.production
@@ -71,9 +72,15 @@ Desktop.ini
 # Docker
 infra/docker/data/
 
+# Scratch files (video frames, request bodies, etc.)
+.tmp-*
+
+# Decrypted backups
+*.json.gz
+*.json.gz.enc
+
 # Misc
 *.pem
 *.key
 .vercel
 .DS_Store
-.env*

@@ -70,9 +70,9 @@ export function configureHttpApp(app: INestApplication, options: ConfigureHttpAp
 
   if (options.withSwagger !== false) {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('Jersey Commerce Engine API')
+      .setTitle('Jerzyfy API')
       .setDescription(
-        'Multi-tenant commerce platform API. Staff routes require a Bearer access token. Storefront cart and checkout use X-Tenant-Slug. Tenant context never comes from a client-supplied tenant id.',
+        'API for the Jerzyfy jersey shop: storefront, Admin/ERP, and POS. Staff routes require a Bearer access token. Storefront routes send the pinned shop slug in X-Tenant-Slug; shop context never comes from a client-supplied id.',
       )
       .setVersion('0.9.0')
       .addBearerAuth(

@@ -1,0 +1,15 @@
+title = "Jerzyfy gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Example env files and documented placeholder secrets"
+paths = [
+  '''(^|/)\.env(\.[a-z0-9-]+)*\.example$''',
+  '''(^|/)package-lock\.json$''',
+]
+regexes = [
+  '''replace-with-[a-z0-9-]+''',
+  '''change-?me''',
+]

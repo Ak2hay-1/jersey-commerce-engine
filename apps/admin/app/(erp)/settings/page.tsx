@@ -9,7 +9,7 @@ export default function SettingsPage(): React.JSX.Element {
   const auth = useAuth();
   return (
     <div className="space-y-4">
-      <PageHeader title="Settings" description="Tenant workspace configuration." />
+      <PageHeader title="Settings" description="Shop configuration for payments, shipping, notifications, sign-in, and backups." />
       <div className="grid gap-3 md:grid-cols-2">
         <Card>
           <CardHeader className="p-4"><CardTitle className="text-sm">Business</CardTitle></CardHeader>

@@ -1,9 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import type { ServerEnv } from '@jersey-commerce/config';
 import { RedisThrottlerStorage } from '../auth/rate-limit/redis-throttler.storage';
+import { ClientIpThrottlerGuard } from '../auth/rate-limit/client-ip-throttler.guard';
 import { RedisService } from '../redis/redis.service';
 import { TenantContextModule } from '../common/context/tenant-context.module';
 import { RbacModule } from '../rbac/rbac.module';
@@ -27,6 +28,6 @@ import { RbacModule } from '../rbac/rbac.module';
       }),
     }),
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [{ provide: APP_GUARD, useClass: ClientIpThrottlerGuard }],
 })
 export class Phase2Module {}

@@ -17,6 +17,9 @@ export class EmailSenderService {
     const from = `${fromName} <${fromAddress}>`;
 
     if (settings.emailProvider === 'CONSOLE') {
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.warn('CONSOLE email provider is active in production; message bodies (including OTP codes) are written to logs. Configure SMTP or Resend.');
+      }
       this.logger.log(`Email to ${input.to}: ${input.subject} — ${input.text}`);
       return;
     }

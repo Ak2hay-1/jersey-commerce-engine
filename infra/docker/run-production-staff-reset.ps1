@@ -11,7 +11,8 @@ param(
   [string]$PublicIp = '45.76.61.16',
   [string]$SshUser = 'root',
   [string]$TenantSlug = 'jerzyfy',
-  [string]$StaffPassword = 'DevPassword123!'
+  [Parameter(Mandatory = $true)]
+  [string]$StaffPassword
 )
 
 $ErrorActionPreference = 'Stop'

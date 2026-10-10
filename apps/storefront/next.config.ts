@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { NextConfig } from 'next';
+import { storefrontSecurityHeaders } from './lib/security-headers';
 
 function apiImagePattern(): Array<{ protocol: 'http' | 'https'; hostname: string; port?: string }> {
   const raw = process.env.NEXT_PUBLIC_API_URL;
@@ -24,6 +25,10 @@ function apiImagePattern(): Array<{ protocol: 'http' | 'https'; hostname: string
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: '/:path*', headers: storefrontSecurityHeaders() }];
+  },
   async rewrites() {
     const apiUrl = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
     return [
@@ -45,8 +50,12 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'http', hostname: 'localhost' },
-      { protocol: 'http', hostname: '127.0.0.1' },
+      ...(process.env.NODE_ENV === 'production'
+        ? []
+        : [
+            { protocol: 'http' as const, hostname: 'localhost' },
+            { protocol: 'http' as const, hostname: '127.0.0.1' },
+          ]),
       ...apiImagePattern(),
     ],
   },

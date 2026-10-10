@@ -12,6 +12,7 @@ const portal = getStaffPortal();
 export const metadata: Metadata = {
   title: portal === 'admin' ? 'Admin Panel' : portal === 'erp' ? 'ERP' : 'Admin & ERP',
   description: 'Jerzyfy staff console.',
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

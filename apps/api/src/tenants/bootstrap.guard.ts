@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { ServerEnv } from '@jersey-commerce/config';
 import type { Request } from 'express';
+import { safeEqual } from '../common/crypto/safe-equal';
 
 @Injectable()
 export class BootstrapGuard implements CanActivate {
@@ -21,7 +22,7 @@ export class BootstrapGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const provided = request.headers['x-bootstrap-secret'];
     const header = Array.isArray(provided) ? provided[0] : provided;
-    if (!header || header !== secret) {
+    if (!safeEqual(header, secret)) {
       throw new UnauthorizedException('Invalid bootstrap secret.');
     }
     return true;

@@ -7,6 +7,7 @@ import { CustomerDialog } from '@/components/customer-dialog';
 import { PaymentDialog } from '@/components/payment-dialog';
 import { ProductSearch } from '@/components/product-search';
 import { ReceiptDialog } from '@/components/receipt-dialog';
+import { isNetworkError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import {
   addCartItem,
@@ -70,7 +71,28 @@ export default function RegisterPage(): React.JSX.Element {
   }
 
   async function onComplete(payments: PosPaymentInput[]): Promise<void> {
-    const completed = await completeSale({ cartId: cart?.id, payments });
+    if (!cart) {
+      return;
+    }
+    const input = { cartId: cart.id, payments };
+    let completed: PosSaleDto;
+    try {
+      completed = await completeSale(input);
+    } catch (error) {
+      if (!isNetworkError(error)) {
+        throw error;
+      }
+      // Safe to repeat: the API returns the sale already created from this cart instead of charging twice.
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      try {
+        completed = await completeSale(input);
+      } catch (retryError) {
+        if (isNetworkError(retryError)) {
+          throw new Error('Connection lost. Check the network and press Complete sale again — the sale will not be duplicated.');
+        }
+        throw retryError;
+      }
+    }
     setSale(completed);
     setPayOpen(false);
     setReceiptOpen(true);

@@ -46,6 +46,19 @@ Users cannot change their own roles or deactivate themselves. Only OWNER or SUPE
 - Refresh tokens are stored hashed. Raw tokens exist only in the login/refresh response and the httpOnly cookie.
 - Redis holds rate-limit counters, access-token denylist entries, and realtime pub/sub (`realtime:tenant:{tenantId}`).
 - Admin and POS open `ws://API/realtime?token=ACCESS_JWT`. Tenant membership comes from the JWT, never from the client.
+- Refresh rotation is atomic: the old token is revoked with a conditional update in the same transaction that issues the new one. Presenting an already-rotated token revokes the whole token family and writes an `AUTH_REFRESH_REUSE` audit event.
+
+### Residual risk: browser token storage (accepted)
+
+- **Admin and POS** keep the access JWT in `localStorage` so the static exports can attach the bearer header.
+- **Storefront** keeps the customer access JWT in a JS-readable cookie for the same reason.
+- Any successful XSS on those origins could read the token. Moving to httpOnly-cookie sessions with CSRF protection was deferred.
+- Compensating controls:
+  - Short access-token lifetime (`JWT_ACCESS_EXPIRATION`, default 15m).
+  - A strict Content-Security-Policy on all three frontends (no third-party scripts beyond Razorpay; `frame-ancestors` locked down).
+  - React output escaping. The only `dangerouslySetInnerHTML` is JSON-LD, which is serialized with `<`, `>` and `&` escaped.
+  - Refresh-token reuse detection.
+- Revisit this if the frontends start loading third-party scripts or user-authored HTML.
 
 ## Tenant creation
 
@@ -57,7 +70,11 @@ If `BOOTSTRAP_SECRET` is empty, the route returns 404.
 
 ## CORS and headers
 
-Helmet is enabled. Production requires explicit `CORS_ORIGINS` (never `*` unless you set that list deliberately). Credentials are allowed so the refresh cookie can be sent to listed frontend origins.
+Helmet is enabled. Production requires explicit `CORS_ORIGINS`; the API refuses to boot if the list contains `*`. Credentials are allowed so the refresh cookie can be sent to listed frontend origins.
+
+At boot in production the API also rejects missing, short (< 32 chars), placeholder, or identical JWT secrets, and `COOKIE_SAMESITE=none` without `COOKIE_SECURE=true` (see `assert-production-config.ts`).
+
+Rate limits key on the client IP. Storefront browser calls arrive through the Vercel `/api/v1` rewrite, so set the same `STOREFRONT_PROXY_SECRET` on Vercel and the API; the storefront middleware then forwards the shopper IP in `x-jerzyfy-client-ip`, which the API trusts only when the secret matches.
 
 ## Storefront customer login options
 

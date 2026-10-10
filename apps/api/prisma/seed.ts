@@ -123,6 +123,9 @@ async function removeUser(
 }
 
 async function main(): Promise<void> {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    throw new Error('Refusing to run the development seed with NODE_ENV=production.');
+  }
   console.warn('=== DEVELOPMENT SEED ONLY — do not use these credentials in production ===');
 
   const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);

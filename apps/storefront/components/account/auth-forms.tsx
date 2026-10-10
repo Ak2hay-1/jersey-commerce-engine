@@ -11,6 +11,8 @@ import { useAuth } from '../providers/auth-provider';
 import { useStore } from '../providers/store-provider';
 import { publicErrorMessage } from '../../lib/errors';
 import { COMPLETE_PROFILE_PATH, isProfileComplete } from '../../lib/profile';
+import { nextFromLocation } from '../../lib/next-path';
+import { ConsentNotice } from '../legal/consent-notice';
 
 type LoginMethod = 'password' | 'email' | 'sms';
 
@@ -215,7 +217,7 @@ function OtpForm({
         code,
       });
       const destination =
-        registering || !isProfileComplete(customer) ? COMPLETE_PROFILE_PATH : '/account';
+        registering || !isProfileComplete(customer) ? COMPLETE_PROFILE_PATH : (nextFromLocation() ?? '/account');
       router.push(destination);
       router.refresh();
     } catch (caught) {
@@ -366,7 +368,7 @@ export function LoginForm(): React.JSX.Element {
         email: String(form.get('email') ?? ''),
         password: String(form.get('password') ?? ''),
       });
-      router.push('/account');
+      router.push(nextFromLocation() ?? '/account');
       router.refresh();
     } catch (caught) {
       setError(publicErrorMessage(caught, 'Could not sign in.'));
@@ -456,7 +458,7 @@ export function RegisterForm(): React.JSX.Element {
         phone: String(form.get('phone') ?? '') || undefined,
         password: String(form.get('password') ?? ''),
       });
-      router.push('/account');
+      router.push(nextFromLocation() ?? '/account');
       router.refresh();
     } catch (caught) {
       setError(publicErrorMessage(caught, 'Could not create this account.'));
@@ -564,6 +566,7 @@ export function RegisterForm(): React.JSX.Element {
           </form>
         </>
       ) : null}
+      <ConsentNotice action="creating an account" />
     </AuthShell>
   );
 }

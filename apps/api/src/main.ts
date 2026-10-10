@@ -1,3 +1,4 @@
+import './instrument';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
@@ -5,9 +6,12 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import { APP_PORTS } from '@jersey-commerce/config';
 import { AppModule } from './app.module';
 import { configureHttpApp } from './common/http/configure-app';
+import { assertProductionSecurityConfig } from './common/http/assert-production-config';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
+  assertProductionSecurityConfig();
+  app.enableShutdownHooks();
   const logger = app.get(Logger);
   app.useLogger(logger);
   app.useWebSocketAdapter(new WsAdapter(app));

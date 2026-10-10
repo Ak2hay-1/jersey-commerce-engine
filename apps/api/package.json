@@ -18,6 +18,8 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
     "prisma:reset-staff": "node --require ts-node/register/transpile-only prisma/reset-staff.ts",
+    "backup:decrypt": "node --require ts-node/register/transpile-only scripts/decrypt-backup.ts",
+    "backup:restore": "node --require ts-node/register/transpile-only scripts/restore-backup.ts",
     "prisma:studio": "prisma studio"
   },
   "prisma": {
@@ -41,6 +43,7 @@
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/websockets": "^11.1.5",
     "@prisma/client": "^6.13.0",
+    "@sentry/nestjs": "^10.76.2",
     "bcryptjs": "^2.4.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",

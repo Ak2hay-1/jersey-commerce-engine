@@ -64,10 +64,10 @@ export class PaymentsService {
     if (!dto.saleId && !dto.orderId) {
       throw new BadRequestException('A payment must reference a sale or an order.');
     }
-    if (dto.orderId && !dto.saleId) {
-      throw new BadRequestException('Order payments are not captured in this phase.');
-    }
     try {
+      if (dto.orderId && !dto.saleId) {
+        return await this.recordOrderPayment(actor, dto);
+      }
       return await this.createInTransaction(actor, dto);
     } catch (error) {
       await this.audit.log({
@@ -82,12 +82,100 @@ export class PaymentsService {
     }
   }
 
+  /**
+   * Staff record the full payment for an order whose money was collected outside the storefront checkout
+   * (bank transfer, UPI to the shop, cash at pickup, or a COD remittance). Partial order payments are not supported.
+   */
+  private async recordOrderPayment(actor: AuthPrincipal, dto: CreatePaymentDto) {
+    const tenantId = actor.tenantId;
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${dto.orderId} AND tenant_id = ${tenantId} FOR UPDATE`;
+      const order = await tx.order.findFirst({
+        where: { id: dto.orderId, tenantId },
+        include: { payments: true },
+      });
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
+      if (order.status === 'CANCELLED' || order.status === 'REFUNDED') {
+        throw new ConflictException('Payments cannot be recorded against a cancelled or refunded order.');
+      }
+      if (order.paymentStatus === PaymentStatus.COMPLETED) {
+        throw new BadRequestException('Order is already paid in full.');
+      }
+      const total = money(order.total.toString());
+      const billed = dto.amount ? parseMoney(dto.amount, 'amount') : total;
+      if (!billed.eq(total)) {
+        throw new BadRequestException(`Order payments must cover the full order total (${total.toFixed(2)}).`);
+      }
+      if (['UPI', 'CARD', 'OTHER', 'BANK_TRANSFER'].includes(dto.method) && !dto.reference?.trim()) {
+        throw new BadRequestException('A transaction reference is required for this payment method.');
+      }
+      await this.assertUniqueReference(tx, tenantId, dto.method, dto.reference?.trim() || null);
+      const pending = order.payments.find((payment) => payment.status === PaymentStatus.PENDING);
+      const metadata = {
+        ...((pending?.metadata as Record<string, unknown> | null) ?? {}),
+        recordedBy: actor.userId,
+        recordedAt: new Date().toISOString(),
+        recordedMethod: dto.method,
+      } as Prisma.InputJsonValue;
+      const paymentId = pending
+        ? (
+            await tx.payment.update({
+              where: { id: pending.id },
+              data: {
+                status: PaymentStatus.COMPLETED,
+                method: dto.method,
+                amount: total,
+                amountReceived: total,
+                reference: dto.reference?.trim() || pending.reference,
+                createdById: pending.createdById ?? actor.userId,
+                metadata,
+              },
+              select: { id: true },
+            })
+          ).id
+        : (
+            await tx.payment.create({
+              data: {
+                tenantId,
+                orderId: order.id,
+                createdById: actor.userId,
+                amount: total,
+                amountReceived: total,
+                method: dto.method,
+                status: PaymentStatus.COMPLETED,
+                reference: dto.reference?.trim() || null,
+                provider: dto.provider ?? null,
+                metadata,
+              },
+              select: { id: true },
+            })
+          ).id;
+      await tx.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: PaymentStatus.COMPLETED },
+      });
+      await this.audit.log(
+        {
+          action: AUDIT_ACTIONS.ORDER_PAYMENT_STATE_CHANGED,
+          tenantId,
+          userId: actor.userId,
+          entity: 'Order',
+          entityId: order.id,
+          oldValue: { paymentStatus: order.paymentStatus },
+          newValue: { paymentStatus: PaymentStatus.COMPLETED },
+          metadata: { method: dto.method, amount: total.toFixed(2), paymentId },
+        },
+        tx,
+      );
+      return this.toDto(await tx.payment.findFirstOrThrow({ where: { id: paymentId, tenantId }, include: paymentInclude }));
+    });
+  }
+
   private async createInTransaction(actor: AuthPrincipal, dto: CreatePaymentDto) {
-    if (!dto.saleId && !dto.orderId) {
+    if (!dto.saleId) {
       throw new BadRequestException('A payment must reference a sale or an order.');
-    }
-    if (dto.orderId && !dto.saleId) {
-      throw new BadRequestException('Order payments are not captured in this phase.');
     }
     const tenantId = actor.tenantId;
     return this.prisma.$transaction(async (tx) => {

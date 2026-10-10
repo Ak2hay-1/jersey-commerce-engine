@@ -25,7 +25,7 @@ export default function CustomerSegmentsPage(): React.JSX.Element {
   }, []);
   return (
     <div className="space-y-4">
-      <PageHeader title="Customer segments" description="Derived from completed purchases. Thresholds are tenant CRM settings." />
+      <PageHeader title="Customer segments" description="Derived from completed purchases. Thresholds come from CRM settings." />
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card><CardHeader className="p-4"><CardTitle className="text-sm">New this period</CardTitle></CardHeader><CardContent className="p-4 pt-0 text-2xl font-semibold">{summary?.newInPeriod ?? 0}</CardContent></Card>

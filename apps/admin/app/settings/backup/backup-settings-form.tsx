@@ -142,7 +142,7 @@ export function BackupSettingsForm(): React.JSX.Element {
       <Card>
         <CardHeader>
           <CardTitle>Automatic backups</CardTitle>
-          <CardDescription>{error || 'Backup settings are not available for this tenant.'}</CardDescription>
+          <CardDescription>{error || 'Backup settings are not available for this shop.'}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -159,7 +159,7 @@ export function BackupSettingsForm(): React.JSX.Element {
             </Badge>
           </div>
           <CardDescription>
-            Save a tenant-scoped copy of store data to a folder on the machine that runs the API. Time of day uses{' '}
+            Save a copy of all shop data to a folder on the machine that runs the API. Time of day uses{' '}
             {auth.tenant?.timezone ?? 'the tenant timezone'}.
           </CardDescription>
         </CardHeader>

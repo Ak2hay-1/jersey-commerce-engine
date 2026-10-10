@@ -330,21 +330,6 @@ export const storeApi = {
     });
   },
 
-  createRazorpayOrder(
-    input: { amount: number; currency?: string; receipt?: string },
-    options?: StoreRequestOptions,
-  ) {
-    return storeFetch<{ order_id: string; amount: number; currency: string; key_id: string }>(
-      '/store/razorpay/create-order',
-      {
-        ...options,
-        method: 'POST',
-        body: JSON.stringify(input),
-        cache: 'no-store',
-      },
-    );
-  },
-
   verifyRazorpayPayment(
     input: {
       razorpay_order_id: string;
@@ -453,8 +438,21 @@ export const storeApi = {
     });
   },
 
-  orders(options?: StoreRequestOptions) {
-    return storeFetch<{ items: OrderSummary[]; meta: PaginationMeta }>('/store/orders', {
+  exportAccountData(options?: StoreRequestOptions) {
+    return storeFetch<Record<string, unknown>>('/store/account/data-export', { ...options, cache: 'no-store' });
+  },
+
+  eraseAccount(options?: StoreRequestOptions) {
+    return storeFetch<{ erased: boolean }>('/store/account/erase', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify({ confirm: 'DELETE' }),
+      cache: 'no-store',
+    });
+  },
+
+  orders(options?: StoreRequestOptions, page = 1, pageSize = 10) {
+    return storeFetch<{ items: OrderSummary[]; meta: PaginationMeta }>(`/store/orders?page=${page}&pageSize=${pageSize}`, {
       ...options,
       cache: 'no-store',
     });

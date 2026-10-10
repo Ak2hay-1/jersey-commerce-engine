@@ -121,7 +121,7 @@ export function ErpShell({ children }: { children: ReactNode }): React.JSX.Eleme
             </Button>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{auth.tenant.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{auth.tenant.slug}</p>
+              <p className="truncate text-xs text-muted-foreground">{auth.user?.name ?? 'Staff'}</p>
             </div>
             <DesktopModeSwitch active="erp" showPos={auth.can('pos.access')} />
             <div className="hidden items-center gap-2 sm:flex" aria-label="Connection status">

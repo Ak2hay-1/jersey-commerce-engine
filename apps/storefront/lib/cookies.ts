@@ -28,7 +28,22 @@ export function writeBrowserCookie(name: string, value: string, maxAgeSeconds: n
   if (typeof document === 'undefined') {
     return;
   }
-  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${secure}`;
+}
+
+/** Persist customer/order tokens as httpOnly cookies via the same-origin session route. */
+export async function persistSessionTokens(tokens: { customerToken?: string; orderAccessToken?: string }): Promise<void> {
+  await fetch('/api/session', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify(tokens),
+  });
+}
+
+export async function clearCustomerSession(): Promise<void> {
+  await fetch('/api/session', { method: 'DELETE', credentials: 'same-origin' });
 }
 
 export function clearBrowserCookie(name: string): void {

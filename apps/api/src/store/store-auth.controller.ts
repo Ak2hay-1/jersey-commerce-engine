@@ -10,9 +10,18 @@ import { CustomerAccessGuard } from './customer-access.guard';
 import { CurrentStoreCustomer } from './current-store-customer.decorator';
 import type { StoreCustomer } from './customer-access.guard';
 import { StoreAuthService } from './store-auth.service';
-import { StoreLoginDto, StoreOtpRequestDto, StoreOtpVerifyDto, StoreGoogleExchangeDto, StoreProfileUpdateDto, StoreRegisterDto } from './dto/store-auth.dto';
+import {
+  StoreAccountEraseDto,
+  StoreLoginDto,
+  StoreOtpRequestDto,
+  StoreOtpVerifyDto,
+  StoreGoogleExchangeDto,
+  StoreProfileUpdateDto,
+  StoreRegisterDto,
+} from './dto/store-auth.dto';
 import { StoreOtpService } from './store-otp.service';
 import { StoreGoogleAuthService } from './store-google-auth.service';
+import { StorePrivacyService } from './store-privacy.service';
 
 @Controller('store')
 @ApiTags('store')
@@ -24,6 +33,7 @@ export class StoreAuthController {
     private readonly auth: StoreAuthService,
     private readonly otp: StoreOtpService,
     private readonly google: StoreGoogleAuthService,
+    private readonly privacy: StorePrivacyService,
   ) {}
 
   @Post('auth/register')
@@ -92,5 +102,32 @@ export class StoreAuthController {
     @Body() dto: StoreProfileUpdateDto,
   ) {
     return this.auth.updateProfile(tenantId, customer.customerId, dto);
+  }
+
+  @Get('account/data-export')
+  @UseGuards(CustomerAccessGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Download a copy of the personal data held for the authenticated customer' })
+  exportData(
+    @TenantId() tenantId: string,
+    @CurrentStoreCustomer() customer: StoreCustomer,
+    @Req() request: Request,
+  ) {
+    return this.privacy.exportData(tenantId, customer.customerId, requestMeta(request));
+  }
+
+  @Post('account/erase')
+  @UseGuards(CustomerAccessGuard)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Delete the authenticated customer account (orders are retained for tax records)' })
+  erase(
+    @TenantId() tenantId: string,
+    @CurrentStoreCustomer() customer: StoreCustomer,
+    @Body() _dto: StoreAccountEraseDto,
+    @Req() request: Request,
+  ) {
+    return this.privacy.erase(tenantId, customer.customerId, requestMeta(request));
   }
 }

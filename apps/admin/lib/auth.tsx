@@ -2,7 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AuthMeResponse, AuthUser, PermissionCode, TenantSummary } from '@jersey-commerce/types';
-import { clearTokens, getMe, login as loginRequest, logout as logoutRequest, storeTokens } from './api';
+import { ACCESS_KEY, ApiError, clearTokens, getMe, login as loginRequest, logout as logoutRequest, storeTokens } from './api';
+
+const HYDRATE_ATTEMPTS = 5;
+
+function isTransient(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 0 || error.status >= 500);
+}
 
 interface AuthState {
   loading: boolean;
@@ -21,20 +27,38 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
   const [me, setMe] = useState<AuthMeResponse | null>(null);
 
   const hydrate = useCallback(async () => {
-    try {
-      const next = await getMe();
-      setMe(next);
-    } catch {
-      setMe(null);
-      clearTokens();
-    } finally {
-      setLoading(false);
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        setMe(await getMe());
+        break;
+      } catch (error) {
+        if (isTransient(error) && attempt < HYDRATE_ATTEMPTS) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+          continue;
+        }
+        setMe(null);
+        if (!isTransient(error)) {
+          clearTokens();
+        }
+        break;
+      }
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if ((event.key === ACCESS_KEY || event.key === null) && !event.newValue) {
+        setMe(null);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const value = useMemo<AuthState>(
     () => ({

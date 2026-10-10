@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { StorefrontCustomer } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
-import { STORE_COOKIES, clearBrowserCookie, writeBrowserCookie } from '../../lib/cookies';
+import { STORE_COOKIES, clearBrowserCookie, clearCustomerSession, persistSessionTokens } from '../../lib/cookies';
 
 type OtpInput = {
   channel: 'email' | 'sms';
@@ -43,15 +43,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     })();
   }, []);
 
-  const persist = useCallback((token: string, next: StorefrontCustomer) => {
-    writeBrowserCookie(STORE_COOKIES.customer, token, 30 * 24 * 60 * 60);
+  const persist = useCallback(async (token: string, next: StorefrontCustomer) => {
+    await persistSessionTokens({ customerToken: token });
     setCustomer(next);
   }, []);
 
   const login = useCallback(
     async (input: { email?: string; phone?: string; password: string }) => {
       const result = await storeApi.login(input);
-      persist(result.accessToken, result.customer);
+      await persist(result.accessToken, result.customer);
     },
     [persist],
   );
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   const register = useCallback(
     async (input: { name: string; email: string; password: string; phone?: string }) => {
       const result = await storeApi.register(input);
-      persist(result.accessToken, result.customer);
+      await persist(result.accessToken, result.customer);
     },
     [persist],
   );
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   const verifyOtp = useCallback(
     async (input: OtpInput & { code: string }) => {
       const result = await storeApi.verifyOtp(input);
-      persist(result.accessToken, result.customer);
+      await persist(result.accessToken, result.customer);
       return result.customer;
     },
     [persist],
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   const completeGoogle = useCallback(
     async (ticket: string) => {
       const result = await storeApi.exchangeGoogle(ticket);
-      persist(result.accessToken, result.customer);
+      await persist(result.accessToken, result.customer);
       return result.customer;
     },
     [persist],
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   const logout = useCallback(() => {
     clearBrowserCookie(STORE_COOKIES.customer);
     setCustomer(null);
-    void storeApi.logout();
+    void storeApi.logout().finally(() => clearCustomerSession());
   }, []);
 
   const value = useMemo(

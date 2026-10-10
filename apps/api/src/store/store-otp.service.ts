@@ -11,6 +11,7 @@ import type { ServerEnv } from '@jersey-commerce/config';
 import { AuthRateLimiterService } from '../auth/rate-limit/auth-rate-limiter.service';
 import { RedisService } from '../redis/redis.service';
 import { hashOpaqueToken } from '../common/crypto/token-hash';
+import { safeEqual } from '../common/crypto/safe-equal';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
 import { AuthSettingsService } from '../auth-settings/auth-settings.service';
@@ -104,20 +105,23 @@ export class StoreOtpService {
     const key = `store-otp:${tenantId}:${dto.channel}:${identifier}`;
     const raw = await this.redis.getClient().get(key);
     if (!raw) {
+      await this.logOtpFailure(tenantId, dto.channel, 'missing_or_expired', meta);
       throw new UnauthorizedException(INVALID);
     }
     const stored = JSON.parse(raw) as StoredOtp;
     if (stored.attempts >= MAX_ATTEMPTS) {
       await this.redis.getClient().del(key);
+      await this.logOtpFailure(tenantId, dto.channel, 'max_attempts', meta);
       throw new UnauthorizedException(INVALID);
     }
     const code = dto.code.replace(/\D/g, '');
-    if (stored.hash !== hashOpaqueToken(code)) {
+    if (!safeEqual(stored.hash, hashOpaqueToken(code))) {
       stored.attempts += 1;
       const ttl = await this.redis.getClient().ttl(key);
       if (ttl > 0) {
         await this.redis.getClient().set(key, JSON.stringify(stored), 'EX', ttl);
       }
+      await this.logOtpFailure(tenantId, dto.channel, 'invalid_code', meta);
       throw new UnauthorizedException(INVALID);
     }
     await this.redis.getClient().del(key);
@@ -156,6 +160,20 @@ export class StoreOtpService {
       userAgent: meta?.userAgent,
     });
     return this.storeAuth.issueSession(tenantId, customer);
+  }
+
+  private async logOtpFailure(tenantId: string, channel: string, reason: string, meta?: RequestMeta) {
+    await this.audit
+      .log({
+        action: AUDIT_ACTIONS.CUSTOMER_OTP_FAILED,
+        tenantId,
+        entity: 'Customer',
+        entityId: 'unknown',
+        metadata: { channel, reason },
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      })
+      .catch(() => undefined);
   }
 
   private identifier(dto: StoreOtpRequestDto): string | null {

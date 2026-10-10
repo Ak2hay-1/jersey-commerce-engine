@@ -97,6 +97,7 @@ export class StoreAuthService {
     await this.rateLimit.consume(`store-login:${tenantId}:${identifier ?? meta?.ipAddress ?? 'unknown'}`);
     if (!identifier) {
       await this.passwords.dummyVerify(dto.password);
+      await this.logLoginFailure(tenantId, undefined, 'missing_identifier', meta);
       throw new UnauthorizedException(INVALID);
     }
     const customer = await this.prisma.customer.findFirst({
@@ -107,10 +108,12 @@ export class StoreAuthService {
     });
     if (!customer?.passwordHash || customer.status !== 'ACTIVE') {
       await this.passwords.dummyVerify(dto.password);
+      await this.logLoginFailure(tenantId, customer?.id, customer ? 'inactive_or_no_password' : 'not_found', meta);
       throw new UnauthorizedException(INVALID);
     }
     const ok = await this.passwords.verify(customer.passwordHash, dto.password);
     if (!ok) {
+      await this.logLoginFailure(tenantId, customer.id, 'invalid_password', meta);
       throw new UnauthorizedException(INVALID);
     }
     return this.issueSession(tenantId, customer);
@@ -238,6 +241,20 @@ export class StoreAuthService {
       expiresIn: access.expiresIn,
       customer: toStorefrontCustomer(customer),
     };
+  }
+
+  private async logLoginFailure(tenantId: string, customerId: string | undefined, reason: string, meta?: RequestMeta) {
+    await this.audit
+      .log({
+        action: AUDIT_ACTIONS.CUSTOMER_LOGIN_FAILED,
+        tenantId,
+        entity: 'Customer',
+        entityId: customerId ?? 'unknown',
+        metadata: { reason },
+        ipAddress: meta?.ipAddress,
+        userAgent: meta?.userAgent,
+      })
+      .catch(() => undefined);
   }
 
   private async assertPasswordLogin(tenantId: string) {

@@ -10,11 +10,12 @@ import { OrderSaleRecognitionService } from './order-sale.service';
 import { ShippingCalculator } from './shipping.calculator';
 import { UnconfiguredOnlineGateway } from './unconfigured-online.gateway';
 import { RazorpayOnlineGateway } from './razorpay-online.gateway';
+import { OrderExpiryService } from './order-expiry.service';
 import { StoreCartController } from '../store/store-cart.controller';
 import { StoreCartService } from '../store/store-cart.service';
 import { StoreCheckoutController } from '../store/store-checkout.controller';
 import { StoreCheckoutService } from '../store/store-checkout.service';
-import { StoreRazorpayController } from '../store/store-razorpay.controller';
+import { RazorpayWebhookController, StoreRazorpayController } from '../store/store-razorpay.controller';
 import { StoreOrdersController } from '../store/store-orders.controller';
 import { StoreCoreModule } from '../store/store-core.module';
 import { PromoCodesModule } from '../promo-codes/promo-codes.module';
@@ -33,6 +34,7 @@ import { PromoCodesModule } from '../promo-codes/promo-codes.module';
     StoreCartController,
     StoreCheckoutController,
     StoreRazorpayController,
+    RazorpayWebhookController,
     StoreOrdersController,
   ],
   providers: [
@@ -42,6 +44,7 @@ import { PromoCodesModule } from '../promo-codes/promo-codes.module';
     ShippingCalculator,
     UnconfiguredOnlineGateway,
     RazorpayOnlineGateway,
+    OrderExpiryService,
     StoreCartService,
     StoreCheckoutService,
   ],

@@ -38,8 +38,13 @@ export class MediaController {
         : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
           ? 'image/jpeg'
           : 'application/octet-stream';
+    const filename = (relative.split('/').pop() ?? 'file').replace(/[^A-Za-z0-9._-]/g, '_');
+    const disposition = mime === 'application/octet-stream' ? 'attachment' : 'inline';
     response.setHeader('Content-Type', mime);
     response.setHeader('Cache-Control', 'public, max-age=86400');
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
+    response.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
     return new StreamableFile(createReadStream(absolute));
   }
 }

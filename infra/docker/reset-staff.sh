@@ -17,7 +17,14 @@ source infra/docker/.env.production
 set +a
 
 COMPOSE=(docker compose -f infra/docker/docker-compose.api.yml --env-file infra/docker/.env.production)
-STAFF_PASSWORD="${STAFF_PASSWORD:-DevPassword123!}"
+if [[ -z "${STAFF_PASSWORD:-}" ]]; then
+  echo "STAFF_PASSWORD must be set to a strong, unique password (no default is allowed in production)."
+  exit 1
+fi
+if [[ "${STAFF_PASSWORD}" == "DevPassword123!" || ${#STAFF_PASSWORD} -lt 12 ]]; then
+  echo "STAFF_PASSWORD is too weak or is the public development password. Use at least 12 characters."
+  exit 1
+fi
 
 echo "Resetting staff for tenant: ${TENANT_SLUG}"
 

@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -14,7 +13,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
-import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
+import { RequireAnyPermission, RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthPrincipal } from '../common/context/request-context';
 import { ProductsService } from './products.service';
@@ -27,12 +26,6 @@ import {
 } from './dto/product-mutations.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { IMAGE_MAX_BYTES } from '../storage/image-validation';
-
-function assertProductImageWrite(actor: AuthPrincipal): void {
-  if (!actor.permissions.includes('products.update') && !actor.permissions.includes('products.create')) {
-    throw new ForbiddenException('You do not have permission to perform this action.');
-  }
-}
 
 @ApiTags('products')
 @ApiBearerAuth('access-token')
@@ -114,6 +107,7 @@ export class ProductsController {
   }
 
   @Post(':id/images')
+  @RequireAnyPermission('products.create', 'products.update')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -129,7 +123,6 @@ export class ProductsController {
     @UploadedFile() file: { buffer: Buffer; size: number; mimetype?: string } | undefined,
     @CurrentUser() actor: AuthPrincipal,
   ) {
-    assertProductImageWrite(actor);
     return this.products.addImage(id, dto, file, actor);
   }
 

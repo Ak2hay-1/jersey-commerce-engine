@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { ReactNode } from 'react';
@@ -8,10 +8,10 @@ import { Banknote, Check, CreditCard, Lock, Store, Truck } from 'lucide-react';
 import { cn } from '@jersey-commerce/ui';
 import type { CheckoutQuote, FulfillmentMethod, ShippingQuoteResult } from '@jersey-commerce/types';
 import { storeApi } from '../../lib/api';
-import { STORE_COOKIES, writeBrowserCookie } from '../../lib/cookies';
-import { publicErrorMessage } from '../../lib/errors';
+import { persistSessionTokens } from '../../lib/cookies';
+import { publicErrorMessage, StoreApiError } from '../../lib/errors';
 import { formatMoney } from '../../lib/format';
-import { loadRazorpayCheckout } from '../../lib/razorpay';
+import { payWithRazorpay, PaymentDismissedError } from '../../lib/razorpay-pay';
 import { useCart } from '../providers/cart-provider';
 import { useAuth } from '../providers/auth-provider';
 import { useStore } from '../providers/store-provider';
@@ -23,8 +23,48 @@ import { Input } from '../ui/input';
 import { EmptyState } from '../ui/empty-state';
 import { blockingCheckoutIssues } from '../../lib/checkout';
 import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
+import { ConsentNotice } from '../legal/consent-notice';
 
 const STEPS = ['Contact', 'Delivery', 'Payment', 'Confirmation'] as const;
+
+const CHECKOUT_KEY_PREFIX = 'jce_checkout_key_';
+
+function newCheckoutKey(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `chk_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+/** Survives reloads so a retried submit replays the same order instead of reserving stock twice. */
+function checkoutKeyForCart(cartId: string | undefined): string {
+  if (typeof window === 'undefined' || !cartId) {
+    return newCheckoutKey();
+  }
+  const storageKey = `${CHECKOUT_KEY_PREFIX}${cartId}`;
+  try {
+    const existing = window.sessionStorage.getItem(storageKey);
+    if (existing) {
+      return existing;
+    }
+    const created = newCheckoutKey();
+    window.sessionStorage.setItem(storageKey, created);
+    return created;
+  } catch {
+    return newCheckoutKey();
+  }
+}
+
+function clearCheckoutKey(cartId: string | undefined): void {
+  if (typeof window === 'undefined' || !cartId) {
+    return;
+  }
+  try {
+    window.sessionStorage.removeItem(`${CHECKOUT_KEY_PREFIX}${cartId}`);
+  } catch {
+    // ignore
+  }
+}
 
 function PanelTitle({ index, children, as: Heading = 'h2' }: { index: number; children: ReactNode; as?: 'h1' | 'h2' }): React.JSX.Element {
   return (
@@ -138,16 +178,11 @@ export function CheckoutForm(): React.JSX.Element {
   const canPayCod = codEnabled && method === 'DELIVERY';
   const checkoutAvailable = canPayOnline || canPayCod;
 
-  const idempotencyKey = useMemo(() => {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-      return crypto.randomUUID();
-    }
-    return `chk_${Date.now()}`;
-  }, []);
-
   if (!cart || cart.items.length === 0) {
     return <EmptyState title="Your cart is empty" description="Add a piece before checking out." actionHref="/products" actionLabel="Shop products" />;
   }
+
+  const cartId = cart.id;
 
   async function placeOrder(event: FormEvent) {
     event.preventDefault();
@@ -182,16 +217,17 @@ export function CheckoutForm(): React.JSX.Element {
           shippingAddress: method === 'DELIVERY' ? toShippingDto(address) : undefined,
           notes: paymentMethod === 'ONLINE' ? 'ONLINE' : 'COD',
         },
-        { idempotencyKey },
+        { idempotencyKey: checkoutKeyForCart(cartId) },
       );
-      if (result.customerAccessToken) {
-        writeBrowserCookie(STORE_COOKIES.customer, result.customerAccessToken, 30 * 24 * 60 * 60);
-      }
-      if (result.orderAccessToken) {
-        writeBrowserCookie(STORE_COOKIES.orderAccess, result.orderAccessToken, 30 * 24 * 60 * 60);
+      if (result.customerAccessToken || result.orderAccessToken) {
+        await persistSessionTokens({
+          customerToken: result.customerAccessToken,
+          orderAccessToken: result.orderAccessToken,
+        });
       }
 
       if (paymentMethod === 'COD') {
+        clearCheckoutKey(cartId);
         await refresh();
         router.push(`/order/success/${result.order.orderNumber}`);
         return;
@@ -207,48 +243,34 @@ export function CheckoutForm(): React.JSX.Element {
         return;
       }
 
-      const Razorpay = await loadRazorpayCheckout();
-      await new Promise<void>((resolve, reject) => {
-        const rzp = new Razorpay({
-          key: keyId,
-          amount: amountPaise,
+      try {
+        await payWithRazorpay({
+          keyId,
+          razorpayOrderId: orderId,
+          amountPaise,
           currency: result.order.currency || 'INR',
-          name: store.tenant.name,
-          description: `Order ${result.order.orderNumber}`,
-          order_id: orderId,
+          storeName: store.tenant.name,
+          orderNumber: result.order.orderNumber,
+          themeColor: store.theme.primaryColor,
           prefill: {
             name: name || undefined,
             email: email || undefined,
             contact: phone || undefined,
           },
-          theme: { color: store.theme.primaryColor || '#111111' },
-          modal: {
-            ondismiss: () => {
-              reject(new Error('Payment cancelled. Your order is reserved — complete payment to confirm it.'));
-            },
-          },
-          handler: async (response) => {
-            try {
-              await storeApi.verifyRazorpayPayment({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              });
-              resolve();
-            } catch (verifyError) {
-              reject(verifyError instanceof Error ? verifyError : new Error('Payment verification failed.'));
-            }
-          },
         });
-        rzp.on('payment.failed', (response) => {
-          reject(new Error(response.error.description || response.error.reason || 'Payment failed.'));
-        });
-        rzp.open();
-      });
-
+      } catch (paymentError) {
+        // The order exists and holds stock; the order page offers "Complete payment" instead of a dead end.
+        if (!(paymentError instanceof PaymentDismissedError)) {
+          setError(publicErrorMessage(paymentError, 'Payment could not be completed.'));
+        }
+      }
+      clearCheckoutKey(cartId);
       await refresh();
       router.push(`/order/success/${result.order.orderNumber}`);
     } catch (caught) {
+      if (caught instanceof StoreApiError && caught.status === 409) {
+        clearCheckoutKey(cartId);
+      }
       setError(publicErrorMessage(caught, 'Checkout could not be completed.'));
     } finally {
       setPending(false);
@@ -459,6 +481,7 @@ export function CheckoutForm(): React.JSX.Element {
             <Lock className="h-4 w-4" aria-hidden />
             {checkoutAvailable ? submitLabel : 'Checkout unavailable'}
           </button>
+          <ConsentNotice action="placing your order" />
         </motion.section>
       </div>
       <div className="order-1 lg:order-2">

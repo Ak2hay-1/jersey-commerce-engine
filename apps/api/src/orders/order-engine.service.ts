@@ -239,6 +239,8 @@ export class OrderEngineService {
     actor?: AuthPrincipal;
     meta?: RequestMeta;
     allowPaid?: boolean;
+    /** Online refunds were issued already; remaining offline payments are marked refunded with the cancel. */
+    refundPaid?: boolean;
   }): Promise<OrderRecord> {
     const reason = input.reason.trim();
     if (!reason) {
@@ -273,7 +275,11 @@ export class OrderEngineService {
         where: { tenantId: input.tenantId, orderId: order.id, status: 'PENDING' },
         data: { status: 'CANCELLED' },
       });
-      const nextPaymentStatus = order.paymentStatus === 'PENDING' ? 'CANCELLED' : order.paymentStatus;
+      let nextPaymentStatus = order.paymentStatus === 'PENDING' ? 'CANCELLED' : order.paymentStatus;
+      if (input.refundPaid && order.paymentStatus === 'COMPLETED') {
+        await this.markManualPaymentsRefunded(tx, input.tenantId, order.id, input.actor?.userId, reason);
+        nextPaymentStatus = 'REFUNDED';
+      }
       await tx.order.update({
         where: { id: order.id },
         data: {
@@ -335,10 +341,25 @@ export class OrderEngineService {
     status: OrderRecord['status'];
     actor?: AuthPrincipal;
     meta?: RequestMeta;
+    /** RETURNED: put goods back into sellable stock (default) or write them off as damaged. */
+    restock?: boolean;
+    reason?: string;
+    /** COMPLETED: mark pending cash-on-delivery payments collected in the same transaction. */
+    settleCod?: boolean;
   }): Promise<OrderRecord> {
     return this.prisma.$transaction(async (tx) => {
       const order = await this.lockOrder(tx, input.tenantId, input.orderId);
       assertOrderTransition(order.status, input.status, order.fulfillmentMethod);
+      if (input.status === 'CONFIRMED' && order.paymentStatus !== 'COMPLETED') {
+        const prepaidPending = await tx.payment.count({
+          where: { tenantId: input.tenantId, orderId: order.id, method: 'ONLINE', status: 'PENDING' },
+        });
+        if (prepaidPending > 0) {
+          throw new ConflictException(
+            'This order is awaiting online payment. Record the payment (Payments → Record order payment) before confirming it.',
+          );
+        }
+      }
       const now = new Date();
       const data: Prisma.OrderUpdateInput = { status: input.status };
       if (input.status === 'CONFIRMED') {
@@ -374,6 +395,22 @@ export class OrderEngineService {
             tx,
           );
         }
+        if (input.settleCod) {
+          const settled = await tx.payment.updateMany({
+            where: { tenantId: input.tenantId, orderId: order.id, method: 'COD', status: 'PENDING' },
+            data: { status: 'COMPLETED' },
+          });
+          if (settled.count > 0) {
+            data.paymentStatus = 'COMPLETED';
+          }
+        }
+      }
+      if (input.status === 'RETURNED') {
+        data.inventoryState = await this.receiveReturnedGoods(tx, order, input);
+      }
+      if (input.status === 'REFUNDED') {
+        await this.markManualPaymentsRefunded(tx, input.tenantId, order.id, input.actor?.userId, input.reason);
+        data.paymentStatus = 'REFUNDED';
       }
       await tx.order.update({ where: { id: order.id }, data });
       await this.audit.log(
@@ -413,6 +450,122 @@ export class OrderEngineService {
     return toOrderDetail(order);
   }
 
+  /**
+   * Shipped orders still hold a reservation, so the hold is released. Completed orders already consumed stock,
+   * so restocking adds it back. Non-restocked goods are written off as damaged.
+   */
+  private async receiveReturnedGoods(
+    tx: object,
+    order: OrderRecord,
+    input: { tenantId: string; restock?: boolean; reason?: string; actor?: AuthPrincipal; meta?: RequestMeta },
+  ): Promise<OrderRecord['inventoryState']> {
+    const restock = input.restock !== false;
+    const reason = input.reason?.trim() || `Return for order ${order.orderNumber}`;
+    const actor: InventoryActor = {
+      userId: input.actor?.userId,
+      ipAddress: input.meta?.ipAddress,
+      userAgent: input.meta?.userAgent,
+    };
+    const items = [...order.items].sort((a, b) => a.productVariantId.localeCompare(b.productVariantId));
+    if (order.inventoryState === 'RESERVED') {
+      for (const item of items) {
+        await this.inventory.releaseStock(
+          input.tenantId,
+          item.productVariantId,
+          { quantity: item.quantity, reason, referenceType: 'ORDER_RETURN', referenceId: order.id },
+          actor,
+          input.meta,
+          tx,
+        );
+        if (!restock) {
+          await this.inventory.applyDamageWriteOff(tx, {
+            tenantId: input.tenantId,
+            productVariantId: item.productVariantId,
+            quantity: item.quantity,
+            referenceType: 'ORDER_RETURN',
+            referenceId: order.id,
+            reason,
+            createdBy: input.actor?.userId,
+          });
+        }
+      }
+      await this.audit.log(
+        {
+          action: AUDIT_ACTIONS.ORDER_RETURNED,
+          tenantId: input.tenantId,
+          userId: input.actor?.userId,
+          entity: 'Order',
+          entityId: order.id,
+          metadata: { orderNumber: order.orderNumber, restock, from: 'RESERVED' },
+        },
+        tx,
+      );
+      return 'RELEASED';
+    }
+    if (order.inventoryState === 'CONSUMED' && restock) {
+      for (const item of items) {
+        await this.inventory.applyReturn(tx, {
+          tenantId: input.tenantId,
+          productVariantId: item.productVariantId,
+          quantity: item.quantity,
+          referenceType: 'ORDER_RETURN',
+          referenceId: order.id,
+          reason,
+          createdBy: input.actor?.userId,
+        });
+      }
+    }
+    await this.audit.log(
+      {
+        action: AUDIT_ACTIONS.ORDER_RETURNED,
+        tenantId: input.tenantId,
+        userId: input.actor?.userId,
+        entity: 'Order',
+        entityId: order.id,
+        metadata: { orderNumber: order.orderNumber, restock, from: order.inventoryState },
+      },
+      tx,
+    );
+    return order.inventoryState;
+  }
+
+  /** Online (Razorpay) refunds are issued before the transition; anything still COMPLETED was paid offline. */
+  private async markManualPaymentsRefunded(
+    tx: object,
+    tenantId: string,
+    orderId: string,
+    userId: string | undefined,
+    reason: string | undefined,
+  ): Promise<void> {
+    const client = asTx(tx);
+    const payments = await client.payment.findMany({
+      where: { tenantId, orderId, status: { in: ['COMPLETED', 'PARTIALLY_REFUNDED'] } },
+    });
+    for (const payment of payments) {
+      await client.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'REFUNDED',
+          metadata: {
+            ...((payment.metadata as Record<string, unknown> | null) ?? {}),
+            manualRefund: { by: userId ?? null, at: new Date().toISOString(), reason: reason ?? null },
+          } as Prisma.InputJsonValue,
+        },
+      });
+    }
+    await this.audit.log(
+      {
+        action: AUDIT_ACTIONS.ORDER_REFUNDED,
+        tenantId,
+        userId,
+        entity: 'Order',
+        entityId: orderId,
+        metadata: { manualPayments: payments.map((payment) => ({ id: payment.id, method: payment.method })), reason: reason ?? null },
+      },
+      tx,
+    );
+  }
+
   private async reserveLines(
     input: CreateOrderEngineInput,
     orderId: string,
@@ -425,7 +578,9 @@ export class OrderEngineService {
       ipAddress: input.meta?.ipAddress ?? input.actor?.ipAddress,
       userAgent: input.meta?.userAgent ?? input.actor?.userAgent,
     };
-    for (const line of lines) {
+    // Lock inventory rows in a stable order so concurrent checkouts sharing variants cannot deadlock.
+    const ordered = [...lines].sort((a, b) => a.productVariantId.localeCompare(b.productVariantId));
+    for (const line of ordered) {
       await this.inventory.reserveStock(
         input.tenantId,
         line.productVariantId,

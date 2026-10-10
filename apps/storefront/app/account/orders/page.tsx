@@ -6,17 +6,32 @@ import { serverStoreOptions } from '../../../lib/server-options';
 import { formatMoney } from '../../../lib/format';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { OrderStatusBadge } from '../../../components/account/order-status';
+import { loginHref } from '../../../lib/next-path';
 
 export const metadata: Metadata = { title: 'Orders' };
 
-export default async function OrdersPage(): Promise<React.JSX.Element> {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}): Promise<React.JSX.Element> {
   const options = await serverStoreOptions();
   if (!options.accessToken) {
-    return <EmptyState title="Sign in to view orders" description="Order history is available after you sign in." actionHref="/auth/login" actionLabel="Sign in" />;
+    return (
+      <EmptyState
+        title="Sign in to view orders"
+        description="Order history is available after you sign in."
+        actionHref={loginHref('/account/orders')}
+        actionLabel="Sign in"
+      />
+    );
   }
-  const result = await storeApi.orders(options);
+  const requested = Number.parseInt((await searchParams).page ?? '1', 10);
+  const page = Number.isFinite(requested) && requested > 0 ? requested : 1;
+  const result = await storeApi.orders(options, page);
   const store = await storeApi.bootstrap(options);
-  if (result.items.length === 0) {
+  const totalPages = result.meta?.totalPages ?? 1;
+  if (result.items.length === 0 && page === 1) {
     return (
       <EmptyState
         icon={<Package className="h-7 w-7" />}
@@ -52,6 +67,27 @@ export default async function OrdersPage(): Promise<React.JSX.Element> {
           </li>
         ))}
       </ul>
+      {totalPages > 1 ? (
+        <nav className="flex items-center justify-between gap-3 text-sm" aria-label="Order pages">
+          {page > 1 ? (
+            <Link className="btn btn-secondary" href={`/account/orders?page=${page - 1}`}>
+              Newer orders
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="text-muted-foreground">
+            Page {Math.min(page, totalPages)} of {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link className="btn btn-secondary" href={`/account/orders?page=${page + 1}`}>
+              Older orders
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      ) : null}
     </div>
   );
 }

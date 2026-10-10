@@ -1,0 +1,10 @@
+---
+description: Test changes in UAT or Prod, never by running the app locally
+alwaysApply: true
+---
+
+# No local app runs
+
+- Do not start local dev servers (`next dev`, `pnpm dev`, `npm run dev`, Docker compose, etc.) for Jerzyfy.
+- Verify changes in the **UAT** or **Prod** environments instead.
+- Local static checks (typecheck, lint, unit tests) are still fine.

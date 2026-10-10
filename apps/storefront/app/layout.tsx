@@ -20,6 +20,7 @@ import { JsonLd, organizationJsonLd } from '../components/seo/json-ld';
 import { SmoothScroll } from '../components/motion/smooth-scroll';
 import { CustomCursor } from '../components/motion/custom-cursor';
 import { FilmGrain } from '../components/motion/film-grain';
+import { CookieNotice } from '../components/legal/cookie-notice';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -91,6 +92,7 @@ export default async function RootLayout({
                 <CartDrawer />
                 <main id="main">{unavailable ? <p className="px-4 py-16 text-center text-sm text-muted-foreground">The store is temporarily unavailable. Please try again shortly.</p> : children}</main>
                 <StoreFooter />
+                <CookieNotice />
               </CartProvider>
             </AuthProvider>
           </SmoothScroll>

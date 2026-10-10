@@ -21,6 +21,7 @@ import {
   type UserWithAuth,
 } from '../users/user.mapper';
 import type { AuthPrincipal } from '../common/context/request-context';
+import { resolveClientIp } from '../common/http/client-ip';
 
 export interface RequestMeta {
   ipAddress?: string;
@@ -110,7 +111,7 @@ export class AuthSessionService {
     );
     if (!stored || stored.revokedAt || stored.expiresAt.getTime() <= Date.now()) {
       if (stored?.revokedAt) {
-        await this.revokeFamily(stored.familyId);
+        await this.handleRefreshReuse(stored, meta);
       }
       throw new UnauthorizedException('Invalid refresh token.');
     }
@@ -125,23 +126,38 @@ export class AuthSessionService {
       throw new UnauthorizedException('Invalid refresh token.');
     }
     const replacement = this.tokens.createRefreshTokenValue();
-    await this.prisma.withoutTenantScope(async () => {
-      const created = await this.prisma.refreshToken.create({
-        data: {
-          familyId: stored.familyId,
-          userId: stored.userId,
-          tenantId: stored.tenantId,
-          tokenHash: replacement.tokenHash,
-          expiresAt: new Date(Date.now() + this.tokens.refreshExpiresInMs()),
-          ipAddress: meta.ipAddress,
-          userAgent: meta.userAgent,
-        },
-      });
-      await this.prisma.refreshToken.update({
-        where: { id: stored.id },
-        data: { revokedAt: new Date(), replacedById: created.id },
-      });
-    });
+    const rotated = await this.prisma.withoutTenantScope(async () =>
+      this.prisma.$transaction(async (tx) => {
+        // Claim the old token first so two concurrent refreshes cannot both rotate it.
+        const claimed = await tx.refreshToken.updateMany({
+          where: { id: stored.id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        if (claimed.count === 0) {
+          return false;
+        }
+        const created = await tx.refreshToken.create({
+          data: {
+            familyId: stored.familyId,
+            userId: stored.userId,
+            tenantId: stored.tenantId,
+            tokenHash: replacement.tokenHash,
+            expiresAt: new Date(Date.now() + this.tokens.refreshExpiresInMs()),
+            ipAddress: meta.ipAddress,
+            userAgent: meta.userAgent,
+          },
+        });
+        await tx.refreshToken.update({
+          where: { id: stored.id },
+          data: { replacedById: created.id },
+        });
+        return true;
+      }),
+    );
+    if (!rotated) {
+      await this.handleRefreshReuse(stored, meta);
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
     const access = this.tokens.signAccessToken({
       userId: user.id,
       tenantId: user.tenantId,
@@ -284,6 +300,25 @@ export class AuthSessionService {
     );
   }
 
+  private async handleRefreshReuse(
+    stored: { id: string; familyId: string; userId: string; tenantId: string },
+    meta: RequestMeta,
+  ): Promise<void> {
+    await this.revokeFamily(stored.familyId);
+    await this.audit
+      .log({
+        action: AUDIT_ACTIONS.AUTH_REFRESH_REUSE,
+        tenantId: stored.tenantId,
+        userId: stored.userId,
+        entity: 'RefreshToken',
+        entityId: stored.id,
+        metadata: { familyId: stored.familyId },
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      })
+      .catch(() => undefined);
+  }
+
   readRefreshToken(dto: RefreshDto | undefined, request: Request): string | undefined {
     const cookieToken = (request.cookies as Record<string, string | undefined> | undefined)?.[REFRESH_COOKIE_NAME];
     return dto?.refreshToken ?? cookieToken;
@@ -293,7 +328,7 @@ export class AuthSessionService {
 export function requestMeta(request: Request): RequestMeta {
   const userAgentHeader = request.headers['user-agent'];
   return {
-    ipAddress: request.ip,
+    ipAddress: resolveClientIp(request),
     userAgent: Array.isArray(userAgentHeader) ? userAgentHeader[0] : userAgentHeader,
   };
 }

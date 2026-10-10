@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuth } from '../providers/auth-provider';
 import { LoadingSkeleton } from '../ui/loading-skeleton';
+import { loginHref } from '../../lib/next-path';
 
 export function RequireCustomer({ children }: { children: React.ReactNode }): React.JSX.Element {
   const { customer, loading } = useAuth();
@@ -11,7 +12,7 @@ export function RequireCustomer({ children }: { children: React.ReactNode }): Re
 
   useEffect(() => {
     if (!loading && !customer) {
-      router.replace('/auth/login');
+      router.replace(loginHref(`${window.location.pathname}${window.location.search}`));
     }
   }, [customer, loading, router]);
 

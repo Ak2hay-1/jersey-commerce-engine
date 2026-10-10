@@ -29,7 +29,7 @@ export default function SaleDetailPage(): React.JSX.Element {
   const [reason, setReason] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [restock, setRestock] = useState<Record<string, RestockDisposition>>({});
-  const [confirmed, setConfirmed] = useState(true);
+  const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
 
@@ -37,9 +37,7 @@ export default function SaleDetailPage(): React.JSX.Element {
     void getSale(id)
       .then((next) => {
         setSale(next);
-        setQuantities(
-          Object.fromEntries(next.items.map((item) => [item.id, remainingQuantity(next, item.id, item.quantity)])),
-        );
+        setQuantities(Object.fromEntries(next.items.map((item) => [item.id, 0])));
         setRestock(Object.fromEntries(next.items.map((item) => [item.id, 'RESTOCK' as RestockDisposition])));
       })
       .catch((err: Error) => setError(err.message));
@@ -80,18 +78,41 @@ export default function SaleDetailPage(): React.JSX.Element {
     if (!sale) {
       return;
     }
-    setBusy(true);
     setError('');
+    const items = remainingItems
+      .map((item) => ({
+        saleItemId: item.id,
+        quantity: quantities[item.id] ?? 0,
+        restock: restock[item.id] ?? 'RESTOCK',
+        remaining: remainingQuantity(sale, item.id, item.quantity),
+        name: item.productName ?? item.sku ?? 'Item',
+      }))
+      .filter((item) => item.quantity !== 0);
+    if (items.length === 0) {
+      setError('Enter the quantity to refund for at least one item.');
+      return;
+    }
+    const invalid = items.find(
+      (item) => !Number.isInteger(item.quantity) || item.quantity < 0 || item.quantity > item.remaining,
+    );
+    if (invalid) {
+      setError(`${invalid.name}: refund quantity must be a whole number between 0 and ${invalid.remaining}.`);
+      return;
+    }
+    const summary = items.map((item) => `${item.quantity} × ${item.name} (${item.restock.toLowerCase()})`).join('\n');
+    if (!window.confirm(`Refund these items on ${sale.invoiceNumber}?\n\n${summary}`)) {
+      return;
+    }
+    setBusy(true);
     try {
-      const items = remainingItems
-        .map((item) => ({
-          saleItemId: item.id,
-          quantity: quantities[item.id] ?? 0,
-          restock: restock[item.id] ?? 'RESTOCK',
-        }))
-        .filter((item) => item.quantity > 0);
-      await refundSale(sale.id, { reason, items: items.length ? items : undefined, confirmed });
+      await refundSale(sale.id, {
+        reason,
+        items: items.map(({ saleItemId, quantity, restock: disposition }) => ({ saleItemId, quantity, restock: disposition })),
+        confirmed,
+      });
       setReason('');
+      setQuantities((current) => Object.fromEntries(Object.keys(current).map((key) => [key, 0])));
+      setConfirmed(false);
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Refund failed');
@@ -102,6 +123,9 @@ export default function SaleDetailPage(): React.JSX.Element {
 
   async function onCancel(): Promise<void> {
     if (!sale) {
+      return;
+    }
+    if (!window.confirm(`Cancel ${sale.invoiceNumber} for ${formatMoney(sale.total)}? Stock is returned and payments are reversed.`)) {
       return;
     }
     setBusy(true);
@@ -232,11 +256,16 @@ export default function SaleDetailPage(): React.JSX.Element {
                       <Input
                         type="number"
                         min={0}
+                        step={1}
                         max={remainingQuantity(sale, item.id, item.quantity)}
                         className="h-11"
+                        aria-label={`Refund quantity for ${item.productName ?? item.sku ?? 'item'}`}
                         value={quantities[item.id] ?? 0}
                         onChange={(e) =>
-                          setQuantities((current) => ({ ...current, [item.id]: Number(e.target.value) }))
+                          setQuantities((current) => ({
+                            ...current,
+                            [item.id]: e.target.value === '' ? 0 : Number(e.target.value),
+                          }))
                         }
                       />
                       <select

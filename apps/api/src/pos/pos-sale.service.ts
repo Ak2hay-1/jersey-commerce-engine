@@ -61,21 +61,28 @@ export class PosSaleService {
 
   async complete(actor: AuthPrincipal, dto: CompleteSaleDto) {
     const tenantId = actor.tenantId;
-    const sale = await this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (raw) => {
         const tx = asTx(raw);
         const open = await this.sessions.requireOpenForUser(tenantId, actor.userId, tx);
         const session = await this.sessions.lock(tx, tenantId, open.id);
         const cartId = dto.cartId ?? (await this.activeCartId(tx, tenantId, session.id, actor.userId));
         const cart = await this.carts.lock(tx, tenantId, cartId);
-        if (cart.status !== 'ACTIVE') {
-          throw new ConflictException('Only an active cart can be completed.');
-        }
         if (cart.posSessionId !== session.id) {
           throw new BadRequestException('Cart does not belong to the open POS session.');
         }
         if (!canViewAllPosData(actor) && cart.userId !== actor.userId) {
           throw new ForbiddenException('You cannot complete another cashier’s cart.');
+        }
+        if (cart.status !== 'ACTIVE') {
+          // A retried "Complete sale" (lost response, double tap) returns the sale already made from this cart.
+          const existing = dto.cartId
+            ? await tx.sale.findFirst({ where: { tenantId, posCartId: cart.id }, include: saleInclude })
+            : null;
+          if (existing) {
+            return { dto: toSaleDto(existing), replayed: true };
+          }
+          throw new ConflictException('Only an active cart can be completed.');
         }
         if (cart.items.length === 0) {
           throw new BadRequestException('Cart has no items.');
@@ -319,7 +326,7 @@ export class PosSaleService {
           where: { id: sale.id, tenantId },
           include: saleInclude,
         });
-        return toSaleDto(complete);
+        return { dto: toSaleDto(complete), replayed: false };
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
@@ -327,6 +334,10 @@ export class PosSaleService {
         maxWait: 5000,
       },
     );
+    const sale = result.dto;
+    if (result.replayed) {
+      return sale;
+    }
     this.notifications.schedule(
       tenantId,
       'POS_SALE',

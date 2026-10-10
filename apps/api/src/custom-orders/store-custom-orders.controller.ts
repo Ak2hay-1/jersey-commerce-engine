@@ -37,11 +37,17 @@ export class StoreCustomOrdersController {
   }
 
   @Post('inquiry')
-  @Throttle({ default: { limit: 40, ttl: 60_000 } })
+  @Throttle({ default: { limit: 6, ttl: 60_000 } })
   @UseInterceptors(
     FilesInterceptor('files', CUSTOM_ORDER_MAX_FILES, {
       storage: memoryStorage(),
-      limits: { fileSize: CUSTOM_ORDER_FILE_MAX_BYTES },
+      limits: {
+        fileSize: CUSTOM_ORDER_FILE_MAX_BYTES,
+        files: CUSTOM_ORDER_MAX_FILES,
+        fields: 60,
+        fieldSize: 64 * 1024,
+        parts: CUSTOM_ORDER_MAX_FILES + 60,
+      },
     }),
   )
   @ApiConsumes('multipart/form-data', 'application/json')

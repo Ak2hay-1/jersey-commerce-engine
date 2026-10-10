@@ -48,6 +48,11 @@ export function getDefaultTenantSlug(): string | undefined {
   return publicEnv.NEXT_PUBLIC_DEFAULT_TENANT_SLUG;
 }
 
+/** When true, the refresh token lives only in the API's httpOnly cookie (needs same-site API hosting). */
+export function isRefreshCookieOnly(): boolean {
+  return process.env.NEXT_PUBLIC_STAFF_REFRESH_COOKIE_ONLY === 'true';
+}
+
 export function isSingleTenantMode(): boolean {
   return publicEnv.NEXT_PUBLIC_SINGLE_TENANT !== false;
 }

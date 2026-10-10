@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Badge, Button, cn } from '@jersey-commerce/ui';
 import { DesktopModeSwitch } from '@/components/desktop-mode-switch';
 import { useAuth } from '@/lib/auth';
@@ -16,6 +16,21 @@ const NAV = [
   { href: '/sales', label: 'Sales' },
 ];
 
+function useOnline(): boolean {
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const update = (): void => setOnline(navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
+  return online;
+}
+
 function navActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -26,6 +41,7 @@ export function PosShell({ children }: { children: ReactNode }): React.JSX.Eleme
   const pathname = usePathname();
   const { loading: sessionLoading, session, refresh } = usePosSession();
   const realtime = useRealtime();
+  const online = useOnline();
 
   useEffect(() => {
     if (!auth.loading && !auth.user) {
@@ -156,6 +172,11 @@ export function PosShell({ children }: { children: ReactNode }): React.JSX.Eleme
           </div>
         </div>
       </header>
+      {online ? null : (
+        <div role="alert" className="border-b border-amber-500/40 bg-amber-500/15 px-4 py-2 text-sm font-medium lg:px-6">
+          No internet connection. Sales cannot be completed until the register is back online — the cart is kept.
+        </div>
+      )}
       <main className="flex-1 p-4 lg:p-6">{children}</main>
     </div>
   );

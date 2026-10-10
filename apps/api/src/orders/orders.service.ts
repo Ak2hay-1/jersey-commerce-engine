@@ -1,4 +1,14 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException, UnauthorizedException, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+  forwardRef,
+} from '@nestjs/common';
 import { Prisma } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPaginationArgs, toPaginationMeta } from '../common/dto/pagination-query.dto';
@@ -9,6 +19,8 @@ import type { RequestMeta } from '../auth/auth-session.service';
 import { assertFound } from '../common/http/assert-found';
 import { hashOpaqueToken } from '../common/crypto/token-hash';
 import { OrderEngineService } from './order-engine.service';
+import { RazorpayOnlineGateway } from './razorpay-online.gateway';
+import { assertOrderTransition, isCancellableStatus } from './order-state-machine';
 import { orderInclude, toOrderDetail, toOrderSummary, type OrderRecord } from './order.mapper';
 import type { AdminOrderQueryDto, CancelOrderDto, UpdateOrderStatusDto } from './dto/order.dto';
 import { ShipmentsService } from '../shipping/shipments.service';
@@ -20,6 +32,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly engine: OrderEngineService,
+    private readonly gateway: RazorpayOnlineGateway,
     @Inject(forwardRef(() => ShipmentsService))
     private readonly shipments: ShipmentsService,
   ) {}
@@ -102,12 +115,23 @@ export class OrdersService {
 
   async updateStatus(actor: AuthPrincipal, id: string, dto: UpdateOrderStatusDto, meta?: RequestMeta) {
     const order = await this.requireOrder(actor.tenantId, id);
+    if (dto.status === 'REFUNDED') {
+      this.assertCanRefund(actor);
+      const current = await this.prisma.order.findFirstOrThrow({
+        where: { id: order.id, tenantId: actor.tenantId },
+        select: { status: true, fulfillmentMethod: true },
+      });
+      assertOrderTransition(current.status, 'REFUNDED', current.fulfillmentMethod);
+      await this.refundOnlinePayments(actor.tenantId, order.id, dto.reason ?? 'Order refunded');
+    }
     const updated = await this.engine.transitionStatus({
       tenantId: actor.tenantId,
       orderId: order.id,
       status: dto.status,
       actor,
       meta,
+      restock: dto.restock,
+      reason: dto.reason,
     });
     if (
       (dto.status === 'CONFIRMED' || dto.status === 'READY') &&
@@ -128,6 +152,18 @@ export class OrdersService {
 
   async cancel(actor: AuthPrincipal, id: string, dto: CancelOrderDto, meta?: RequestMeta) {
     const order = await this.requireOrder(actor.tenantId, id);
+    const current = await this.prisma.order.findFirstOrThrow({
+      where: { id: order.id, tenantId: actor.tenantId },
+      select: { status: true, paymentStatus: true },
+    });
+    const paid = current.paymentStatus === 'COMPLETED';
+    if (paid) {
+      this.assertCanRefund(actor);
+      if (!isCancellableStatus(current.status)) {
+        throw new ConflictException('This order can no longer be cancelled.');
+      }
+      await this.refundOnlinePayments(actor.tenantId, order.id, dto.reason);
+    }
     const updated = await this.engine.cancelOrder({
       tenantId: actor.tenantId,
       orderId: order.id,
@@ -135,8 +171,37 @@ export class OrdersService {
       actor,
       meta,
       allowPaid: true,
+      refundPaid: paid,
     });
     return toOrderDetail(updated);
+  }
+
+  private assertCanRefund(actor: AuthPrincipal): void {
+    if (!actor.permissions.includes('payments.refund') && !actor.permissions.includes('sales.refund')) {
+      throw new ForbiddenException('Refunding a paid order requires the payments.refund permission.');
+    }
+  }
+
+  /** Issues Razorpay refunds for the unrefunded balance of every captured online payment on the order. */
+  private async refundOnlinePayments(tenantId: string, orderId: string, reason: string): Promise<void> {
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        tenantId,
+        orderId,
+        method: 'ONLINE',
+        provider: this.gateway.providerKey,
+        status: { in: ['COMPLETED', 'PARTIALLY_REFUNDED'] },
+      },
+    });
+    for (const payment of payments) {
+      const meta = (payment.metadata as { refundedPaise?: number } | null) ?? {};
+      const refundedPaise = typeof meta.refundedPaise === 'number' ? meta.refundedPaise : 0;
+      const remaining = payment.amount.sub(new Prisma.Decimal(refundedPaise).div(100));
+      if (remaining.lte(0)) {
+        continue;
+      }
+      await this.gateway.refundPayment({ tenantId, paymentId: payment.id, amount: remaining, reason });
+    }
   }
 
   async cancelForCustomer(tenantId: string, customerId: string, id: string, dto: CancelOrderDto, meta?: RequestMeta) {

@@ -6,6 +6,7 @@ import type { ServerEnv } from '@jersey-commerce/config';
 import type { BackupRun, BackupRunTrigger, BackupSettings } from '@jersey-commerce/types';
 import type { BackupRun as BackupRunRecord, BackupSettings as BackupSettingsRecord } from '../../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
 import {
   toPaginationArgs,
@@ -14,6 +15,7 @@ import {
 } from '../common/dto/pagination-query.dto';
 import { backupFileName, buildTenantBackupPayload, compressBackupPayload } from './backup-exporter';
 import { assertSafeBackupPath } from './backup-path';
+import { ENCRYPTED_BACKUP_EXTENSION, encryptBackup } from './backup-crypto';
 import { computeNextRunAt, DEFAULT_SCHEDULE_TIME } from './backup-schedule';
 import type { UpdateBackupSettingsDto } from './dto/update-backup-settings.dto';
 
@@ -83,6 +85,7 @@ export class BackupsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService<ServerEnv, true>,
+    private readonly redis: RedisService,
   ) {}
 
   async getSettings(tenantId: string): Promise<BackupSettings> {
@@ -205,9 +208,30 @@ export class BackupsService {
     if (inFlight.has(tenantId)) {
       throw new ConflictException({
         code: 'CONFLICT',
-        message: 'A backup is already running for this tenant.',
+        message: 'A backup is already running for this shop.',
       });
     }
+    const lockKey = `jobs:backup:${tenantId}`;
+    let locked = true;
+    try {
+      locked = (await this.redis.getClient().set(lockKey, String(process.pid), 'EX', STALE_RUN_MS / 1000, 'NX')) === 'OK';
+    } catch (error) {
+      this.logger.warn(`Backup lock unavailable, relying on the local guard: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    if (!locked) {
+      throw new ConflictException({
+        code: 'CONFLICT',
+        message: 'A backup is already running for this shop.',
+      });
+    }
+    try {
+      return await this.runBackupUnlocked(tenantId, trigger);
+    } finally {
+      await this.redis.getClient().del(lockKey).catch(() => undefined);
+    }
+  }
+
+  private async runBackupUnlocked(tenantId: string, trigger: BackupRunTrigger): Promise<BackupRun> {
 
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -232,7 +256,7 @@ export class BackupsService {
     if (active) {
       throw new ConflictException({
         code: 'CONFLICT',
-        message: 'A backup is already running for this tenant.',
+        message: 'A backup is already running for this shop.',
       });
     }
 
@@ -248,11 +272,19 @@ export class BackupsService {
 
     try {
       await fs.mkdir(destinationPath, { recursive: true });
+      const encryptionKey = this.encryptionKey();
+      if (!encryptionKey && process.env.NODE_ENV === 'production') {
+        throw new Error('BACKUP_ENCRYPTION_KEY is not configured; refusing to write an unencrypted backup.');
+      }
       const payload = await buildTenantBackupPayload(this.prisma, tenantId);
-      const compressed = compressBackupPayload(payload);
-      const fileName = backupFileName(tenant.slug, new Date());
+      const compressed = encryptionKey
+        ? encryptBackup(compressBackupPayload(payload), encryptionKey)
+        : compressBackupPayload(payload);
+      const fileName = backupFileName(tenant.slug, new Date(), Boolean(encryptionKey));
       const filePath = path.join(destinationPath, fileName);
-      await fs.writeFile(filePath, compressed);
+      const partialPath = `${filePath}.partial`;
+      await fs.writeFile(partialPath, compressed, { mode: 0o600 });
+      await fs.rename(partialPath, filePath);
 
       const finishedAt = new Date();
       const nextRunAt = settings.enabled
@@ -328,6 +360,10 @@ export class BackupsService {
     return this.config.get('BACKUP_ALLOWED_ROOT', { infer: true }) ?? '';
   }
 
+  private encryptionKey(): string {
+    return (this.config.get('BACKUP_ENCRYPTION_KEY', { infer: true }) ?? '').trim();
+  }
+
   private async ensureSettings(tenantId: string): Promise<BackupSettingsRecord> {
     const existing = await this.prisma.backupSettings.findUnique({ where: { tenantId } });
     if (existing) {
@@ -344,7 +380,9 @@ export class BackupsService {
     try {
       const names = await fs.readdir(destinationPath);
       const files = names
-        .filter((name) => name.startsWith(prefix) && name.endsWith('.json.gz'))
+        .filter(
+          (name) => name.startsWith(prefix) && (name.endsWith('.json.gz') || name.endsWith(ENCRYPTED_BACKUP_EXTENSION)),
+        )
         .map((name) => ({ name, fullPath: path.join(destinationPath, name) }));
       const withStats = await Promise.all(
         files.map(async (file) => {

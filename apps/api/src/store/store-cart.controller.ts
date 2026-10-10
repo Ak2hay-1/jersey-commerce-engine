@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { TenantId } from '../common/decorators/tenant-id.decorator';
@@ -64,6 +65,7 @@ export class StoreCartController {
   }
 
   @Post('promo')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({ summary: 'Apply a promo code to the current cart. Discount is calculated server-side.' })
   applyPromo(@TenantId() tenantId: string, @Req() request: Request, @Body() dto: ApplyStorePromoDto) {
     return this.carts.applyPromo(tenantId, cartTokenFromRequest(request), dto.code);

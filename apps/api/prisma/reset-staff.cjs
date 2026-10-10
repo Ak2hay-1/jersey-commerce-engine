@@ -7,7 +7,11 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 const TENANT_SLUG = (process.env.TENANT_SLUG || 'jerzyfy').trim();
-const STAFF_PASSWORD = (process.env.STAFF_PASSWORD || 'DevPassword123!').trim();
+const STAFF_PASSWORD = (process.env.STAFF_PASSWORD || '').trim();
+if (STAFF_PASSWORD.length < 12 || STAFF_PASSWORD === 'DevPassword123!') {
+  console.error('STAFF_PASSWORD must be set to a strong password of at least 12 characters.');
+  process.exit(1);
+}
 
 const STAFF = {
   SUPER_ADMIN: {

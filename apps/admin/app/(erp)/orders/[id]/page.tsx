@@ -38,6 +38,9 @@ export default function OrderDetailPage(): React.JSX.Element {
   const [waStatus, setWaStatus] = useState<WhatsappReceiptStatus | null>(null);
   const [waSending, setWaSending] = useState(false);
   const [waNotice, setWaNotice] = useState('');
+  const [returnRestock, setReturnRestock] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER');
+  const [paymentReference, setPaymentReference] = useState('');
 
   async function load(): Promise<void> {
     const next = await apiRequest<OrderDetail>(`/orders/${id}`);
@@ -150,6 +153,39 @@ export default function OrderDetailPage(): React.JSX.Element {
     }
   }
 
+  async function onReturn(reason: string): Promise<void> {
+    setError('');
+    await apiRequest(`/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'RETURNED', reason, restock: returnRestock }),
+    });
+    await load();
+  }
+
+  async function onRefund(reason: string): Promise<void> {
+    setError('');
+    await apiRequest(`/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'REFUNDED', reason }),
+    });
+    await load();
+  }
+
+  async function onRecordPayment(): Promise<void> {
+    setError('');
+    await apiRequest('/payments', {
+      method: 'POST',
+      body: JSON.stringify({
+        orderId: order?.id,
+        method: paymentMethod,
+        reference: paymentReference.trim() || undefined,
+        confirmed: true,
+      }),
+    });
+    setPaymentReference('');
+    await load();
+  }
+
   async function onCreateShipment(): Promise<void> {
     setShipping(true);
     setError('');
@@ -256,6 +292,14 @@ export default function OrderDetailPage(): React.JSX.Element {
     order.fulfillmentMethod === 'DELIVERY' &&
     ['CONFIRMED', 'PROCESSING', 'READY'].includes(order.status) &&
     !(order.shipments?.length || order.shipment);
+  const canRefundMoney = auth.can('payments.refund') || auth.can('sales.refund');
+  const canReturn = auth.can('orders.update') && ['SHIPPED', 'COMPLETED'].includes(order.status);
+  const canRefund = canRefundMoney && ['COMPLETED', 'RETURNED'].includes(order.status);
+  const canRecordPayment =
+    auth.can('payments.create') &&
+    order.paymentStatus === 'PENDING' &&
+    !['CANCELLED', 'REFUNDED'].includes(order.status);
+  const isPaid = order.paymentStatus === 'COMPLETED';
 
   return (
     <div className="space-y-4">
@@ -290,16 +334,95 @@ export default function OrderDetailPage(): React.JSX.Element {
               Refresh tracking
             </Button>
           ) : null}
-          {auth.can('orders.cancel') ? (
+          {auth.can('orders.cancel') && (!isPaid || canRefundMoney) ? (
             <ConfirmAction
               triggerLabel="Cancel order"
               title="Cancel this order?"
+              description={
+                isPaid
+                  ? 'This order is paid. Online (Razorpay) payments are refunded automatically; cash, UPI, bank or COD payments are marked refunded and must be returned to the customer manually.'
+                  : 'Reserved stock is released back to inventory.'
+              }
               requireReason
-              confirmLabel="Cancel order"
+              confirmLabel={isPaid ? 'Cancel and refund' : 'Cancel order'}
               disabled={saving}
               onConfirm={(reason) => onCancel(reason)}
             />
           ) : null}
+        </div>
+      ) : null}
+      {canReturn || canRefund ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
+          <span className="font-medium">Returns & refunds:</span>
+          {canReturn ? (
+            <>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={returnRestock} onChange={(e) => setReturnRestock(e.target.checked)} />
+                Restock returned items
+              </label>
+              <ConfirmAction
+                triggerLabel="Mark returned"
+                title="Mark this order as returned?"
+                description={
+                  returnRestock
+                    ? 'Returned items go back into sellable stock.'
+                    : 'Returned items are written off as damaged and do not go back into stock.'
+                }
+                requireReason
+                variant="outline"
+                confirmLabel="Mark returned"
+                onConfirm={(reason) => onReturn(reason)}
+              />
+            </>
+          ) : null}
+          {canRefund ? (
+            <ConfirmAction
+              triggerLabel="Refund order"
+              title={`Refund ${order.orderNumber}?`}
+              description="Online (Razorpay) payments are refunded to the customer automatically. Cash, UPI, bank or COD payments are marked refunded and must be returned manually."
+              requireReason
+              confirmLabel="Refund"
+              onConfirm={(reason) => onRefund(reason)}
+            />
+          ) : null}
+        </div>
+      ) : null}
+      {canRecordPayment ? (
+        <div className="flex flex-wrap items-end gap-2 rounded-md border border-border px-3 py-2 text-sm">
+          <div>
+            <Label htmlFor="pay-method">Record payment</Label>
+            <select
+              id="pay-method"
+              className={selectClassName}
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="BANK_TRANSFER">Bank transfer</option>
+              <option value="UPI">UPI</option>
+              <option value="CASH">Cash</option>
+              <option value="CARD">Card</option>
+              <option value="COD">COD remittance</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="pay-ref">Reference</Label>
+            <Input
+              id="pay-ref"
+              className="mt-1"
+              value={paymentReference}
+              placeholder="UTR / transaction id"
+              onChange={(e) => setPaymentReference(e.target.value)}
+            />
+          </div>
+          <ConfirmAction
+            triggerLabel="Mark paid"
+            title={`Record full payment for ${order.orderNumber}?`}
+            description="Use this only after the money has reached the shop. The full order total is recorded."
+            variant="outline"
+            confirmLabel="Record payment"
+            onConfirm={() => onRecordPayment()}
+          />
         </div>
       ) : null}
       <div className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">

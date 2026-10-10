@@ -13,6 +13,14 @@ const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   youtube: Youtube,
 };
 
+const POLICY_LINKS = [
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms' },
+  { href: '/refund-policy', label: 'Returns & refunds' },
+  { href: '/shipping-policy', label: 'Shipping' },
+  { href: '/grievance', label: 'Grievance officer' },
+] as const;
+
 function socialEntries(links: StorefrontSocialLinks): Array<[string, string]> {
   return Object.entries(links).filter((entry): entry is [string, string] => Boolean(entry[1]?.trim()));
 }
@@ -163,6 +171,17 @@ export function StoreFooter(): React.JSX.Element {
           </ul>
         </div>
       ) : null}
+      <nav aria-label="Policies" className="border-t border-background/15 px-4 py-5">
+        <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.16em] text-background/70">
+          {POLICY_LINKS.map((link) => (
+            <li key={link.href}>
+              <Link href={link.href} className="hover:text-background hover:underline">
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
       <div className="border-t border-background/15 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-[11px] uppercase tracking-[0.16em] text-background/55">
         {copyright}
       </div>

@@ -19,8 +19,31 @@ env:
 
 jobs:
   quality:
-    name: Lint, typecheck, and build
+    name: Lint, typecheck, test, and build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jersey
+          POSTGRES_PASSWORD: jersey
+          POSTGRES_DB: jersey_commerce
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jersey -d jersey_commerce"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,6 +62,18 @@ jobs:
 
       - name: Validate Prisma schema
         run: npm run prisma:validate
+
+      - name: Apply migrations to a clean database
+        run: npm run prisma:migrate:deploy
+
+      - name: Check schema matches migrations (drift)
+        working-directory: apps/api
+        run: |
+          npx prisma migrate diff \
+            --from-url "$DATABASE_URL" \
+            --to-schema-datamodel prisma/schema.prisma \
+            --exit-code \
+            || { echo "::error::prisma/schema.prisma has changes without a migration. Run 'npm run prisma:migrate' and commit the migration."; exit 1; }
 
       - name: Typecheck
         run: npm run typecheck

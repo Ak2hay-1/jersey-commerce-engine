@@ -21,6 +21,7 @@ RUN npm prune --omit=dev
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
+RUN apk add --no-cache su-exec
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/apps/api/dist ./apps/api/dist
@@ -30,7 +31,8 @@ COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/packages ./packages
 COPY infra/docker/api-entrypoint.sh /api-entrypoint.sh
 RUN chmod +x /api-entrypoint.sh \
-  && mkdir -p /app/apps/api/uploads
+  && mkdir -p /app/apps/api/uploads /backups \
+  && chown -R node:node /app/apps/api/uploads /backups
 WORKDIR /app/apps/api
 EXPOSE 4000
 ENTRYPOINT ["/api-entrypoint.sh"]

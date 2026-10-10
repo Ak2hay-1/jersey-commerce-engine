@@ -95,6 +95,7 @@ export const ERP_NAV: ErpNavSection[] = [
       { href: '/reports/payments', label: 'Payments', permission: 'payments.read', portal: 'erp' },
       { href: '/reports/expenses', label: 'Expenses', permission: 'expenses.read', portal: 'erp' },
       { href: '/reports/custom-orders', label: 'Custom Orders', permission: 'customOrders.read', portal: 'erp' },
+      { href: '/reports/activity', label: 'Activity log', permission: 'reports.read', portal: 'erp' },
     ],
   },
   {

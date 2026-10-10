@@ -14,6 +14,7 @@ import {
 } from '@jersey-commerce/ui';
 import { POS_TENDER_METHODS, type PosCartDto, type PosPaymentInput, type PosTenderMethod } from '@jersey-commerce/types';
 import { formatMoney, moneyString, parseMoney, remainingDue } from '@/lib/format';
+import { validateTenders } from '@/lib/tenders';
 
 interface TenderRow {
   key: string;
@@ -72,17 +73,9 @@ export function PaymentDialog({
     setBusy(true);
     setError('');
     try {
-      for (const row of rows) {
-        if ((row.method === 'UPI' || row.method === 'CARD') && !row.reference.trim()) {
-          throw new Error(`${row.method} requires a transaction reference.`);
-        }
-        if (row.method === 'CASH') {
-          const amount = parseMoney(row.amount || total);
-          const received = parseMoney(row.amountReceived || row.amount || total);
-          if (received < amount) {
-            throw new Error('Cash received must be at least the amount applied.');
-          }
-        }
+      const invalid = validateTenders(total, rows);
+      if (invalid) {
+        throw new Error(invalid);
       }
       const payments: PosPaymentInput[] = rows.map((row) => {
         const amount = row.amount || remainingDue(total, []);

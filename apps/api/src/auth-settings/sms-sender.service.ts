@@ -21,6 +21,9 @@ export class SmsSenderService {
     text: string;
   }): Promise<void> {
     if (settings.smsProvider === 'CONSOLE') {
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.warn('CONSOLE SMS provider is active in production; message bodies (including OTP codes) are written to logs. Configure MSG91 or Twilio.');
+      }
       this.logger.log(`SMS to ${input.to}: ${input.text}`);
       return;
     }

@@ -6,6 +6,7 @@ import { StoreCatalogService } from './store-catalog.service';
 import { StoreAuthService } from './store-auth.service';
 import { StoreOtpService } from './store-otp.service';
 import { StoreGoogleAuthService } from './store-google-auth.service';
+import { StorePrivacyService } from './store-privacy.service';
 import { StoreBootstrapController } from './store-bootstrap.controller';
 import { StoreCatalogController } from './store-catalog.controller';
 import { StoreAuthController } from './store-auth.controller';
@@ -14,6 +15,6 @@ import { StoreGoogleCallbackController } from './store-google-callback.controlle
 @Module({
   imports: [StoreCoreModule, OrdersModule, AuthSettingsModule],
   controllers: [StoreBootstrapController, StoreCatalogController, StoreAuthController, StoreGoogleCallbackController],
-  providers: [StoreCatalogService, StoreAuthService, StoreOtpService, StoreGoogleAuthService],
+  providers: [StoreCatalogService, StoreAuthService, StoreOtpService, StoreGoogleAuthService, StorePrivacyService],
 })
 export class StoreModule {}

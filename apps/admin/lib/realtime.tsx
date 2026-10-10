@@ -13,7 +13,7 @@ import {
 import type { RealtimeEvent } from '@jersey-commerce/types';
 import { openRealtimeSocket, REALTIME_OFFLINE_DEBOUNCE_MS } from '@jersey-commerce/utils';
 import { getApiUrl } from './env';
-import { readAccessToken } from './api';
+import { readAccessToken, refreshAccessToken } from './api';
 import { useAuth } from './auth';
 
 type Listener = (event: RealtimeEvent) => void;
@@ -42,19 +42,27 @@ function RealtimeInner({ children }: { children: ReactNode }): React.JSX.Element
     }
 
     setStatus('connecting');
+    let lastRefresh = 0;
+    let disposed = false;
     const handle = openRealtimeSocket({
       apiUrl: getApiUrl(),
-      token,
+      token: readAccessToken,
       offlineDebounceMs: REALTIME_OFFLINE_DEBOUNCE_MS,
       onEvent: (event) => {
         listeners.current.forEach((listener) => listener(event));
       },
       onStatus: (connected) => {
         setStatus(connected ? 'live' : 'offline');
+        // An expired access token closes the socket; renew it so the next reconnect authenticates.
+        if (!connected && !disposed && Date.now() - lastRefresh > 60_000) {
+          lastRefresh = Date.now();
+          void refreshAccessToken().catch(() => undefined);
+        }
       },
     });
 
     return () => {
+      disposed = true;
       handle.close();
       setStatus('offline');
     };

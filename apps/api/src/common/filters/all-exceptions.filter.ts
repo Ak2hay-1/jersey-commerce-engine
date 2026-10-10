@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 import { Prisma } from '../../../generated/prisma';
 import { API_ERROR_CODES, type ApiErrorCode, type ApiErrorResponse } from '@jersey-commerce/types';
 
@@ -35,6 +36,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      Sentry.captureException(exception);
       const detail = exception instanceof Error ? exception.message : String(exception);
       this.logger.error(
         { message, detail, code, status, path: request.url, requestId },

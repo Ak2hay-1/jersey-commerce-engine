@@ -227,7 +227,7 @@ export class StoreCheckoutService {
       promoCodeId: cart.promoCodeId,
     });
     if (idempotencyKey) {
-      const replay = await this.findReplay(tenantId, idempotencyKey, fingerprint);
+      const replay = await this.findReplay(tenantId, idempotencyKey, fingerprint, customerId);
       if (replay) {
         return replay;
       }
@@ -362,11 +362,15 @@ export class StoreCheckoutService {
               data: { orderId: order.id },
             });
           }
-          const access = this.tokens.signCustomerAccessToken({ customerId: customer.id, tenantId });
+        // Contact details alone never prove account ownership, so only signed-in shoppers get a session token.
+        const customerAccessToken =
+          customerId && customerId === customer.id
+            ? this.tokens.signCustomerAccessToken({ customerId: customer.id, tenantId }).token
+            : undefined;
         return {
           order: toOrderDetail(order),
           cart: { id: cart.publicId, status: 'CONVERTED' as const },
-          customerAccessToken: access.token,
+          customerAccessToken,
           orderAccessToken,
         };
       }, TX_OPTIONS);
@@ -435,7 +439,7 @@ export class StoreCheckoutService {
     return createHash('sha256').update(JSON.stringify(value)).digest('hex');
   }
 
-  private async findReplay(tenantId: string, key: string, fingerprint: string) {
+  private async findReplay(tenantId: string, key: string, fingerprint: string, customerId?: string) {
     const existing = await this.prisma.checkoutIdempotency.findFirst({
       where: { tenantId, keyHash: hashOpaqueToken(key) },
     });
@@ -455,11 +459,14 @@ export class StoreCheckoutService {
     if (!order || !order.customerId) {
       return null;
     }
-    const access = this.tokens.signCustomerAccessToken({ customerId: order.customerId, tenantId });
+    const customerAccessToken =
+      customerId && customerId === order.customerId
+        ? this.tokens.signCustomerAccessToken({ customerId: order.customerId, tenantId }).token
+        : undefined;
     return {
       order: toOrderDetail(order),
       cart: { id: existing.cartId ?? order.id, status: 'CONVERTED' as const },
-      customerAccessToken: access.token,
+      customerAccessToken,
     };
   }
 

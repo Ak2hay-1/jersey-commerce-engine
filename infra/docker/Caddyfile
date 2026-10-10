@@ -8,5 +8,27 @@
 
 {$API_HOST} {
 	encode gzip
+
+	header {
+		defer
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+		-X-Powered-By
+	}
+
+	# Per-file limits are enforced by the API; custom-order inquiries carry up to 5 x 8 MB.
+	@inquiry path /api/v1/store/custom-orders/inquiry
+	request_body @inquiry {
+		max_size 45MB
+	}
+	@other not path /api/v1/store/custom-orders/inquiry
+	request_body @other {
+		max_size 10MB
+	}
+
 	reverse_proxy api:4000
 }

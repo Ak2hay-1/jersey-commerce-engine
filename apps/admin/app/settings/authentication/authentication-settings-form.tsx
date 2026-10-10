@@ -156,7 +156,7 @@ export function AuthenticationSettingsForm(): React.JSX.Element {
       <Card>
         <CardHeader>
           <CardTitle>Authentication</CardTitle>
-          <CardDescription>{error || 'Authentication settings are not available for this tenant.'}</CardDescription>
+          <CardDescription>{error || 'Authentication settings are not available for this shop.'}</CardDescription>
         </CardHeader>
       </Card>
     );

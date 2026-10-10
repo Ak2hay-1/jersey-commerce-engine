@@ -9,6 +9,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'POS',
   description: 'Jerzyfy point of sale.',
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

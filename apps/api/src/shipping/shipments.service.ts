@@ -21,6 +21,7 @@ import {
   type DelhiveryWarehouse,
 } from './delhivery.client';
 import { ShippingSettingsService } from './shipping-settings.service';
+import { safeEqual } from '../common/crypto/safe-equal';
 import { WarehousesService } from '../warehouses/warehouses.service';
 
 const SHIPPABLE_STATUSES = new Set(['CONFIRMED', 'PROCESSING', 'READY']);
@@ -281,7 +282,7 @@ export class ShipmentsService {
     return toOrderDetail(refreshed as OrderRecord);
   }
 
-  async handleWebhook(tenantId: string | undefined, secretHeader: string | undefined, body: Record<string, unknown>) {
+  async handleWebhook(secretHeader: string | undefined, body: Record<string, unknown>, meta?: RequestMeta) {
     const waybill =
       (typeof body.waybill === 'string' && body.waybill) ||
       (typeof body.Shipment === 'object' &&
@@ -302,16 +303,30 @@ export class ShipmentsService {
     }
 
     const shipment = await this.prisma.shipment.findFirst({
-      where: tenantId ? { tenantId, waybill } : { waybill },
+      where: { waybill },
       include: { order: true },
     });
     if (!shipment) {
-      throw new NotFoundException('Shipment not found');
+      // Same response as a bad secret so the endpoint cannot be used to probe waybills.
+      throw new UnauthorizedException('Invalid Delhivery webhook secret.');
     }
 
     const expected = await this.shippingSettings.resolveWebhookSecret(shipment.tenantId);
-    if (expected && expected !== secretHeader) {
-      throw new UnauthorizedException('Invalid Delhivery webhook secret.');
+    if (!expected || !safeEqual(secretHeader, expected)) {
+      await this.audit
+        .log({
+          action: AUDIT_ACTIONS.WEBHOOK_SIGNATURE_INVALID,
+          tenantId: shipment.tenantId,
+          entity: 'shipment',
+          entityId: shipment.id,
+          metadata: { provider: 'delhivery', reason: expected ? 'secret_mismatch' : 'secret_not_configured' },
+          ipAddress: meta?.ipAddress,
+          userAgent: meta?.userAgent,
+        })
+        .catch(() => undefined);
+      throw new UnauthorizedException(
+        expected ? 'Invalid Delhivery webhook secret.' : 'Delhivery webhook secret is not configured.',
+      );
     }
 
     await this.prisma.shipment.update({
@@ -344,20 +359,8 @@ export class ShipmentsService {
         tenantId,
         orderId,
         status: 'COMPLETED',
+        settleCod: true,
       });
-      const codPayment = await this.prisma.payment.findFirst({
-        where: { tenantId, orderId, method: 'COD', status: 'PENDING' },
-      });
-      if (codPayment) {
-        await this.prisma.payment.update({
-          where: { id: codPayment.id },
-          data: { status: 'COMPLETED' },
-        });
-        await this.prisma.order.update({
-          where: { id: orderId },
-          data: { paymentStatus: 'COMPLETED' },
-        });
-      }
     }
   }
 

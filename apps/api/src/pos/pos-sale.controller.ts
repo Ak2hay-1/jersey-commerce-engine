@@ -62,6 +62,7 @@ export class PosSaleController {
   }
 
   @Post(':id/cancel')
+  @RequirePermissions('pos.access', 'sales.cancel')
   @ApiOperation({
     summary: 'Cancel a completed sale, preserve history, reverse remaining inventory, and record payment reversals.',
   })

@@ -1,31 +1,15 @@
-import { Body, Controller, Inject, Post, UseGuards, forwardRef } from '@nestjs/common';
-import { ApiHeader, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Headers, HttpCode, HttpStatus, Inject, Post, Req, UseGuards, forwardRef } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
+import { ApiExcludeEndpoint, ApiHeader, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { IsString, MinLength } from 'class-validator';
+import type { Request } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { TenantId } from '../common/decorators/tenant-id.decorator';
 import { StoreTenantGuard } from './store-tenant.guard';
 import { RazorpayOnlineGateway } from '../orders/razorpay-online.gateway';
 import { ShipmentsService } from '../shipping/shipments.service';
 import { WhatsappReceiptService } from '../whatsapp/whatsapp-receipt.service';
-
-class CreateRazorpayOrderDto {
-  @ApiProperty({ description: 'Amount in paise (minimum 100)', example: 50000 })
-  @IsInt()
-  @Min(100)
-  amount!: number;
-
-  @ApiPropertyOptional({ example: 'INR' })
-  @IsOptional()
-  @IsString()
-  @MinLength(3)
-  currency?: string;
-
-  @ApiPropertyOptional({ example: 'receipt_001' })
-  @IsOptional()
-  @IsString()
-  receipt?: string;
-}
 
 class VerifyRazorpayPaymentDto {
   @ApiProperty()
@@ -45,8 +29,8 @@ class VerifyRazorpayPaymentDto {
 }
 
 /**
- * Razorpay Standard Checkout endpoints (framework equivalent of /api/create-order
- * and /api/verify-payment under the Nest global prefix api/v1).
+ * Razorpay Standard Checkout verification. Razorpay orders are only ever created server-side during checkout,
+ * tied to a real Jerzyfy order and amount.
  */
 @Controller('store/razorpay')
 @ApiTags('store-razorpay')
@@ -60,17 +44,6 @@ export class StoreRazorpayController {
     private readonly shipments: ShipmentsService,
     private readonly whatsappReceipts: WhatsappReceiptService,
   ) {}
-
-  @Post('create-order')
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Create a Razorpay order (amount in paise)' })
-  createOrder(@TenantId() tenantId: string, @Body() dto: CreateRazorpayOrderDto) {
-    return this.razorpay.createRazorpayOrderForAmount(tenantId, {
-      amountPaise: dto.amount,
-      currency: dto.currency,
-      receipt: dto.receipt,
-    });
-  }
 
   @Post('verify-payment')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
@@ -88,5 +61,37 @@ export class StoreRazorpayController {
       paymentId: result.paymentId,
       orderNumber: result.orderNumber,
     };
+  }
+}
+
+@Controller('webhooks/razorpay')
+@ApiTags('store-razorpay')
+@Public()
+export class RazorpayWebhookController {
+  constructor(
+    private readonly razorpay: RazorpayOnlineGateway,
+    @Inject(forwardRef(() => ShipmentsService))
+    private readonly shipments: ShipmentsService,
+    private readonly whatsappReceipts: WhatsappReceiptService,
+  ) {}
+
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 300, ttl: 60_000 } })
+  @ApiExcludeEndpoint()
+  async webhook(
+    @Req() request: RawBodyRequest<Request>,
+    @Headers('x-razorpay-signature') signature: string | undefined,
+    @Headers('x-razorpay-event-id') eventId: string | undefined,
+  ) {
+    const result = await this.razorpay.handleWebhook(request.rawBody, signature, eventId);
+    if (result.captured) {
+      const { tenantId, orderId, fulfillmentMethod } = result.captured;
+      if (fulfillmentMethod === 'DELIVERY') {
+        await this.shipments.tryAutoCreateForOrder(tenantId, orderId).catch(() => undefined);
+      }
+      this.whatsappReceipts.scheduleOrderReceipt(tenantId, orderId);
+    }
+    return { ok: result.ok, handled: result.handled };
   }
 }

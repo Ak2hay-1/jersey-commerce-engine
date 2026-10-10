@@ -9,9 +9,9 @@ import type {
   TenantSummary,
   UpdateBackupSettingsInput,
 } from '@jersey-commerce/types';
-import { getApiUrl } from './env';
+import { getApiUrl, isRefreshCookieOnly } from './env';
 
-const ACCESS_KEY = 'jersey-staff-access-token';
+export const ACCESS_KEY = 'jersey-staff-access-token';
 const REFRESH_KEY = 'jersey-staff-refresh-token';
 const LEGACY_ACCESS_KEYS = ['jersey-admin-access-token', 'jersey-pos-access-token'] as const;
 const LEGACY_REFRESH_KEYS = ['jersey-admin-refresh-token', 'jersey-pos-refresh-token'] as const;
@@ -69,7 +69,11 @@ export function readRefreshToken(): string {
 
 export function storeTokens(accessToken: string, refreshToken: string): void {
   window.localStorage.setItem(ACCESS_KEY, accessToken);
-  window.localStorage.setItem(REFRESH_KEY, refreshToken);
+  if (isRefreshCookieOnly()) {
+    window.localStorage.removeItem(REFRESH_KEY);
+  } else {
+    window.localStorage.setItem(REFRESH_KEY, refreshToken);
+  }
   for (const key of LEGACY_ACCESS_KEYS) {
     window.localStorage.removeItem(key);
   }
@@ -92,13 +96,31 @@ export function clearTokens(): void {
 async function parseBody<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type') ?? '';
   if (contentType.includes('text/csv')) {
+    if (!response.ok) {
+      throw new ApiError('Export failed', response.status);
+    }
     return (await response.blob()) as T;
+  }
+  if (!contentType.includes('application/json')) {
+    throw new ApiError(
+      response.ok ? 'Unexpected response from the server.' : `The server is unavailable (HTTP ${response.status}). Try again shortly.`,
+      response.status,
+      'BAD_RESPONSE',
+    );
   }
   const payload = (await response.json()) as ApiSuccess<T> | ApiFailure;
   if (!payload.success) {
     throw new ApiError(payload.error.message, response.status, payload.error.code);
   }
   return payload.data;
+}
+
+async function send(path: string, init: RequestInit, headers: Headers): Promise<Response> {
+  try {
+    return await fetch(`${getApiUrl()}/api/v1${path}`, { ...init, headers, credentials: 'include' });
+  } catch {
+    throw new ApiError('Network error. Check your connection and try again.', 0, 'NETWORK_ERROR');
+  }
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -110,41 +132,57 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   }
-  const response = await fetch(`${getApiUrl()}/api/v1${path}`, {
-    ...init,
-    headers,
-    credentials: 'include',
-  });
+  let response = await send(path, init, headers);
   if (response.status === 401 && !path.startsWith('/auth/')) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
+    if (await tryRefresh()) {
       headers.set('authorization', `Bearer ${readAccessToken()}`);
-      const retry = await fetch(`${getApiUrl()}/api/v1${path}`, {
-        ...init,
-        headers,
-        credentials: 'include',
-      });
-      if (!retry.ok && retry.status !== 200) {
-        return parseBody<T>(retry);
-      }
-      return parseBody<T>(retry);
+      response = await send(path, init, headers);
     }
   }
   if (response.status === 401) {
     clearTokens();
   }
-  if (!response.ok && response.headers.get('content-type')?.includes('text/csv')) {
-    throw new ApiError('Export failed', response.status);
-  }
-  if (response.headers.get('content-type')?.includes('text/csv')) {
-    return (await response.blob()) as T;
-  }
   return parseBody<T>(response);
 }
 
-async function tryRefresh(): Promise<boolean> {
+let refreshInFlight: Promise<boolean> | null = null;
+
+/**
+ * Refresh tokens rotate on every use and the API revokes the whole session when an old one is replayed,
+ * so concurrent 401s (in this tab or across tabs) must share a single refresh call.
+ */
+/** Single-flight access-token refresh; resolves false when the session can no longer be renewed. */
+export function refreshAccessToken(): Promise<boolean> {
+  return tryRefresh();
+}
+
+function tryRefresh(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = refreshExclusive().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+async function refreshExclusive(): Promise<boolean> {
+  const accessBefore = readAccessToken();
+  const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+  if (!locks) {
+    return performRefresh();
+  }
+  return locks.request('jersey-staff-token-refresh', async () => {
+    const accessNow = readAccessToken();
+    if (accessNow && accessNow !== accessBefore) {
+      return true;
+    }
+    return performRefresh();
+  });
+}
+
+async function performRefresh(): Promise<boolean> {
   const refreshToken = readRefreshToken();
-  if (!refreshToken) {
+  if (!refreshToken && !isRefreshCookieOnly()) {
     return false;
   }
   try {
@@ -152,7 +190,7 @@ async function tryRefresh(): Promise<boolean> {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     });
     if (!response.ok) {
       return false;
@@ -182,7 +220,7 @@ export function changePassword(input: { currentPassword: string; newPassword: st
 
 export function logout(): Promise<{ success?: boolean } | Record<string, never>> {
   const refreshToken = readRefreshToken();
-  return apiRequest('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) });
+  return apiRequest('/auth/logout', { method: 'POST', body: JSON.stringify(refreshToken ? { refreshToken } : {}) });
 }
 
 export function getMe(): Promise<AuthMeResponse> {

@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Badge, Button, Input } from '@jersey-commerce/ui';
+import { Badge, Input } from '@jersey-commerce/ui';
 import type { PosLookupItem } from '@jersey-commerce/types';
 import { formatMoney, statusLabel } from '@/lib/format';
 import { lookupBarcode, lookupProducts } from '@/lib/pos-api';
@@ -25,8 +25,37 @@ export function ProductSearch({
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState('');
 
+  const scanQueue = useRef<Promise<void>>(Promise.resolve());
+
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!busy) {
+      const active = document.activeElement;
+      if (!active || active === document.body) {
+        inputRef.current?.focus();
+      }
+    }
+  }, [busy]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) {
+        return;
+      }
+      const active = document.activeElement;
+      if (active && active !== document.body) {
+        return;
+      }
+      if (document.querySelector('[role="dialog"]')) {
+        return;
+      }
+      inputRef.current?.focus();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   useEffect(() => {
@@ -68,12 +97,12 @@ export function ProductSearch({
     },
   );
 
-  async function addItem(item: PosLookupItem): Promise<void> {
+  async function addItem(item: PosLookupItem, scannedValue?: string): Promise<void> {
     setAddingId(item.variant.id);
     setError('');
     try {
       await onAdd(item);
-      setQuery('');
+      setQuery((current) => (scannedValue === undefined || current.trim() === scannedValue ? '' : current));
       setResults([]);
       inputRef.current?.focus();
     } catch (err) {
@@ -83,24 +112,29 @@ export function ProductSearch({
     }
   }
 
-  async function onSubmit(event: FormEvent): Promise<void> {
+  function onSubmit(event: FormEvent): void {
     event.preventDefault();
     const value = query.trim();
     if (!value) {
       return;
     }
+    // Scanners fire Enter quickly; run lookups one at a time so no scan is lost or reordered.
+    scanQueue.current = scanQueue.current.then(() => lookupAndAdd(value));
+  }
+
+  async function lookupAndAdd(value: string): Promise<void> {
     setSearching(true);
     setError('');
     try {
       const scanned = await lookupBarcode(value);
       if (scanned) {
-        await addItem(scanned);
+        await addItem(scanned, value);
         return;
       }
       const payload = await lookupProducts({ q: value, limit: 24 });
       setResults(payload.items);
       if (payload.items.length === 1) {
-        await addItem(payload.items[0]!);
+        await addItem(payload.items[0]!, value);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lookup failed');
@@ -120,7 +154,7 @@ export function ProductSearch({
           </div>
           <p className="hidden text-xs text-muted-foreground sm:block">Enter adds a single match</p>
         </div>
-        <form onSubmit={(event) => void onSubmit(event)}>
+        <form onSubmit={onSubmit}>
           <Input
             ref={inputRef}
             value={query}
@@ -128,7 +162,7 @@ export function ProductSearch({
             placeholder="Scan barcode or search name / SKU"
             autoComplete="off"
             className="h-14 rounded-xl border-border/80 bg-background text-base shadow-inner"
-            disabled={busy}
+            aria-busy={busy || searching}
           />
         </form>
         {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}

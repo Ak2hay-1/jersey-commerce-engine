@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@jersey-commerce/config": "*",
+    "@sentry/nextjs": "^10.76.2",
     "@jersey-commerce/types": "*",
     "@jersey-commerce/ui": "*",
     "@jersey-commerce/utils": "*",

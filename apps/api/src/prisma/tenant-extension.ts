@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from './client';
 import { getRequestContext } from '../common/context/request-context';
 
-const TENANT_SCOPED_MODELS = new Set<string>([
+export const TENANT_SCOPED_MODELS = new Set<string>([
   'User',
   'Role',
   'UserRole',
@@ -63,6 +63,12 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   'RefreshToken',
   'PasswordResetToken',
   'TenantHost',
+  'Warehouse',
+  'PaymentSettings',
+  'NotificationSettings',
+  'ShippingSettings',
+  'Shipment',
+  'WhatsappMessage',
 ]);
 
 type QueryArgs = {

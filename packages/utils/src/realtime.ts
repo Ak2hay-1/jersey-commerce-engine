@@ -89,7 +89,8 @@ export interface RealtimeSocketHandle {
 
 export function openRealtimeSocket(options: {
   apiUrl: string;
-  token: string;
+  /** A getter is re-read on every reconnect so a refreshed access token is picked up. */
+  token: string | (() => string | null);
   onEvent: (event: RealtimeEventPayload) => void;
   onStatus: (connected: boolean) => void;
   offlineDebounceMs?: number;
@@ -135,8 +136,15 @@ export function openRealtimeSocket(options: {
     if (closed) {
       return;
     }
+    const token = typeof options.token === 'function' ? options.token() : options.token;
+    if (!token) {
+      reportOffline(true);
+      reconnectTimer = setTimeout(connect, Math.min(10_000, 400 * 2 ** attempt));
+      attempt += 1;
+      return;
+    }
     const base = options.apiUrl.replace(/^http/i, 'ws').replace(/\/$/, '');
-    const url = `${base}${REALTIME_PATH}?token=${encodeURIComponent(options.token)}`;
+    const url = `${base}${REALTIME_PATH}?token=${encodeURIComponent(token)}`;
     socket = new SocketCtor(url);
     socket.addEventListener('open', () => {
       attempt = 0;

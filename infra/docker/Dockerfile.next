@@ -41,5 +41,7 @@ COPY --from=build /app/apps/${APP_NAME}/.next/standalone ./
 COPY --from=build /app/apps/${APP_NAME}/.next/static ./apps/${APP_NAME}/.next/static
 RUN mkdir -p ./apps/${APP_NAME}/public
 COPY --from=build /app/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
+RUN mkdir -p ./apps/${APP_NAME}/.next/cache && chown -R node:node ./apps/${APP_NAME}/.next
+USER node
 EXPOSE 3000
 CMD ["sh", "-c", "node apps/${APP_NAME}/server.js"]

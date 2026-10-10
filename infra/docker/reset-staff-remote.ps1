@@ -18,7 +18,8 @@ param(
 
   [string]$TenantSlug = 'jerzyfy',
 
-  [string]$StaffPassword = 'DevPassword123!'
+  [Parameter(Mandatory = $true)]
+  [string]$StaffPassword
 )
 
 $ErrorActionPreference = 'Stop'

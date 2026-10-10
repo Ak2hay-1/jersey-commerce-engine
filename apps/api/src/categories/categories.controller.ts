@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -14,18 +13,12 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
+import { RequireAnyPermission, RequirePermissions } from '../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthPrincipal } from '../common/context/request-context';
 import { IMAGE_MAX_BYTES } from '../storage/image-validation';
 import { CategoriesService } from './categories.service';
 import { CategoryQueryDto, CreateCategoryDto, UpdateCategoryDto } from './dto/category-mutations.dto';
-
-function assertCategoryImagePermission(actor: AuthPrincipal): void {
-  if (!actor.permissions.includes('categories.update') && !actor.permissions.includes('categories.create')) {
-    throw new ForbiddenException('You do not have permission to perform this action.');
-  }
-}
 
 @ApiTags('categories')
 @ApiBearerAuth('access-token')
@@ -78,6 +71,7 @@ export class CategoriesController {
   }
 
   @Post(':id/image')
+  @RequireAnyPermission('categories.create', 'categories.update')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -98,7 +92,6 @@ export class CategoriesController {
     @UploadedFile() file: { buffer: Buffer; size: number; mimetype?: string } | undefined,
     @CurrentUser() actor: AuthPrincipal,
   ) {
-    assertCategoryImagePermission(actor);
     return this.categories.uploadImage(id, file, actor);
   }
 

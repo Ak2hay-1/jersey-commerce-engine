@@ -13,13 +13,14 @@ const REPORTS = [
   { href: '/reports/payments', label: 'Payments', permission: 'payments.read' as const, blurb: 'Cash, UPI, card, online, and refunds.' },
   { href: '/reports/expenses', label: 'Expenses', permission: 'expenses.read' as const, blurb: 'Operating expenses by category.' },
   { href: '/reports/custom-orders', label: 'Custom orders', permission: 'customOrders.read' as const, blurb: 'Enquiries, quotes, production, and balances.' },
+  { href: '/reports/activity', label: 'Activity log', permission: 'reports.read' as const, blurb: 'Staff actions on orders, payments, refunds, stock, and settings.' },
 ];
 
 export default function ReportsIndexPage(): React.JSX.Element {
   const auth = useAuth();
   return (
     <div className="space-y-4">
-      <PageHeader title="Reports" description="Tenant-scoped reports from live ledgers. Gross profit is not net profit." />
+      <PageHeader title="Reports" description="Reports from live ledgers. Gross profit is not net profit." />
       <div className="grid gap-3 md:grid-cols-2">
         {REPORTS.filter((report) => auth.can(report.permission)).map((report) => (
           <Link key={report.href} href={report.href}>

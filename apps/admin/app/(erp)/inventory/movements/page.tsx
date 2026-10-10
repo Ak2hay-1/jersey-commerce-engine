@@ -19,7 +19,7 @@ export default function MovementsPage(): React.JSX.Element {
   return (
     <ResourceList<MovementRow>
       title="Stock movements"
-      description="Append-only inventory ledger for this tenant."
+      description="Append-only stock ledger: every receipt, sale, return, and adjustment."
       path="/inventory/movements"
       rowHref={(row) => `/inventory/${row.productVariantId}`}
       columns={[

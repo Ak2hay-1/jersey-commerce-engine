@@ -153,3 +153,9 @@ export class StoreGoogleExchangeDto {
   @MaxLength(512)
   ticket!: string;
 }
+
+export class StoreAccountEraseDto {
+  @ApiProperty({ enum: ['DELETE'], description: 'Must be the literal string DELETE.' })
+  @IsIn(['DELETE'])
+  confirm!: 'DELETE';
+}

@@ -35,6 +35,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         'PostgreSQL connection failed during startup',
         error instanceof Error ? error.stack : String(error),
       );
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
     }
   }
 
