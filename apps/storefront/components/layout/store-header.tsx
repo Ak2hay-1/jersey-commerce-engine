@@ -83,7 +83,7 @@ export function StoreHeader(): React.JSX.Element {
           scrolled && 'header-panel--scrolled',
         )}
       >
-        <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 sm:h-16 sm:gap-3 sm:px-4">
+        <div className="grid h-14 grid-cols-[1fr_auto] items-center gap-2 px-2 sm:h-16 sm:gap-3 sm:px-4 md:grid-cols-[1fr_auto_1fr]">
           <div className="flex min-w-0 items-center gap-1">
             <Button
               type="button"
