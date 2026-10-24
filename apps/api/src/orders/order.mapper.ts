@@ -110,6 +110,7 @@ export function toOrderSummary(order: OrderRecord): OrderSummary {
     total: moneyString(order.total),
     currency: order.currency,
     customerId: order.customerId,
+    customer: order.customer ? { id: order.customer.id, name: order.customer.name } : null,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
   };

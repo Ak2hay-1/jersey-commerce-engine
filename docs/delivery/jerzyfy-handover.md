@@ -11,8 +11,7 @@ Company context: [../rkyves/BUSINESS-CONTEXT.md](../rkyves/BUSINESS-CONTEXT.md).
 | --- | --- |
 | Storefront | [https://www.jerzyfy.in](https://www.jerzyfy.in) |
 | Staff portal (Admin + ERP + POS) | [https://admin.jerzyfy.in](https://admin.jerzyfy.in) — POS at [/pos/](https://admin.jerzyfy.in/pos/) |
-| API (live, cohost) | [https://95-135-254-46.sslip.io](https://95-135-254-46.sslip.io) on shared VM `95.135.254.46` (Cullinos nginx) — see [../../infra/docker/COHOST-CUTOVER.md](../../infra/docker/COHOST-CUTOVER.md) |
-| API (preferred DNS) | `api.jerzyfy.in` → point A at `95.135.254.46`, then reissue cert + update Vercel |
+| API (live, cohost) | [https://api.jerzyfy.in](https://api.jerzyfy.in) on shared VM `95.135.254.46` (Cullinos nginx) — see [../../infra/docker/COHOST-CUTOVER.md](../../infra/docker/COHOST-CUTOVER.md). DNS A → `95.135.254.46`, then certbot and Vercel `NEXT_PUBLIC_API_URL`. |
 | API (legacy rollback) | [https://45-76-61-16.sslip.io](https://45-76-61-16.sslip.io) on `45.76.61.16` |
 
 
@@ -64,7 +63,7 @@ See [known-limitations.md](./known-limitations.md).
 - **Live API** cohosts with Cullinos on `95.135.254.46` (nginx → `127.0.0.1:4000`). Playbook: [../../infra/docker/COHOST-CUTOVER.md](../../infra/docker/COHOST-CUTOVER.md)
 - API updates: `.\infra\docker\run-cohost-deploy.ps1`
 - Do **not** run `prod-up.sh` / Caddy on the shared VM (ports 80/443 belong to Cullinos nginx)
-- Staff portal / storefront updates: redeploy Vercel with `NEXT_PUBLIC_API_URL=https://95-135-254-46.sslip.io`
+- Staff portal / storefront updates: redeploy Vercel with `NEXT_PUBLIC_API_URL=https://api.jerzyfy.in`
 - Never run `prisma:seed` on the VM
 - Backup restore drill: weekly at first
 - Jersey Staff EXE is **deprecated** — do not pack or install for Jerzyfy
@@ -73,7 +72,7 @@ See [known-limitations.md](./known-limitations.md).
 
 ## Emergency
 
-- API health: `https://95-135-254-46.sslip.io/health`
-- API ready: `https://95-135-254-46.sslip.io/ready`
+- API health: `https://api.jerzyfy.in/health`
+- API ready: `https://api.jerzyfy.in/ready`
 - VM: `95.135.254.46` (shared with Cullinos)
 - Rollback VM: Vultr `45.76.61.16` (`https://45-76-61-16.sslip.io`) — start old stack only if reverting Vercel URL

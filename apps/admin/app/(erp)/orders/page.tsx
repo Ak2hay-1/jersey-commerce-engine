@@ -25,6 +25,7 @@ export default function OrdersPage(): React.JSX.Element {
       description="Website, WhatsApp, and manual orders."
       path="/orders"
       searchKey="customer"
+      tableClassName="min-w-[48rem]"
       rowHref={(row) => `/orders/${row.id}`}
       actions={
         auth.can('orders.create') ? (

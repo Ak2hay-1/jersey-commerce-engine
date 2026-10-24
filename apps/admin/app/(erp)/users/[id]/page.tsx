@@ -32,7 +32,6 @@ export default function UserDetailPage(): React.JSX.Element {
   const router = useRouter();
   const auth = useAuth();
   const canManage = auth.can('users.manage');
-  const isSuperior = auth.user?.roles.includes('SUPER_ADMIN') ?? false;
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [user, setUser] = useState<UserDetail | null>(null);
   const [name, setName] = useState('');
@@ -182,7 +181,7 @@ export default function UserDetailPage(): React.JSX.Element {
         title={isNew ? 'Add staff user' : user?.name ?? 'User'}
         description={
           isNew
-            ? 'Assign one or more roles. Superior Admin is reserved for the developer and client accounts.'
+            ? 'Assign one or more roles.'
             : user?.email
         }
       />
@@ -225,9 +224,6 @@ export default function UserDetailPage(): React.JSX.Element {
                     </label>
                   ))}
                 </div>
-                {!isSuperior ? (
-                  <p className="text-xs text-muted-foreground">Superior Admin is hidden unless you already have that role.</p>
-                ) : null}
               </fieldset>
               {canManage ? (
                 <Button type="submit" disabled={saving}>

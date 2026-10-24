@@ -20,6 +20,8 @@ import type { CreatePaymentDto, PaymentQueryDto } from './dto/payment.dto';
 
 const paymentInclude = {
   sale: { select: { id: true, invoiceNumber: true, cashierId: true, posSessionId: true, status: true, total: true } },
+  order: { select: { id: true, orderNumber: true } },
+  customOrder: { select: { id: true, orderNumber: true } },
   createdBy: { select: { id: true, name: true, email: true } },
 } satisfies Prisma.PaymentInclude;
 
@@ -335,6 +337,8 @@ export class PaymentsService {
     createdAt: Date;
     updatedAt: Date;
     sale?: { id: string; invoiceNumber: string } | null;
+    order?: { id: string; orderNumber: string } | null;
+    customOrder?: { id: string; orderNumber: string } | null;
     createdBy?: { id: string; name: string; email: string } | null;
   }) {
     return {
@@ -352,7 +356,7 @@ export class PaymentsService {
       reference: payment.reference,
       provider: payment.provider,
       metadata: payment.metadata,
-      invoiceNumber: payment.sale?.invoiceNumber ?? null,
+      invoiceNumber: payment.sale?.invoiceNumber ?? payment.order?.orderNumber ?? payment.customOrder?.orderNumber ?? null,
       createdBy: payment.createdBy ?? null,
       createdAt: payment.createdAt.toISOString(),
       updatedAt: payment.updatedAt.toISOString(),

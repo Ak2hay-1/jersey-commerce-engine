@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import {
   CUSTOM_ORDER_STATUSES,
   DATE_RANGE_PRESETS,
@@ -53,6 +53,11 @@ export class ReportQueryDto {
 export const TOP_SUPPLIER_SORTS = ['totalPurchases', 'outstanding', 'quantity'] as const;
 
 export class PurchaseReportQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ enum: DATE_RANGE_PRESETS })
+  @IsOptional()
+  @IsIn(DATE_RANGE_PRESETS)
+  preset?: (typeof DATE_RANGE_PRESETS)[number];
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -159,6 +164,22 @@ export class SalesReportQueryDto extends PaginationQueryDto {
 }
 
 export class InventoryReportQueryDto extends PaginationQueryDto {
+  /** Accepted so the shared report screen can send a date preset. Inventory is a current-stock snapshot and does not filter by it. */
+  @ApiPropertyOptional({ enum: DATE_RANGE_PRESETS })
+  @IsOptional()
+  @IsIn(DATE_RANGE_PRESETS)
+  preset?: (typeof DATE_RANGE_PRESETS)[number];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  to?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -238,6 +259,30 @@ export class ExpenseReportQueryDto extends PaginationQueryDto {
 }
 
 export class PaymentReportQueryDto extends DashboardQueryDto {
+  /** Accepted from the shared report screen. The payments report is a method summary, not a paged table. */
+  @ApiPropertyOptional({ default: 1, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
   @ApiPropertyOptional({ enum: PAYMENT_METHODS })
   @IsOptional()
   @IsIn(PAYMENT_METHODS)

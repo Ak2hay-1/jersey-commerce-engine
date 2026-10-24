@@ -426,7 +426,7 @@ export default function CustomOrderDetailPage(): React.JSX.Element {
           <CardContent className="p-4">
             <form className="flex flex-wrap items-end gap-2" onSubmit={(event) => void addNote(event)}>
               <div className="min-w-[16rem] flex-1">
-                <Label htmlFor="note">Internal note</Label>
+                <Label htmlFor="note">Staff note</Label>
                 <Input id="note" className="mt-1" value={noteBody} onChange={(e) => setNoteBody(e.target.value)} />
               </div>
               <Button type="submit" disabled={saving}>

@@ -125,7 +125,7 @@ export function CinematicHero({
         aria-hidden
       />
 
-      <div className="mx-auto flex min-h-[min(100svh,58rem)] max-w-store flex-col store-gutter pb-6 pt-20 sm:pt-24 lg:pb-10">
+      <div className="mx-auto flex max-w-store flex-col store-gutter pb-6 pt-20 sm:pt-24 lg:min-h-[min(100svh,58rem)] lg:pb-10">
         <div className="grid flex-1 grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10">
           {/* Product */}
           <div className="relative order-1 lg:order-2">

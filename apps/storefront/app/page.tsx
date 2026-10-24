@@ -50,18 +50,38 @@ function withCatalogCover(
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const options = await serverStoreOptions();
-    const store = await cachedBootstrap(tenantKey(options));
+    const key = tenantKey(options);
+    const [store, featured] = await Promise.all([
+      cachedBootstrap(key),
+      cachedFeatured(key).catch(() => [] as StorefrontProductListItem[]),
+    ]);
+    const title = store.website.seoTitle || store.tenant.name;
+    const description =
+      store.website.seoDescription || 'Shop club, national, kids, and custom football jerseys at Jerzyfy.';
+    const image = featured[0]?.primaryImage?.url || store.theme.logo || store.theme.favicon;
     return {
-      title: store.website.seoTitle || store.tenant.name,
-      description: store.website.seoDescription || undefined,
+      title,
+      description,
       alternates: { canonical: '/' },
       openGraph: {
-        title: store.website.seoTitle || store.tenant.name,
-        description: store.website.seoDescription || undefined,
+        type: 'website',
+        url: '/',
+        title,
+        description,
+        images: image ? [{ url: image }] : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: image ? [image] : undefined,
       },
     };
   } catch {
-    return { title: 'Store', description: 'Football jerseys for club, national, kids, and custom kits.' };
+    return {
+      title: 'Store',
+      description: 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
+    };
   }
 }
 

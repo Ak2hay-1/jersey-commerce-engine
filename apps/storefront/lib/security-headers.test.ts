@@ -14,7 +14,21 @@ describe('storefront security headers', () => {
     expect(csp).toContain('https://checkout.razorpay.com');
     expect(csp).toMatch(/connect-src 'self' https:\/\/api\.jerzyfy\.in/);
     expect(csp).toContain("frame-ancestors 'self' https://admin.jerzyfy.in");
+    expect(csp).not.toContain('localhost:3001');
+    expect(csp).not.toContain('127.0.0.1:3001');
+    expect(csp).toContain('https://static.cloudflareinsights.com');
+    expect(csp).toContain('https://cloudflareinsights.com');
     expect(csp).toContain("object-src 'none'");
+  });
+
+  it('omits localhost frame ancestors in production when no admin origin is configured', () => {
+    const origins = frameAncestorOrigins({ NODE_ENV: 'production' } as never);
+    expect(origins).toEqual(['https://admin.jerzyfy.in']);
+  });
+
+  it('keeps localhost frame ancestors for local customizer preview', () => {
+    const origins = frameAncestorOrigins({ NODE_ENV: 'development' } as never);
+    expect(origins).toEqual(['https://admin.jerzyfy.in', 'http://localhost:3001', 'http://127.0.0.1:3001']);
   });
 
   it('uses configured customizer parent origins when present', () => {

@@ -72,6 +72,7 @@ export interface OrderSummary {
   total: MoneyString;
   currency: string;
   customerId: string | null;
+  customer?: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
 }

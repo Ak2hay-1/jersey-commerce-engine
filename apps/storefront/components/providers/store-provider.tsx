@@ -135,7 +135,10 @@ function isAllowedCustomizerOrigin(origin: string): boolean {
     .split(',')
     .map((value) => value.trim().replace(/\/$/, ''))
     .filter(Boolean);
-  const defaults = ['http://localhost:3001', 'http://127.0.0.1:3001', 'https://admin.jerzyfy.in'];
+  const defaults =
+    process.env.NODE_ENV === 'production'
+      ? ['https://admin.jerzyfy.in']
+      : ['http://localhost:3001', 'http://127.0.0.1:3001', 'https://admin.jerzyfy.in'];
   const allowed = configured.length ? configured : defaults;
   if (allowed.includes(origin)) {
     return true;

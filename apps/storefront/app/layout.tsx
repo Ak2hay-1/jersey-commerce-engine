@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import './globals.css';
 import { display, inter } from '../lib/fonts';
 import { serverTenantOptions } from '../lib/server-options';
@@ -21,6 +21,10 @@ import { SmoothScroll } from '../components/motion/smooth-scroll';
 import { CustomCursor } from '../components/motion/custom-cursor';
 import { FilmGrain } from '../components/motion/film-grain';
 import { CookieNotice } from '../components/legal/cookie-notice';
+import { STORE_COOKIES } from '../lib/cookies';
+import { siteUrl } from '../lib/site-url';
+
+const FALLBACK_DESCRIPTION = 'Shop club, national, kids, and custom football jerseys at Jerzyfy.';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -32,18 +36,36 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const options = await serverTenantOptions();
     const store = await cachedBootstrap(tenantKey(options));
+    const title = store.website.seoTitle || store.tenant.name;
+    const description = store.website.seoDescription || FALLBACK_DESCRIPTION;
+    const image = store.theme.logo || store.theme.favicon;
     return {
+      metadataBase: new URL(siteUrl()),
       title: {
-        default: store.website.seoTitle || store.tenant.name,
+        default: title,
         template: `%s · ${store.tenant.name}`,
       },
-      description: store.website.seoDescription || `${store.tenant.name} storefront`,
+      description,
+      openGraph: {
+        type: 'website',
+        url: '/',
+        title,
+        description,
+        images: image ? [{ url: image }] : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: image ? [image] : undefined,
+      },
       icons: store.theme.favicon ? [{ rel: 'icon', url: store.theme.favicon }] : undefined,
     };
   } catch {
     return {
+      metadataBase: new URL(siteUrl()),
       title: 'Store',
-      description: 'Football jerseys for club, national, kids, and custom kits.',
+      description: FALLBACK_DESCRIPTION,
     };
   }
 }
@@ -54,6 +76,8 @@ export default async function RootLayout({
   children: ReactNode;
 }>): Promise<React.JSX.Element> {
   const headerStore = await headers();
+  const cookieStore = await cookies();
+  const hasSession = Boolean(cookieStore.get(STORE_COOKIES.customer)?.value);
   const host = headerStore.get('host');
   const origin = `${host?.includes('localhost') ? 'http' : 'https'}://${host ?? 'localhost:3000'}`;
   let store = fallbackStore;
@@ -83,7 +107,7 @@ export default async function RootLayout({
         <StoreProvider value={store} chrome={chrome}>
           <CustomizerBridge />
           <SmoothScroll>
-            <AuthProvider>
+            <AuthProvider hasSession={hasSession}>
               <CartProvider>
                 <CustomCursor />
                 <FilmGrain />

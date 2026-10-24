@@ -1,4 +1,4 @@
-import { LoadingSkeleton, ProductGridSkeleton } from '../../components/ui/loading-skeleton';
+import { LoadingSkeleton, ProductGridSkeleton } from '../../../components/ui/loading-skeleton';
 
 export default function ProductsLoading(): React.JSX.Element {
   return (

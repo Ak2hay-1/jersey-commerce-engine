@@ -22,7 +22,7 @@ param(
   [string]$OldRemoteDir = '/opt/jersey',
   [string]$NewRemoteDir = '/opt/jersey',
   [string]$RepoUrl = 'https://github.com/Ak2hay-1/jersey-commerce-engine.git',
-  [string]$ApiHost = '95-135-254-46.sslip.io',
+  [string]$ApiHost = 'api.jerzyfy.in',
   [string]$CorsOrigins = 'https://www.jerzyfy.in,https://admin.jerzyfy.in',
   [switch]$SkipExport,
   [switch]$SkipNginx,

@@ -12,7 +12,7 @@ param(
   [string]$SshUser = 'root',
   [string]$RemoteDir = '/opt/jersey',
   [string]$TenantSlug = 'jerzyfy',
-  [string]$ApiHost = '95-135-254-46.sslip.io'
+  [string]$ApiHost = 'api.jerzyfy.in'
 )
 
 $ErrorActionPreference = 'Stop'

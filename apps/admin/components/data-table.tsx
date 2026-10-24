@@ -22,6 +22,7 @@ interface DataTableProps<T> {
   totalPages?: number;
   onPageChange?: (page: number) => void;
   caption?: string;
+  tableClassName?: string;
 }
 
 export function DataTable<T>({
@@ -34,10 +35,11 @@ export function DataTable<T>({
   totalPages = 1,
   onPageChange,
   caption,
+  tableClassName,
 }: DataTableProps<T>): React.JSX.Element {
   return (
     <div className="rounded-lg border bg-background">
-      <Table>
+      <Table className={tableClassName}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader>
           <TableRow>

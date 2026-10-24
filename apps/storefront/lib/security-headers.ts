@@ -24,7 +24,11 @@ export function frameAncestorOrigins(env: NodeJS.ProcessEnv = process.env): stri
   if (configured.length > 0) {
     return configured;
   }
-  return ['https://admin.jerzyfy.in', 'http://localhost:3001', 'http://127.0.0.1:3001'];
+  const fallback = ['https://admin.jerzyfy.in'];
+  if (env.NODE_ENV !== 'production') {
+    fallback.push('http://localhost:3001', 'http://127.0.0.1:3001');
+  }
+  return fallback;
 }
 
 export function buildContentSecurityPolicy(env: NodeJS.ProcessEnv = process.env): string {
@@ -37,12 +41,12 @@ export function buildContentSecurityPolicy(env: NodeJS.ProcessEnv = process.env)
   const directives: Record<string, string> = {
     'default-src': "'self'",
     // Next.js App Router hydration uses inline scripts; nonces would force dynamic rendering.
-    'script-src': `'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://checkout.razorpay.com ${razorpay}`,
+    'script-src': `'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://checkout.razorpay.com ${razorpay} https://static.cloudflareinsights.com`,
     'style-src': "'self' 'unsafe-inline'",
     'img-src': "'self' data: blob: https:" + (api?.startsWith('http:') ? ` ${api}` : ''),
     'media-src': `'self' blob: ${extra([api])}`.trim(),
     'font-src': "'self' data:",
-    'connect-src': `'self' ${extra([api, sentry, razorpay])}${isDev ? ' ws: http://localhost:4000' : ''}`.trim(),
+    'connect-src': `'self' ${extra([api, sentry, razorpay, 'https://cloudflareinsights.com'])}${isDev ? ' ws: http://localhost:4000' : ''}`.trim(),
     'frame-src': `'self' ${razorpay}`,
     'frame-ancestors': `'self' ${frameAncestorOrigins(env).join(' ')}`,
     'form-action': `'self' ${razorpay}`,

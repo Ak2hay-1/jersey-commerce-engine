@@ -29,6 +29,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: storefrontSecurityHeaders() }];
   },
+  async redirects() {
+    return [
+      {
+        source: '/category/ac-milan-26-27-away-master-version',
+        destination: '/category/player-versions',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const apiUrl = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
     return [

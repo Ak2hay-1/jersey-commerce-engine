@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { storeApi } from '../../lib/api';
-import { serverStoreOptions } from '../../lib/server-options';
-import { cachedBootstrap, cachedCategories, tenantKey } from '../../lib/cached-store';
-import { CatalogLayout, type CatalogChip } from '../../components/catalog/catalog-layout';
+import { storeApi } from '../../../lib/api';
+import { serverStoreOptions } from '../../../lib/server-options';
+import { cachedBootstrap, cachedCategories, tenantKey } from '../../../lib/cached-store';
+import { CatalogLayout, type CatalogChip } from '../../../components/catalog/catalog-layout';
 
 type Search = {
   search?: string;
@@ -15,7 +15,13 @@ type Search = {
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
   const query = await searchParams;
   const title = query.search ? `Search: ${query.search}` : 'Products';
-  return { title, alternates: { canonical: '/products' } };
+  return {
+    title,
+    description: query.search
+      ? `Football jerseys matching “${query.search}” at Jerzyfy.`
+      : 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
+    alternates: { canonical: '/products' },
+  };
 }
 
 export default async function ProductsPage({

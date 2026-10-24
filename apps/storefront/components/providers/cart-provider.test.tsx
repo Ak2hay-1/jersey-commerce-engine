@@ -61,15 +61,17 @@ function Probe(): React.JSX.Element {
 
 describe('cart provider', () => {
   beforeEach(() => {
+    document.cookie = 'jce_cart_token=; Path=/; Max-Age=0';
     getCart.mockReset();
     createCart.mockReset();
     addCartItem.mockReset();
     updateCartItem.mockReset();
     removeCartItem.mockReset();
     getCart.mockResolvedValue(emptyCart());
+    createCart.mockResolvedValue(emptyCart());
   });
 
-  it('loads an empty cart, then add/update/remove through the API', { timeout: 15000 }, async () => {
+  it('creates a cart on the first add, then update/remove through the API', { timeout: 15000 }, async () => {
     const { default: userEvent } = await import('@testing-library/user-event');
     const user = userEvent.setup();
     render(
@@ -78,10 +80,13 @@ describe('cart provider', () => {
       </CartProvider>,
     );
     await waitFor(() => expect(screen.getByText('count:0')).toBeInTheDocument());
+    expect(getCart).not.toHaveBeenCalled();
+    expect(createCart).not.toHaveBeenCalled();
 
     addCartItem.mockResolvedValue({ ...emptyCart(), itemCount: 1 });
     await user.click(screen.getByRole('button', { name: 'add' }));
     await waitFor(() => expect(addCartItem).toHaveBeenCalledWith({ productVariantId: 'var-1', quantity: 1 }));
+    expect(createCart).toHaveBeenCalledTimes(1);
     expect(screen.getByText('count:1')).toBeInTheDocument();
 
     updateCartItem.mockResolvedValue({ ...emptyCart(), itemCount: 1 });

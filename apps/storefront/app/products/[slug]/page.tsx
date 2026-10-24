@@ -33,7 +33,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         images: product.images[0] ? [{ url: product.images[0].url }] : undefined,
       },
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof StoreApiError && error.status === 404) {
+      notFound();
+    }
     return { title: 'Product' };
   }
 }

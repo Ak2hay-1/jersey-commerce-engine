@@ -17,6 +17,7 @@ interface ResourceListProps<T> {
   extraQuery?: Record<string, string | undefined>;
   actions?: ReactNode;
   empty?: string;
+  tableClassName?: string;
 }
 
 export function ResourceList<T>({
@@ -29,6 +30,7 @@ export function ResourceList<T>({
   extraQuery,
   actions,
   empty,
+  tableClassName,
 }: ResourceListProps<T>): React.JSX.Element {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -71,6 +73,7 @@ export function ResourceList<T>({
         totalPages={meta?.totalPages ?? 1}
         onPageChange={setPage}
         caption={title}
+        tableClassName={tableClassName}
       />
     </div>
   );

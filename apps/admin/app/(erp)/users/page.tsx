@@ -20,7 +20,7 @@ export default function UsersPage(): React.JSX.Element {
   return (
     <ResourceList<UserRow>
       title="Users & roles"
-      description="Assign staff roles. Superior Admin is only visible to existing superior admins and is reserved for the developer and client."
+      description="Assign staff roles."
       path="/users"
       searchKey="search"
       rowHref={(row) => `/users/${row.id}`}

@@ -31,7 +31,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       description: category.description ?? undefined,
       alternates: { canonical: `/category/${slug.join('/')}` },
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof StoreApiError && error.status === 404) {
+      notFound();
+    }
     return { title: 'Category' };
   }
 }

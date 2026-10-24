@@ -37,17 +37,19 @@ export function CartProvider({ children }: { children: React.ReactNode }): React
 
   const refresh = useCallback(async () => {
     setError(null);
+    if (!readBrowserCookie(STORE_COOKIES.cart)) {
+      setCart(null);
+      setLoading(false);
+      return;
+    }
     try {
-      try {
-        rememberToken(await storeApi.getCart());
-      } catch (error) {
-        if (error instanceof StoreApiError && (error.status === 400 || error.status === 404)) {
-          rememberToken(await storeApi.createCart());
-          return;
-        }
-        throw error;
-      }
+      rememberToken(await storeApi.getCart());
     } catch (caught) {
+      if (caught instanceof StoreApiError && (caught.status === 400 || caught.status === 404)) {
+        clearBrowserCookie(STORE_COOKIES.cart);
+        setCart(null);
+        return;
+      }
       setError(publicErrorMessage(caught, 'Cart is unavailable. Please try again.'));
     } finally {
       setLoading(false);

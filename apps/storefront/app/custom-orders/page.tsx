@@ -12,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: 'Create Your Team Jersey',
       description: `Custom, team, college, and bulk jerseys from ${store.tenant.name}.`,
+      alternates: { canonical: '/custom-orders' },
     };
   } catch {
     return { title: 'Create Your Team Jersey' };

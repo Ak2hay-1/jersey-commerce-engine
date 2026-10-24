@@ -11,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: 'Wholesale Jerseys',
       description: `Wholesale football jerseys for retailers, academies, and resellers from ${store.tenant.name}.`,
+      alternates: { canonical: '/wholesale' },
     };
   } catch {
     return { title: 'Wholesale Jerseys' };

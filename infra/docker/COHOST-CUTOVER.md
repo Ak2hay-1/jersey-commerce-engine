@@ -2,8 +2,7 @@
 
 **Target host:** `95.135.254.46` (Cullinos production)  
 **Old API host:** `45.76.61.16` (`https://45-76-61-16.sslip.io`) — keep as rollback until Vercel is switched  
-**New API URL (live):** `https://95-135-254-46.sslip.io`  
-**Preferred DNS (next):** `api.jerzyfy.in` A → `95.135.254.46`, then certbot + Vercel URL update  
+**API URL:** `https://api.jerzyfy.in` (A → `95.135.254.46`, then certbot and `NEXT_PUBLIC_API_URL` on Vercel)  
 **Tenant:** `jerzyfy`  
 **Frontends (unchanged hosts):** `https://www.jerzyfy.in`, `https://admin.jerzyfy.in` (Vercel)
 

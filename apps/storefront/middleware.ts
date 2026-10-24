@@ -45,17 +45,24 @@ export function middleware(request: NextRequest): NextResponse {
     requestHeaders.set('x-tenant-slug', slug);
   }
 
+  const tenantCookie = {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax' as const,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+  };
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   if (requested) {
-    response.cookies.set(STORE_COOKIES.tenant, requested, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+    response.cookies.set(STORE_COOKIES.tenant, requested, tenantCookie);
     const clean = request.nextUrl.clone();
     clean.searchParams.delete('tenant');
     const redirect = NextResponse.redirect(clean);
-    redirect.cookies.set(STORE_COOKIES.tenant, requested, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+    redirect.cookies.set(STORE_COOKIES.tenant, requested, tenantCookie);
     return redirect;
   }
   if (slug && !request.cookies.get(STORE_COOKIES.tenant)?.value) {
-    response.cookies.set(STORE_COOKIES.tenant, slug, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+    response.cookies.set(STORE_COOKIES.tenant, slug, tenantCookie);
   }
   return response;
 }

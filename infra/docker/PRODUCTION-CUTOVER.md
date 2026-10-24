@@ -3,7 +3,7 @@
 ## Cohost (live)
 
 Shared VM with Cullinos: `95.135.254.46`  
-API: `https://95-135-254-46.sslip.io` (nginx → `127.0.0.1:4000`, no Caddy)
+API: `https://api.jerzyfy.in` (nginx → `127.0.0.1:4000`, no Caddy)
 
 Full playbook: **[COHOST-CUTOVER.md](./COHOST-CUTOVER.md)**
 
@@ -11,7 +11,7 @@ Full playbook: **[COHOST-CUTOVER.md](./COHOST-CUTOVER.md)**
 .\infra\docker\run-cohost-deploy.ps1   # API updates on shared VM
 ```
 
-**Vercel (required for frontends):** set `NEXT_PUBLIC_API_URL=https://95-135-254-46.sslip.io` on storefront + admin and redeploy. Until then staff/storefront still call the legacy Vultr API.
+**Vercel (required for frontends):** set `NEXT_PUBLIC_API_URL=https://api.jerzyfy.in` on storefront + admin and redeploy. Until DNS, the certificate, and that env var are in place, staff and the storefront still call the previous API host.
 
 ---
 

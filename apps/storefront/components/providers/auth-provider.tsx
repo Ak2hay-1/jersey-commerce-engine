@@ -27,11 +27,22 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
+export function AuthProvider({
+  children,
+  hasSession = false,
+}: {
+  children: React.ReactNode;
+  hasSession?: boolean;
+}): React.JSX.Element {
   const [customer, setCustomer] = useState<StorefrontCustomer | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasSession);
 
   useEffect(() => {
+    if (!hasSession) {
+      setCustomer(null);
+      setLoading(false);
+      return;
+    }
     void (async () => {
       try {
         setCustomer(await storeApi.me());
@@ -41,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
         setLoading(false);
       }
     })();
-  }, []);
+  }, [hasSession]);
 
   const persist = useCallback(async (token: string, next: StorefrontCustomer) => {
     await persistSessionTokens({ customerToken: token });
