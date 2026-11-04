@@ -75,11 +75,25 @@ export function evaluateProductionConfig(env: Env): ProductionConfigReport {
   }
   if (!checkOptionalSecret('BACKUP_ENCRYPTION_KEY', env.BACKUP_ENCRYPTION_KEY, errors)) {
     warnings.push('BACKUP_ENCRYPTION_KEY is not set; backups will refuse to run in production until it is configured.');
+  } else if (!isR2BackupConfigured(env)) {
+    warnings.push(
+      'BACKUP_ENCRYPTION_KEY is set but Cloudflare R2 backup env is incomplete; offsite uploads are not armed. Set R2_ACCOUNT_ID (or R2_ENDPOINT), R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BACKUP_BUCKET.',
+    );
   }
   checkOptionalSecret('BOOTSTRAP_SECRET', env.BOOTSTRAP_SECRET, errors);
   checkOptionalSecret('STOREFRONT_PROXY_SECRET', env.STOREFRONT_PROXY_SECRET, errors);
 
   return { errors, warnings };
+}
+
+/** True when enough R2 env is present to upload encrypted backups offsite. */
+export function isR2BackupConfigured(env: Env): boolean {
+  const accountId = env.R2_ACCOUNT_ID?.trim() ?? '';
+  const endpoint = env.R2_ENDPOINT?.trim() ?? '';
+  const accessKeyId = env.R2_ACCESS_KEY_ID?.trim() ?? '';
+  const secretAccessKey = env.R2_SECRET_ACCESS_KEY?.trim() ?? '';
+  const bucket = env.R2_BACKUP_BUCKET?.trim() ?? '';
+  return Boolean((accountId || endpoint) && accessKeyId && secretAccessKey && bucket);
 }
 
 /** Fails boot in production when security-critical configuration is unsafe. */

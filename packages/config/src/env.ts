@@ -45,6 +45,17 @@ export const serverEnvSchema = z.object({
   STOREFRONT_PROXY_SECRET: z.string().optional().default(''),
   /** Encrypts backup files at rest (AES-256-GCM). Required in production for backups to run. */
   BACKUP_ENCRYPTION_KEY: z.string().optional().default(''),
+  /**
+   * Cloudflare R2 (S3-compatible) offsite backup destination.
+   * When all of ACCOUNT_ID (or ENDPOINT), ACCESS_KEY_ID, SECRET_ACCESS_KEY, and BACKUP_BUCKET
+   * are set, each successful local backup is also uploaded to R2.
+   */
+  R2_ACCOUNT_ID: z.string().optional().default(''),
+  R2_ACCESS_KEY_ID: z.string().optional().default(''),
+  R2_SECRET_ACCESS_KEY: z.string().optional().default(''),
+  R2_BACKUP_BUCKET: z.string().optional().default(''),
+  /** Optional override. Default: https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com */
+  R2_ENDPOINT: z.string().optional().default(''),
   SENTRY_DSN: z.string().optional().default(''),
 });
 

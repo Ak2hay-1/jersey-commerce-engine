@@ -139,8 +139,9 @@ Order matters. Stock last, after catalog exists.
 
 ## 6. Backup before first customer
 
-- [ ] Confirm backup scheduler/config for this tenant (`BACKUP_ALLOWED_ROOT` on the API).
-- [ ] Trigger or wait for a backup; confirm a file exists on disk.
+- [ ] Confirm `BACKUP_ALLOWED_ROOT=/backups`, `BACKUP_ENCRYPTION_KEY`, and R2_* (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`) on the API host.
+- [ ] Admin → Settings → Backup: enable daily, path `/backups`, retain 14; **Run backup now**.
+- [ ] Confirm SUCCESS, a local file under the backups volume, and an object under `backups/<tenant-slug>/` in R2.
 - [ ] If you have never restored this stack, restore into a throwaway database **now**, not after a failure.
 
 ---

@@ -27,6 +27,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0",
     "@jersey-commerce/config": "*",
     "@jersey-commerce/types": "*",
     "@jersey-commerce/utils": "*",

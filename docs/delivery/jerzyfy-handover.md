@@ -11,8 +11,8 @@ Company context: [../rkyves/BUSINESS-CONTEXT.md](../rkyves/BUSINESS-CONTEXT.md).
 | --- | --- |
 | Storefront | [https://www.jerzyfy.in](https://www.jerzyfy.in) |
 | Staff portal (Admin + ERP + POS) | [https://admin.jerzyfy.in](https://admin.jerzyfy.in) — POS at [/pos/](https://admin.jerzyfy.in/pos/) |
-| API (live, cohost) | [https://api.jerzyfy.in](https://api.jerzyfy.in) on shared VM `95.135.254.46` (Cullinos nginx) — see [../../infra/docker/COHOST-CUTOVER.md](../../infra/docker/COHOST-CUTOVER.md). DNS A → `95.135.254.46`, then certbot and Vercel `NEXT_PUBLIC_API_URL`. |
-| API (legacy rollback) | [https://45-76-61-16.sslip.io](https://45-76-61-16.sslip.io) on `45.76.61.16` |
+| API (live, cohost) | [https://api.jerzyfy.in](https://api.jerzyfy.in) on shared VM `103.216.169.172` (host nginx → `127.0.0.1:4100`) — see [../../infra/docker/COHOST-CUTOVER.md](../../infra/docker/COHOST-CUTOVER.md). Cloudflare origin A → `103.216.169.172`; Vercel `NEXT_PUBLIC_API_URL=https://api.jerzyfy.in`. |
+| API (previous host, offline) | Was `95.135.254.46` / earlier Vultr `45.76.61.16` — not used for rollback after the empty rebuild on 2026-11-04. |
 
 
 ## Staff accounts
@@ -49,20 +49,27 @@ See [known-limitations.md](./known-limitations.md).
 ## Go-live checklist (remaining manual steps)
 
 - [ ] **Staff portal redeploy** with unified build (`portal=all` + POS at `/pos`): confirm [admin.jerzyfy.in](https://admin.jerzyfy.in) shows ERP + Website, and [/pos/](https://admin.jerzyfy.in/pos/) loads the register.
-- [x] **API health**: `https://45-76-61-16.sslip.io/health` OK.
-- [ ] **CORS**: `CORS_ORIGINS` includes `https://admin.jerzyfy.in` and the storefront origin (desktop `127.0.0.1:39217` no longer required).
-- [ ] **Staff accounts**: Owner logs into [admin.jerzyfy.in](https://admin.jerzyfy.in) → **Users** → create manager, cashier, inventory, and website manager with temporary passwords (forced change on first login).
+- [x] **API health**: `https://api.jerzyfy.in/health` OK on `103.216.169.172`.
+- [x] **CORS**: `CORS_ORIGINS` includes `https://www.jerzyfy.in` and `https://admin.jerzyfy.in`.
+- [ ] **Staff accounts**: Owner logs into [admin.jerzyfy.in](https://admin.jerzyfy.in) → change forced password → **Users** → create manager, cashier, inventory, and website manager with temporary passwords.
+- [ ] **Catalog / media**: Fresh empty DB after 2026-11-04 cutover — re-upload products and images in Admin.
+- [ ] **Payments**: Re-enter Razorpay keys in Admin → Settings → Payments; webhook `https://api.jerzyfy.in/api/v1/webhooks/razorpay`.
+- [ ] **Vercel**: Confirm `NEXT_PUBLIC_API_URL=https://api.jerzyfy.in` and `NEXT_PUBLIC_DEFAULT_TENANT_SLUG=jerzyfy`; set `STOREFRONT_PROXY_SECRET` to match VM `.env.production` then redeploy storefront.
 - [ ] **UAT sign-off**: Print and sign [uat-signoff.md](./uat-signoff.md) after first POS sale and web order.
-- [ ] **Backup**: In Settings → Backup, set path under `BACKUP_ALLOWED_ROOT` and confirm one backup file exists.
-- [ ] **Bootstrap secret**: Clear or rotate `BOOTSTRAP_SECRET` in VM `.env.production` after all tenants are created (empty secret → bootstrap route 404s). Requires SSH to `45.76.61.16`.
+- [ ] **Backup (local + R2)**:
+  1. Cloudflare → R2 → create private bucket `jerzyfy-backups`; create API token (Object Read & Write on that bucket).
+  2. Set `BACKUP_ENCRYPTION_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET=jerzyfy-backups` on the API host `.env.production`; restart API.
+  3. Admin → Settings → Backup: enable, path `/backups`, interval **1 Days**, retain 14, quiet IST hour → **Run backup now**.
+  4. Confirm SUCCESS in Recent backups, a file under the `api_backups` volume, and an object at `backups/<tenant-slug>/` in R2.
+- [x] **Bootstrap secret**: Cleared on the live VM after the first tenant (`jerzyfy`).
 
 
 
 ## Operations
 
-- **Live API** cohosts with Cullinos on `95.135.254.46` (nginx → `127.0.0.1:4000`). Playbook: [../../infra/docker/COHOST-CUTOVER.md](../../infra/docker/COHOST-CUTOVER.md)
+- **Live API** cohosts on `103.216.169.172` (nginx → `127.0.0.1:4100`; host `:4000` is used by another app). Playbook: [../../infra/docker/COHOST-CUTOVER.md](../../infra/docker/COHOST-CUTOVER.md)
 - API updates: `.\infra\docker\run-cohost-deploy.ps1`
-- Do **not** run `prod-up.sh` / Caddy on the shared VM (ports 80/443 belong to Cullinos nginx)
+- Do **not** run `prod-up.sh` / Caddy on the shared VM (ports 80/443 belong to host nginx)
 - Staff portal / storefront updates: redeploy Vercel with `NEXT_PUBLIC_API_URL=https://api.jerzyfy.in`
 - Never run `prisma:seed` on the VM
 - Backup restore drill: weekly at first
@@ -74,5 +81,4 @@ See [known-limitations.md](./known-limitations.md).
 
 - API health: `https://api.jerzyfy.in/health`
 - API ready: `https://api.jerzyfy.in/ready`
-- VM: `95.135.254.46` (shared with Cullinos)
-- Rollback VM: Vultr `45.76.61.16` (`https://45-76-61-16.sslip.io`) — start old stack only if reverting Vercel URL
+- VM: `103.216.169.172` (shared with Cullinos + other apps)

@@ -159,7 +159,8 @@ export function BackupSettingsForm(): React.JSX.Element {
             </Badge>
           </div>
           <CardDescription>
-            Save a copy of all shop data to a folder on the machine that runs the API. Time of day uses{' '}
+            Save an encrypted copy of all shop data to a folder on the API server. When Cloudflare R2 is
+            configured on the server, each run is also uploaded offsite. Time of day uses{' '}
             {auth.tenant?.timezone ?? 'the tenant timezone'}.
           </CardDescription>
         </CardHeader>
@@ -178,13 +179,14 @@ export function BackupSettingsForm(): React.JSX.Element {
             <input
               className={fieldClass}
               required={settings.enabled}
-              placeholder="C:\Backups\jersey-store"
+              placeholder="/backups"
               value={settings.destinationPath}
               onChange={(event) => setSettings({ ...settings, destinationPath: event.target.value })}
             />
             <span className="mt-1 block text-xs font-normal text-muted-foreground">
-              Absolute path on the API server, for example <code>C:\Backups\jersey-store</code> or{' '}
-              <code>/var/backups/jersey-store</code>.
+              Absolute path on the API server (Docker: <code>/backups</code>). Offsite copies go to the
+              private R2 bucket configured via <code>R2_*</code> env on the API — restore still uses a
+              downloaded file plus <code>backup:decrypt</code> / <code>backup:restore</code>.
             </span>
           </label>
 

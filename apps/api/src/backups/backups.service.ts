@@ -16,6 +16,13 @@ import {
 import { backupFileName, buildTenantBackupPayload, compressBackupPayload } from './backup-exporter';
 import { assertSafeBackupPath } from './backup-path';
 import { ENCRYPTED_BACKUP_EXTENSION, encryptBackup } from './backup-crypto';
+import {
+  backupObjectKey,
+  createR2BackupClient,
+  pruneR2Backups,
+  putBackupObject,
+  resolveR2BackupConfig,
+} from './backup-r2';
 import { computeNextRunAt, DEFAULT_SCHEDULE_TIME } from './backup-schedule';
 import type { UpdateBackupSettingsDto } from './dto/update-backup-settings.dto';
 
@@ -286,6 +293,27 @@ export class BackupsService {
       await fs.writeFile(partialPath, compressed, { mode: 0o600 });
       await fs.rename(partialPath, filePath);
 
+      const r2Config = resolveR2BackupConfig({
+        R2_ACCOUNT_ID: this.config.get('R2_ACCOUNT_ID', { infer: true }) ?? '',
+        R2_ACCESS_KEY_ID: this.config.get('R2_ACCESS_KEY_ID', { infer: true }) ?? '',
+        R2_SECRET_ACCESS_KEY: this.config.get('R2_SECRET_ACCESS_KEY', { infer: true }) ?? '',
+        R2_BACKUP_BUCKET: this.config.get('R2_BACKUP_BUCKET', { infer: true }) ?? '',
+        R2_ENDPOINT: this.config.get('R2_ENDPOINT', { infer: true }) ?? '',
+      });
+      let r2ObjectKey: string | null = null;
+      if (r2Config) {
+        const client = createR2BackupClient(r2Config);
+        r2ObjectKey = backupObjectKey(tenant.slug, fileName);
+        await putBackupObject(client, r2Config, r2ObjectKey, compressed);
+        try {
+          await pruneR2Backups(client, r2Config, tenant.slug, settings.retainCopies);
+        } catch (pruneError) {
+          this.logger.warn(
+            `Could not prune R2 backups for ${tenant.slug}: ${pruneError instanceof Error ? pruneError.message : String(pruneError)}`,
+          );
+        }
+      }
+
       const finishedAt = new Date();
       const nextRunAt = settings.enabled
         ? computeNextRunAt({
@@ -319,7 +347,13 @@ export class BackupsService {
             action: AUDIT_ACTIONS.BACKUP_RUN_COMPLETED,
             entity: 'BackupRun',
             entityId: run.id,
-            newValue: { trigger, fileName, filePath, fileSizeBytes: compressed.byteLength },
+            newValue: {
+              trigger,
+              fileName,
+              filePath,
+              fileSizeBytes: compressed.byteLength,
+              ...(r2ObjectKey ? { r2ObjectKey, r2Bucket: r2Config!.bucket } : {}),
+            },
           },
         }),
       ]);

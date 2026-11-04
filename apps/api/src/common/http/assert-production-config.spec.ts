@@ -11,6 +11,10 @@ const safeEnv = {
   COOKIE_SAMESITE: 'none',
   SECRETS_ENCRYPTION_KEY: strong('secrets'),
   BACKUP_ENCRYPTION_KEY: strong('backup'),
+  R2_ACCOUNT_ID: 'acct123',
+  R2_ACCESS_KEY_ID: 'r2access',
+  R2_SECRET_ACCESS_KEY: 'r2secret',
+  R2_BACKUP_BUCKET: 'jerzyfy-backups',
 };
 
 describe('evaluateProductionConfig', () => {
@@ -53,6 +57,18 @@ describe('evaluateProductionConfig', () => {
     });
     expect(report.errors).toEqual([]);
     expect(report.warnings).toHaveLength(3);
+  });
+
+  it('warns when backup encryption is set but R2 offsite env is incomplete', () => {
+    const report = evaluateProductionConfig({
+      ...safeEnv,
+      R2_ACCOUNT_ID: '',
+      R2_ACCESS_KEY_ID: '',
+      R2_SECRET_ACCESS_KEY: '',
+      R2_BACKUP_BUCKET: '',
+    });
+    expect(report.errors).toEqual([]);
+    expect(report.warnings.some((w) => w.includes('R2 backup env is incomplete'))).toBe(true);
   });
 
   it('rejects short optional secrets when set', () => {
