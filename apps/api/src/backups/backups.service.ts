@@ -17,6 +17,10 @@ import { backupFileName, buildTenantBackupPayload, compressBackupPayload } from 
 import { assertSafeBackupPath } from './backup-path';
 import { ENCRYPTED_BACKUP_EXTENSION, encryptBackup } from './backup-crypto';
 import {
+  AUTO_ENABLE_BACKUP_PATH,
+  shouldAutoEnableBackupSettings,
+} from './backup-auto-enable';
+import {
   backupObjectKey,
   createR2BackupClient,
   pruneR2Backups,
@@ -209,6 +213,92 @@ export class BackupsService {
         finishedAt: now,
       },
     });
+  }
+
+  /**
+   * When R2 offsite backups are configured, turn on a daily local+/R2 schedule
+   * for shops that have never configured Backup Settings.
+   */
+  async ensureAutoEnabledDailyBackups(now = new Date()): Promise<number> {
+    const allowedRoot = this.allowedRoot().trim();
+    if (!allowedRoot) {
+      return 0;
+    }
+    const r2Config = resolveR2BackupConfig({
+      R2_ACCOUNT_ID: this.config.get('R2_ACCOUNT_ID', { infer: true }) ?? '',
+      R2_ACCESS_KEY_ID: this.config.get('R2_ACCESS_KEY_ID', { infer: true }) ?? '',
+      R2_SECRET_ACCESS_KEY: this.config.get('R2_SECRET_ACCESS_KEY', { infer: true }) ?? '',
+      R2_BACKUP_BUCKET: this.config.get('R2_BACKUP_BUCKET', { infer: true }) ?? '',
+      R2_ENDPOINT: this.config.get('R2_ENDPOINT', { infer: true }) ?? '',
+    });
+    if (!r2Config) {
+      return 0;
+    }
+
+    let destinationPath: string;
+    try {
+      destinationPath = assertSafeBackupPath(AUTO_ENABLE_BACKUP_PATH, allowedRoot);
+      await fs.mkdir(destinationPath, { recursive: true });
+    } catch (error) {
+      this.logger.warn(
+        `Skipping backup auto-enable: cannot use ${AUTO_ENABLE_BACKUP_PATH}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return 0;
+    }
+
+    const tenants = await this.prisma.tenant.findMany({
+      select: { id: true, slug: true, timezone: true },
+    });
+    let enabledCount = 0;
+    for (const tenant of tenants) {
+      const existing = await this.prisma.backupSettings.findUnique({ where: { tenantId: tenant.id } });
+      if (
+        !shouldAutoEnableBackupSettings(
+          existing ? { enabled: existing.enabled, destinationPath: existing.destinationPath } : null,
+        )
+      ) {
+        continue;
+      }
+
+      const nextRunAt = computeNextRunAt({
+        now,
+        lastRunAt: existing?.lastRunAt ?? null,
+        scheduleTime: DEFAULT_SCHEDULE_TIME,
+        intervalValue: 1,
+        intervalUnit: 'DAYS',
+        timeZone: tenant.timezone,
+      });
+
+      await this.prisma.backupSettings.upsert({
+        where: { tenantId: tenant.id },
+        create: {
+          tenantId: tenant.id,
+          enabled: true,
+          destinationPath,
+          scheduleTime: DEFAULT_SCHEDULE_TIME,
+          intervalValue: 1,
+          intervalUnit: 'DAYS',
+          retainCopies: 14,
+          nextRunAt,
+          lastError: null,
+        },
+        update: {
+          enabled: true,
+          destinationPath,
+          scheduleTime: DEFAULT_SCHEDULE_TIME,
+          intervalValue: 1,
+          intervalUnit: 'DAYS',
+          retainCopies: 14,
+          nextRunAt,
+          lastError: null,
+        },
+      });
+      enabledCount += 1;
+      this.logger.log(
+        `Auto-enabled daily R2 backups for tenant ${tenant.slug} → ${destinationPath} (bucket ${r2Config.bucket})`,
+      );
+    }
+    return enabledCount;
   }
 
   async runBackup(tenantId: string, trigger: BackupRunTrigger): Promise<BackupRun> {
