@@ -52,16 +52,18 @@ export default async function PrivacyPage(): Promise<React.JSX.Element> {
           <li>Delhivery — shipping and delivery tracking.</li>
           <li>MSG91 and our email provider — OTP, order, and invoice messages (SMS, WhatsApp, email).</li>
           <li>Google — only if you choose &ldquo;Sign in with Google&rdquo;.</li>
+          <li>Meta — advertising measurement via the Meta Pixel on this website.</li>
           <li>Hosting and infrastructure providers that run this website and our servers.</li>
         </ul>
-        <p>We do not sell your personal data and we do not use third-party advertising trackers.</p>
+        <p>We do not sell your personal data.</p>
       </LegalSection>
 
       <LegalSection title="Cookies">
         <p>
-          We use only essential cookies: your shopping cart, your sign-in session, the store you are browsing, and
-          access to an order you just placed. They are required for the site to work and are not used for
-          advertising or cross-site tracking.
+          We use essential cookies for your shopping cart, your sign-in session, the store you are browsing, and
+          access to an order you just placed. Cloudflare Analytics measures visits to this site. Meta Pixel sets
+          advertising cookies so we can measure ad performance and reach people who may be interested in our
+          products.
         </p>
       </LegalSection>
 

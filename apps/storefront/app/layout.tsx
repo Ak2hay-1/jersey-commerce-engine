@@ -21,6 +21,7 @@ import { SmoothScroll } from '../components/motion/smooth-scroll';
 import { CustomCursor } from '../components/motion/custom-cursor';
 import { FilmGrain } from '../components/motion/film-grain';
 import { CookieNotice } from '../components/legal/cookie-notice';
+import { MetaPixel } from '../components/analytics/meta-pixel';
 import { STORE_COOKIES } from '../lib/cookies';
 import { siteUrl } from '../lib/site-url';
 
@@ -101,6 +102,7 @@ export default async function RootLayout({
         className={`${inter.variable} ${display.variable} min-h-dvh overflow-x-clip bg-background antialiased`}
         style={theme as CSSProperties}
       >
+        <MetaPixel />
         <a className="skip-link" href="#main">
           Skip to content
         </a>

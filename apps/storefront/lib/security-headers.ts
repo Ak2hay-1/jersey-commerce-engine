@@ -41,12 +41,12 @@ export function buildContentSecurityPolicy(env: NodeJS.ProcessEnv = process.env)
   const directives: Record<string, string> = {
     'default-src': "'self'",
     // Next.js App Router hydration uses inline scripts; nonces would force dynamic rendering.
-    'script-src': `'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://checkout.razorpay.com ${razorpay} https://static.cloudflareinsights.com`,
+    'script-src': `'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://checkout.razorpay.com ${razorpay} https://static.cloudflareinsights.com https://connect.facebook.net`,
     'style-src': "'self' 'unsafe-inline'",
     'img-src': "'self' data: blob: https:" + (api?.startsWith('http:') ? ` ${api}` : ''),
     'media-src': `'self' blob: ${extra([api])}`.trim(),
     'font-src': "'self' data:",
-    'connect-src': `'self' ${extra([api, sentry, razorpay, 'https://cloudflareinsights.com'])}${isDev ? ' ws: http://localhost:4000' : ''}`.trim(),
+    'connect-src': `'self' ${extra([api, sentry, razorpay, 'https://cloudflareinsights.com', 'https://www.facebook.com', 'https://connect.facebook.net'])}${isDev ? ' ws: http://localhost:4000' : ''}`.trim(),
     'frame-src': `'self' ${razorpay}`,
     'frame-ancestors': `'self' ${frameAncestorOrigins(env).join(' ')}`,
     'form-action': `'self' ${razorpay}`,

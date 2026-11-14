@@ -4,12 +4,11 @@ import Link from 'next/link';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'jce_cookie_notice_v1';
+const STORAGE_KEY = 'jce_cookie_notice_v2';
 
 /**
- * Informational notice only: the store sets essential cookies (cart, sign-in,
- * shop, order access) and no analytics or ad trackers. Any future analytics
- * must be gated behind explicit consent rather than this dismissal.
+ * Informational notice: essential cookies (cart, sign-in, shop, order access),
+ * Cloudflare Analytics, and Meta Pixel for advertising measurement.
  */
 export function CookieNotice(): React.JSX.Element | null {
   const [visible, setVisible] = useState(false);
@@ -50,7 +49,7 @@ export function CookieNotice(): React.JSX.Element | null {
         <X className="h-4 w-4" aria-hidden />
       </button>
       <p className="flex-1 leading-relaxed text-muted-foreground">
-        We use only essential cookies to keep your cart and sign-in working — no ads or tracking.{' '}
+        We use essential cookies to keep your cart and sign-in working, Cloudflare Analytics to measure visits, and Meta Pixel for advertising measurement.{' '}
         <Link href="/privacy" className="text-foreground underline underline-offset-4">
           Privacy policy
         </Link>
