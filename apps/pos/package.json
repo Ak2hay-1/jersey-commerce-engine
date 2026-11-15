@@ -16,7 +16,7 @@
     "@jersey-commerce/types": "*",
     "@jersey-commerce/ui": "*",
     "@jersey-commerce/utils": "*",
-    "next": "^15.4.6",
+    "next": "^16.4.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
