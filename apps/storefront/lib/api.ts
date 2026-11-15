@@ -367,6 +367,24 @@ export const storeApi = {
     });
   },
 
+  forgotPassword(input: { email: string }, options?: StoreRequestOptions) {
+    return storeFetch<{ sent: true; message: string }>('/store/auth/forgot-password', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+  },
+
+  resetPassword(input: { token: string; password: string }, options?: StoreRequestOptions) {
+    return storeFetch<{ reset: true }>('/store/auth/reset-password', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
+  },
+
   requestOtp(
     input: { channel: 'email' | 'sms'; email?: string; phone?: string; intent?: 'login' | 'register' },
     options?: StoreRequestOptions,

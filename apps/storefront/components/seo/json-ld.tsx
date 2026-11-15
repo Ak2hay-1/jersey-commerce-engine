@@ -13,13 +13,30 @@ export function JsonLd({ data }: { data: Record<string, unknown> }): React.JSX.E
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }} />;
 }
 
+/** Structured data requires absolute asset URLs. Media paths resolve against the public API; others against the page origin. */
+export function absoluteAssetUrl(url: string | null | undefined, origin: string): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  const path = url.startsWith('/') ? url : `/${url}`;
+  if (path.startsWith('/api/v1/media')) {
+    const api = (process.env.NEXT_PUBLIC_API_URL || origin).replace(/\/$/, '').replace(/\/api\/v1$/, '');
+    return `${api}${path}`;
+  }
+  const base = origin.replace(/\/$/, '');
+  return `${base}${path}`;
+}
+
 export function organizationJsonLd(store: StorefrontBootstrap, origin: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: store.tenant.name,
     url: origin,
-    logo: store.theme.logo ?? undefined,
+    logo: absoluteAssetUrl(store.theme.logo, origin),
     email: store.website.contactEmail ?? undefined,
     telephone: store.website.contactPhone ?? undefined,
   };
@@ -41,7 +58,7 @@ export function productJsonLd(product: StorefrontProductDetail, origin: string, 
     '@type': 'Product',
     name: product.name,
     description: product.seoDescription || product.shortDescription || product.description || undefined,
-    image: image ? [image] : undefined,
+    image: image ? [absoluteAssetUrl(image, origin)] : undefined,
     brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
     sku: product.variants[0]?.sku,
     offers,

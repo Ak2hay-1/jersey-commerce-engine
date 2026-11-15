@@ -1,14 +1,15 @@
 <#
 .SYNOPSIS
-  Deploy / update Jerzyfy API on the shared Cullinos VM (cohost: nginx TLS, no Caddy).
+  Deploy / update Jerzyfy API on the shared VM (cohost: nginx TLS, no Caddy).
+  API listens on host loopback 127.0.0.1:4100 (container :4000).
 
 .EXAMPLE
   .\infra\docker\run-cohost-deploy.ps1
-  .\infra\docker\run-cohost-deploy.ps1 -PublicIp 95.135.254.46 -RemoteDir /opt/jersey
+  .\infra\docker\run-cohost-deploy.ps1 -PublicIp 95.135.254.73 -RemoteDir /opt/jersey
 #>
 [CmdletBinding()]
 param(
-  [string]$PublicIp = '95.135.254.46',
+  [string]$PublicIp = '95.135.254.73',
   [string]$SshUser = 'root',
   [string]$RemoteDir = '/opt/jersey',
   [string]$TenantSlug = 'jerzyfy',

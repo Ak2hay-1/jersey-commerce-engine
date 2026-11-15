@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
 import { LoginForm } from '../../../components/account/auth-forms';
+import { pageShare } from '../../../lib/page-meta';
 
-export const metadata: Metadata = { title: 'Sign in' };
+export const metadata: Metadata = pageShare({
+  title: 'Sign in',
+  description: 'Sign in to your Jerzyfy account.',
+  path: '/auth/login',
+  noIndex: true,
+});
 
 export default function LoginPage(): React.JSX.Element {
   return (

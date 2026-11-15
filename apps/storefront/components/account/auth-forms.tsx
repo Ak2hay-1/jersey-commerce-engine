@@ -321,6 +321,11 @@ function PasswordLoginForm({
         <span className="text-micro text-muted-foreground">Password</span>
         <PasswordInput name="password" autoComplete="current-password" className="h-12 rounded-[var(--radius)] border-[hsl(var(--input))] bg-[hsl(var(--surface-1))] md:text-sm" required />
       </label>
+      <div className="flex justify-end">
+        <Link href="/auth/forgot-password" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
+          Forgot password?
+        </Link>
+      </div>
       <button type="submit" className="btn btn-lg btn-primary w-full cursor-pointer" disabled={pending}>
         {pending ? 'Signing in…' : 'Sign in'}
       </button>
@@ -390,8 +395,10 @@ export function LoginForm(): React.JSX.Element {
               Create an account
             </Link>
           </>
-        ) : (
+        ) : hasGoogle ? (
           'A new account is created automatically the first time you use Google sign-in.'
+        ) : (
+          'This store has no customer sign-in methods enabled.'
         )
       }
     >

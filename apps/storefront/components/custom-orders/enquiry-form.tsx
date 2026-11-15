@@ -107,29 +107,31 @@ export function CustomOrderEnquiryForm({
       <div className="mt-6 grid gap-4">
         {step === 0 ? (
           <>
-            <Field label="Your name" required>
-              <Input value={draft.name} onChange={(event) => setField('name', event.target.value)} autoComplete="name" />
+            <Field label="Your name" htmlFor="name" required>
+              <Input id="name" name="name" value={draft.name} onChange={(event) => setField('name', event.target.value)} autoComplete="name" />
             </Field>
-            <Field label="Phone" hint="Phone or email required">
-              <Input value={draft.phone} onChange={(event) => setField('phone', event.target.value)} autoComplete="tel" />
+            <Field label="Phone" htmlFor="phone" hint="Phone or email required">
+              <Input id="phone" name="phone" value={draft.phone} onChange={(event) => setField('phone', event.target.value)} autoComplete="tel" />
             </Field>
-            <Field label="Email" hint="Phone or email required">
-              <Input type="email" value={draft.email} onChange={(event) => setField('email', event.target.value)} autoComplete="email" />
+            <Field label="Email" htmlFor="email" hint="Phone or email required">
+              <Input id="email" name="email" type="email" value={draft.email} onChange={(event) => setField('email', event.target.value)} autoComplete="email" />
             </Field>
           </>
         ) : null}
 
         {step === 1 ? (
           <>
-            <Field label={isWholesale ? 'Business / shop name' : 'Team or organization'}>
-              <Input value={draft.teamName} onChange={(event) => setField('teamName', event.target.value)} />
+            <Field label={isWholesale ? 'Business / shop name' : 'Team or organization'} htmlFor="teamName">
+              <Input id="teamName" name="teamName" value={draft.teamName} onChange={(event) => setField('teamName', event.target.value)} />
             </Field>
-            <Field label="Estimated quantity" hint={isWholesale ? 'Total pieces across all designs' : undefined}>
-              <Input value={draft.quantity} onChange={(event) => setField('quantity', event.target.value)} inputMode="numeric" />
+            <Field label="Estimated quantity" htmlFor="quantity" hint={isWholesale ? 'Total pieces across all designs' : undefined}>
+              <Input id="quantity" name="quantity" value={draft.quantity} onChange={(event) => setField('quantity', event.target.value)} inputMode="numeric" />
             </Field>
             {lockType ? null : (
-              <Field label="Jersey type">
+              <Field label="Jersey type" htmlFor="type">
                 <select
+                  id="type"
+                  name="type"
                   className="flex h-11 w-full border border-input bg-background px-3 text-base md:text-sm"
                   value={draft.type}
                   onChange={(event) => setField('type', event.target.value)}
@@ -142,8 +144,10 @@ export function CustomOrderEnquiryForm({
                 </select>
               </Field>
             )}
-            <Field label="Description">
+            <Field label="Description" htmlFor="description">
               <textarea
+                id="description"
+                name="description"
                 className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.description}
                 onChange={(event) => setField('description', event.target.value)}
@@ -159,14 +163,26 @@ export function CustomOrderEnquiryForm({
 
         {step === 2 ? (
           <>
-            <Field label="Preferred jersey style">
-              <Input value={draft.preferredJerseyType} onChange={(event) => setField('preferredJerseyType', event.target.value)} />
+            <Field label="Preferred jersey style" htmlFor="preferredJerseyType">
+              <Input
+                id="preferredJerseyType"
+                name="preferredJerseyType"
+                value={draft.preferredJerseyType}
+                onChange={(event) => setField('preferredJerseyType', event.target.value)}
+              />
             </Field>
-            <Field label="Preferred colours">
-              <Input value={draft.preferredColours} onChange={(event) => setField('preferredColours', event.target.value)} />
+            <Field label="Preferred colours" htmlFor="preferredColours">
+              <Input
+                id="preferredColours"
+                name="preferredColours"
+                value={draft.preferredColours}
+                onChange={(event) => setField('preferredColours', event.target.value)}
+              />
             </Field>
-            <Field label="Customization requirements">
+            <Field label="Customization requirements" htmlFor="customizationRequirements">
               <textarea
+                id="customizationRequirements"
+                name="customizationRequirements"
                 className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.customizationRequirements}
                 onChange={(event) => setField('customizationRequirements', event.target.value)}
@@ -190,8 +206,10 @@ export function CustomOrderEnquiryForm({
         ) : null}
 
         {step === 3 ? (
-          <Field label="Reference images or designs (PNG, JPG, WEBP, PDF)">
+          <Field label="Reference images or designs (PNG, JPG, WEBP, PDF)" htmlFor="referenceFiles">
             <Input
+              id="referenceFiles"
+              name="referenceFiles"
               type="file"
               accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf"
               multiple
@@ -211,11 +229,13 @@ export function CustomOrderEnquiryForm({
 
         {step === 4 ? (
           <>
-            <Field label="Required date">
-              <Input type="date" value={draft.requiredDate} onChange={(event) => setField('requiredDate', event.target.value)} />
+            <Field label="Required date" htmlFor="requiredDate">
+              <Input id="requiredDate" name="requiredDate" type="date" value={draft.requiredDate} onChange={(event) => setField('requiredDate', event.target.value)} />
             </Field>
-            <Field label="Notes for the store">
+            <Field label="Notes for the store" htmlFor="notes">
               <textarea
+                id="notes"
+                name="notes"
                 className="min-h-24 w-full border border-input bg-background px-3 py-2 text-base md:text-sm"
                 value={draft.notes}
                 onChange={(event) => setField('notes', event.target.value)}
@@ -271,25 +291,27 @@ export function CustomOrderEnquiryForm({
 
 function Field({
   label,
+  htmlFor,
   required,
   hint,
   children,
 }: {
   label: string;
+  htmlFor: string;
   required?: boolean;
   hint?: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="font-medium">
+    <div className="grid gap-1 text-sm">
+      <label htmlFor={htmlFor} className="font-medium">
         {label}
         {required ? <span className="text-destructive"> *</span> : null}
         {!required && hint ? <span className="font-normal text-muted-foreground"> — {hint}</span> : null}
         {!required && !hint ? <span className="font-normal text-muted-foreground"> (optional)</span> : null}
-      </span>
+      </label>
       {children}
-    </label>
+    </div>
   );
 }
 

@@ -10,14 +10,15 @@
 # Or: bash infra/docker/prod-up-cohost.sh
 #
 # - Does NOT bind host 80/443 (Cullinos nginx keeps TLS)
-# - Publishes API only on loopback: 127.0.0.1:4000
+# - Publishes API only on loopback: 127.0.0.1:4100 (host :4000 is often taken on shared VMs)
+# - Container still listens on 4000 inside the jce network
 # - Postgres / Redis stay on the private Docker network
 # - Put nginx in front: see nginx-jerzyfy-api.conf
 
 services:
   api:
     ports:
-      - '127.0.0.1:4000:4000'
+      - '127.0.0.1:4100:4000'
 
   # Disable Caddy unless you explicitly pass --profile standalone-tls
   caddy:

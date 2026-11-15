@@ -28,10 +28,12 @@ export const fallbackStore: StorefrontBootstrap = {
     contactPhone: '+91 98765 00000',
     contactEmail: 'hello@jerzyfy.local',
     contactAddress: '12 Stadium Road, Mumbai',
+    grievanceOfficerName: null,
+    grievanceOfficerEmail: null,
     socialLinks: {},
     businessHours: null,
     seoTitle: 'Jerzyfy — Football Jerseys',
-    seoDescription: 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
+    seoDescription: 'Shop club, national, and custom football jerseys at Jerzyfy.',
     homepage: {
       sections: [
         {
@@ -72,7 +74,7 @@ export const fallbackStore: StorefrontBootstrap = {
         {
           type: 'marquee',
           enabled: true,
-          heading: 'Club · National · Custom · Kids',
+          heading: 'Club · National · Custom',
           subheading: 'Wear the game · Match day ready',
         },
         {
@@ -103,7 +105,7 @@ export const fallbackStore: StorefrontBootstrap = {
           type: 'featured-categories',
           enabled: true,
           heading: 'Shop by kit',
-          categorySlugs: ['club-jerseys', 'national-jerseys', 'kids-jerseys', 'custom-jerseys'],
+          categorySlugs: ['club-jerseys', 'national-jerseys', 'custom-jerseys'],
         },
         {
           type: 'trust',
@@ -120,7 +122,7 @@ export const fallbackStore: StorefrontBootstrap = {
           type: 'cta',
           enabled: true,
           heading: 'Find your jersey',
-          subheading: 'Club, national, kids, and custom football kits in one catalog.',
+          subheading: 'Club, national, and custom football kits in one catalog.',
           ctaLabel: 'Browse all jerseys',
           ctaHref: '/products',
           image: DEMO_CTA_IMAGE,

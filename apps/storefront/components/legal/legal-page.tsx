@@ -20,6 +20,8 @@ export interface LegalContact {
   storeName: string;
   email: string | null;
   phone: string | null;
+  whatsapp: string | null;
+  address: string | null;
   grievanceOfficerName: string;
   grievanceEmail: string | null;
 }
@@ -28,20 +30,38 @@ export async function loadLegalContact(): Promise<LegalContact> {
   let storeName = fallbackStore.tenant.name;
   let email: string | null = null;
   let phone: string | null = null;
+  let whatsapp: string | null = null;
+  let address: string | null = null;
+  let grievanceOfficerName =
+    process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME?.trim() || 'Grievance Officer';
+  let grievanceEmail = process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_EMAIL?.trim() || null;
   try {
     const store = await cachedBootstrap(tenantKey(await serverStoreOptions()));
     storeName = store.tenant.name;
-    email = store.website.contactEmail || null;
-    phone = store.website.contactPhone || null;
+    email = store.website.contactEmail?.trim() || store.tenant.contactEmail?.trim() || null;
+    phone = store.website.contactPhone?.trim() || store.tenant.contactPhone?.trim() || null;
+    whatsapp = store.website.socialLinks.whatsapp?.trim() || null;
+    address = store.website.contactAddress?.trim() || store.tenant.address?.trim() || null;
+    grievanceOfficerName =
+      store.website.grievanceOfficerName?.trim() ||
+      process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME?.trim() ||
+      'Grievance Officer';
+    grievanceEmail =
+      store.website.grievanceOfficerEmail?.trim() ||
+      process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_EMAIL?.trim() ||
+      email;
   } catch {
     // Policy pages must still render when the API is unreachable.
+    grievanceEmail = grievanceEmail || email;
   }
   return {
     storeName,
     email,
     phone,
-    grievanceOfficerName: process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME?.trim() || 'Grievance Officer',
-    grievanceEmail: process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_EMAIL?.trim() || email,
+    whatsapp,
+    address,
+    grievanceOfficerName,
+    grievanceEmail,
   };
 }
 
@@ -55,27 +75,51 @@ export function LegalSection({ title, children }: { title: string; children: Rea
 }
 
 export function ContactLine({ contact }: { contact: LegalContact }): React.JSX.Element {
+  const parts: ReactNode[] = [];
+  if (contact.email) {
+    parts.push(
+      <>
+        email{' '}
+        <a href={`mailto:${contact.email}`} className="text-foreground underline underline-offset-4">
+          {contact.email}
+        </a>
+      </>,
+    );
+  }
+  if (contact.phone) {
+    parts.push(
+      <>
+        call{' '}
+        <a href={`tel:${contact.phone}`} className="text-foreground underline underline-offset-4">
+          {contact.phone}
+        </a>
+      </>,
+    );
+  }
+  if (!parts.length) {
+    return (
+      <p>
+        Visit our{' '}
+        <Link href="/contact" className="text-foreground underline underline-offset-4">
+          contact page
+        </Link>{' '}
+        or the site footer for ways to reach us.
+      </p>
+    );
+  }
   return (
     <p>
-      {contact.email ? (
-        <>
-          Email{' '}
-          <a href={`mailto:${contact.email}`} className="text-foreground underline underline-offset-4">
-            {contact.email}
-          </a>
-        </>
-      ) : (
-        'Use the contact details shown in the site footer'
-      )}
-      {contact.phone ? (
-        <>
-          {' '}
-          or call{' '}
-          <a href={`tel:${contact.phone}`} className="text-foreground underline underline-offset-4">
-            {contact.phone}
-          </a>
-        </>
-      ) : null}
+      Reach us by{' '}
+      {parts.map((part, index) => (
+        <span key={index}>
+          {index === 0 ? null : index === parts.length - 1 ? ' or ' : ', '}
+          {part}
+        </span>
+      ))}
+      , or see the{' '}
+      <Link href="/contact" className="text-foreground underline underline-offset-4">
+        contact page
+      </Link>
       .
     </p>
   );

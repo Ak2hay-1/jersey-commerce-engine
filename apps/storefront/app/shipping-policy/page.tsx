@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { ContactLine, LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
+import { pageShare } from '../../lib/page-meta';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageShare({
   title: 'Shipping policy',
   description: 'Delivery areas, timelines, charges, and tracking.',
-  alternates: { canonical: '/shipping-policy' },
-};
+  path: '/shipping-policy',
+});
 
 export default async function ShippingPolicyPage(): Promise<React.JSX.Element> {
   const contact = await loadLegalContact();

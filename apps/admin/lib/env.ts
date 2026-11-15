@@ -59,5 +59,13 @@ export function isSingleTenantMode(): boolean {
 
 export function getStorefrontUrl(): string {
   const runtime = typeof window !== 'undefined' ? window.__JCE_PUBLIC__?.storefrontUrl?.trim() : undefined;
-  return (runtime || publicEnv.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const configured = runtime || publicEnv.NEXT_PUBLIC_STOREFRONT_URL;
+  if (configured?.trim()) {
+    return configured.replace(/\/$/, '');
+  }
+  // Single-shop Jerzyfy production default — avoids baking localhost into Admin "Open live site".
+  if (isSingleTenantMode()) {
+    return 'https://www.jerzyfy.in';
+  }
+  return 'http://localhost:3000';
 }

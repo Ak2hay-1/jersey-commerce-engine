@@ -82,7 +82,7 @@ export function DataTable<T>({
                           className={column.hideOnMobile ? `hidden md:table-cell ${column.className ?? ''}` : column.className}
                         >
                           {href && columnIndex === 0 ? (
-                            <Link href={href} className="font-medium text-foreground underline-offset-4 hover:underline">
+                            <Link href={href} prefetch={false} className="font-medium text-foreground underline-offset-4 hover:underline">
                               {content}
                             </Link>
                           ) : (

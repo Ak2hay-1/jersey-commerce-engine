@@ -2,8 +2,8 @@
 
 ## Cohost (live)
 
-Shared VM with Cullinos: `95.135.254.46`  
-API: `https://api.jerzyfy.in` (nginx → `127.0.0.1:4000`, no Caddy)
+Shared VM: `95.135.254.73`
+API: `https://api.jerzyfy.in` (nginx → `127.0.0.1:4100`, no Caddy)
 
 Full playbook: **[COHOST-CUTOVER.md](./COHOST-CUTOVER.md)**
 

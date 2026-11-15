@@ -92,7 +92,7 @@ export function PaymentSettingsForm(): React.JSX.Element {
         <CardHeader className="p-4">
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle className="text-sm">Razorpay</CardTitle>
-            {settings.razorpayEnabled && settings.razorpayKeyId ? (
+            {settings.razorpayEnabled && settings.razorpayKeyId && settings.hasRazorpayKeySecret ? (
               <Badge variant="secondary">Enabled on storefront</Badge>
             ) : (
               <Badge variant="outline">Not active</Badge>
@@ -105,7 +105,14 @@ export function PaymentSettingsForm(): React.JSX.Element {
         <CardContent className="space-y-4 p-4 pt-0">
           {!settings.secretsEncryptionConfigured ? (
             <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              Set SECRETS_ENCRYPTION_KEY on the API server before saving the key secret.
+              Set SECRETS_ENCRYPTION_KEY on the API server before saving the key secret. Without it, the storefront
+              stays on &quot;Checkout unavailable&quot; even if Razorpay is toggled on.
+            </p>
+          ) : null}
+          {settings.razorpayEnabled && (!settings.razorpayKeyId?.trim() || !settings.hasRazorpayKeySecret) ? (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Razorpay is enabled but Key ID or key secret is missing. Save both credentials so checkout can open on the
+              storefront. Env fallbacks (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) also work if Admin secrets are empty.
             </p>
           ) : null}
           <label className="flex items-center gap-2 text-sm">

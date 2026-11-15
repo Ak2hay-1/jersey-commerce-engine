@@ -29,7 +29,8 @@ import type {
 } from './dto/product-mutations.dto';
 import type { ProductQueryDto } from './dto/product-query.dto';
 import { OBJECT_STORAGE, type ObjectStorage } from '../storage/storage.types';
-import { ALLOWED_IMAGE_MIME_TYPES, extensionForMime, IMAGE_MAX_BYTES, sniffImageMime } from '../storage/image-validation';
+import { ALLOWED_IMAGE_MIME_TYPES, IMAGE_MAX_BYTES, sniffImageMime } from '../storage/image-validation';
+import { optimizeImageToWebp } from '../storage/image-optimize';
 import { InventoryService } from '../inventory/inventory.service';
 
 const listInclude = {
@@ -757,7 +758,13 @@ export class ProductsService {
     if (!sniffed || !ALLOWED_IMAGE_MIME_TYPES.includes(sniffed)) {
       throw new BadRequestException('Only JPEG, PNG, and WEBP images are allowed.');
     }
-    const key = `${tenantId}/products/${productId}/${randomUUID()}.${extensionForMime(sniffed)}`;
-    return this.storage.put({ tenantId, key, body: file.buffer, contentType: sniffed });
+    const optimized = await optimizeImageToWebp(file.buffer);
+    const key = `${tenantId}/products/${productId}/${randomUUID()}.${optimized.extension}`;
+    return this.storage.put({
+      tenantId,
+      key,
+      body: optimized.buffer,
+      contentType: optimized.contentType,
+    });
   }
 }

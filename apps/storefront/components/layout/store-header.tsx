@@ -158,7 +158,7 @@ export function StoreHeader(): React.JSX.Element {
               className={cn('hidden h-9 w-9 rounded-full sm:inline-flex', iconButton)}
               aria-label="Wishlist"
             >
-              <Link href="/products">
+              <Link href="/wishlist">
                 <Heart className="h-4 w-4" />
               </Link>
             </Button>

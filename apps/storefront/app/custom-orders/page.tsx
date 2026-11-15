@@ -5,17 +5,22 @@ import { storeApi } from '../../lib/api';
 import { serverStoreOptions } from '../../lib/server-options';
 import { formatMoney } from '../../lib/format';
 import { CustomOrderEnquiryForm } from '../../components/custom-orders/enquiry-form';
+import { pageShare } from '../../lib/page-meta';
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const store = await storeApi.bootstrap(await serverStoreOptions());
-    return {
+    return pageShare({
       title: 'Create Your Team Jersey',
       description: `Custom, team, college, and bulk jerseys from ${store.tenant.name}.`,
-      alternates: { canonical: '/custom-orders' },
-    };
+      path: '/custom-orders',
+    });
   } catch {
-    return { title: 'Create Your Team Jersey' };
+    return pageShare({
+      title: 'Create Your Team Jersey',
+      description: 'Custom, team, college, and bulk jerseys from Jerzyfy.',
+      path: '/custom-orders',
+    });
   }
 }
 
@@ -94,9 +99,7 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
       <section id="enquiry" className="mx-auto grid max-w-store gap-10 store-gutter py-12 md:grid-cols-[1fr_1.2fr] md:py-16">
         <div>
           <h2 className="font-heading text-3xl uppercase tracking-wide">Bulk & team orders</h2>
-          <p className="mt-3 text-muted-foreground">
-            No account required to enquire. We will match or create your customer profile using the same CRM used for POS and website orders.
-          </p>
+          <p className="mt-3 text-muted-foreground">No account required to enquire.</p>
           <p className="mt-6 text-sm">
             Prefer ready-made kits?{' '}
             <Link href="/products" className="underline">

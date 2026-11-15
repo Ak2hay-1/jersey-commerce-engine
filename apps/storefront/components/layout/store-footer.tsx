@@ -1,16 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import { ArrowUpRight, Facebook, Instagram, MessageCircle, Twitter, Youtube } from 'lucide-react';
 import { useStore } from '../providers/store-provider';
 import { DEFAULT_STOREFRONT_FOOTER, type StorefrontSocialLinks } from '@jersey-commerce/types';
 import { useState } from 'react';
+import { whatsappHref } from '../../lib/contact';
 
 const SOCIAL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   instagram: Instagram,
   facebook: Facebook,
   twitter: Twitter,
   youtube: Youtube,
+  whatsapp: MessageCircle,
 };
 
 const POLICY_LINKS = [
@@ -26,6 +28,7 @@ const SHOP_LINKS = [
   { href: '/custom-orders', label: 'Customize' },
   { href: '/wholesale', label: 'Wholesale' },
   { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
   { href: '/account', label: 'Account' },
   { href: '/cart', label: 'Cart' },
 ] as const;
@@ -62,14 +65,21 @@ export function StoreFooter(): React.JSX.Element {
   const store = useStore();
   const year = new Date().getFullYear();
   const footer = { ...DEFAULT_STOREFRONT_FOOTER, ...store.website.footer };
-  const social = socialEntries(store.website.socialLinks);
   const collections = store.navigation.filter((item) => !item.parentId).slice(0, 6);
   const brand = store.tenant.name?.trim() || 'Jerzyfy';
-  const intro = footer.body.trim() || `${brand} is a football jersey store — club kits, national colours, kids sizes, and custom prints built to last beyond a season.`;
+  const intro =
+    footer.body.trim() ||
+    `${brand} is a football jersey store — club kits, national colours, and custom prints built to last beyond a season.`;
   const about =
     footer.aboutBody.trim() ||
-    `Welcome to ${brand}. We focus on football jerseys only: replica-inspired club and national kits, youth sizes, and blank customs ready for name and number.`;
+    `Welcome to ${brand}. We focus on football jerseys only: replica-inspired club and national kits, and blank customs ready for name and number.`;
   const copyright = footer.copyright.trim() || `© ${year} ${brand}. All rights reserved.`;
+  const contactEmail = store.website.contactEmail?.trim() || store.tenant.contactEmail?.trim() || null;
+  const contactPhone = store.website.contactPhone?.trim() || store.tenant.contactPhone?.trim() || null;
+  const contactAddress = store.website.contactAddress?.trim() || store.tenant.address?.trim() || null;
+  const whatsapp = whatsappHref(store.website.socialLinks.whatsapp);
+  const social = socialEntries(store.website.socialLinks).filter(([name]) => name.toLowerCase() !== 'whatsapp');
+  const hasContact = Boolean(contactEmail || contactPhone || contactAddress || whatsapp || social.length > 0);
 
   return (
     <footer className="relative mt-10 overflow-hidden border-t border-foreground/10 bg-background text-foreground md:mt-16">
@@ -151,42 +161,87 @@ export function StoreFooter(): React.JSX.Element {
             </div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">{footer.contactTitle}</p>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {store.website.contactEmail ? (
-                  <li>
-                    <a href={`mailto:${store.website.contactEmail}`} className="break-all text-muted-foreground transition-colors hover:text-foreground">
-                      {store.website.contactEmail}
-                    </a>
-                  </li>
-                ) : null}
-                {store.website.contactPhone ? (
-                  <li>
-                    <a href={`tel:${store.website.contactPhone}`} className="text-muted-foreground transition-colors hover:text-foreground">
-                      {store.website.contactPhone}
-                    </a>
-                  </li>
-                ) : null}
-              </ul>
-              {social.length > 0 ? (
-                <ul className="mt-5 flex flex-wrap items-center gap-3">
-                  {social.map(([name, href]) => {
-                    const Icon = SOCIAL_ICONS[name.toLowerCase()];
-                    return (
-                      <li key={name}>
-                        <a
-                          href={href}
-                          rel="noreferrer"
-                          target="_blank"
-                          aria-label={name}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-foreground/15 text-foreground transition-colors hover:border-accent hover:bg-accent hover:text-accent-foreground"
-                        >
-                          {Icon ? <Icon className="h-4 w-4" /> : <span className="text-xs uppercase">{name.slice(0, 2)}</span>}
+              {hasContact ? (
+                <>
+                  <ul className="mt-4 space-y-2.5 text-sm">
+                    {contactEmail ? (
+                      <li>
+                        <a href={`mailto:${contactEmail}`} className="break-all text-muted-foreground transition-colors hover:text-foreground">
+                          {contactEmail}
                         </a>
                       </li>
-                    );
-                  })}
+                    ) : null}
+                    {contactPhone ? (
+                      <li>
+                        <a href={`tel:${contactPhone}`} className="text-muted-foreground transition-colors hover:text-foreground">
+                          {contactPhone}
+                        </a>
+                      </li>
+                    ) : null}
+                    {whatsapp ? (
+                      <li>
+                        <a href={whatsapp} rel="noreferrer" target="_blank" className="text-muted-foreground transition-colors hover:text-foreground">
+                          WhatsApp
+                        </a>
+                      </li>
+                    ) : null}
+                    {contactAddress ? (
+                      <li className="max-w-[18rem] text-muted-foreground">
+                        <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">
+                          Address
+                        </span>
+                        <span className="mt-1 block whitespace-pre-line leading-relaxed">{contactAddress}</span>
+                      </li>
+                    ) : null}
+                    <li>
+                      <Link href="/contact" className="text-muted-foreground transition-colors hover:text-foreground">
+                        Contact page
+                      </Link>
+                    </li>
+                  </ul>
+                  {social.length > 0 || whatsapp ? (
+                    <ul className="mt-5 flex flex-wrap items-center gap-3">
+                      {whatsapp ? (
+                        <li>
+                          <a
+                            href={whatsapp}
+                            rel="noreferrer"
+                            target="_blank"
+                            aria-label="WhatsApp"
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-foreground/15 text-foreground transition-colors hover:border-accent hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </a>
+                        </li>
+                      ) : null}
+                      {social.map(([name, href]) => {
+                        const Icon = SOCIAL_ICONS[name.toLowerCase()];
+                        return (
+                          <li key={name}>
+                            <a
+                              href={href}
+                              rel="noreferrer"
+                              target="_blank"
+                              aria-label={name}
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-foreground/15 text-foreground transition-colors hover:border-accent hover:bg-accent hover:text-accent-foreground"
+                            >
+                              {Icon ? <Icon className="h-4 w-4" /> : <span className="text-xs uppercase">{name.slice(0, 2)}</span>}
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </>
+              ) : (
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li>
+                    <Link href="/contact" className="text-muted-foreground transition-colors hover:text-foreground">
+                      Contact us
+                    </Link>
+                  </li>
                 </ul>
-              ) : null}
+              )}
             </div>
           </div>
         </div>

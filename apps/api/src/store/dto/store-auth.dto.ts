@@ -159,3 +159,25 @@ export class StoreAccountEraseDto {
   @IsIn(['DELETE'])
   confirm!: 'DELETE';
 }
+
+export class StoreForgotPasswordDto {
+  @ApiProperty()
+  @Transform(emptyToUndefined)
+  @IsEmail()
+  @MaxLength(320)
+  email!: string;
+}
+
+export class StoreResetPasswordDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(16)
+  @MaxLength(256)
+  token!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  password!: string;
+}

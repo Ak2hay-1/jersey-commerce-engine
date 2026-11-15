@@ -12,6 +12,7 @@ import { DEFAULT_STORE_CHROME } from '../lib/swatch';
 import { StoreProvider, CustomizerBridge } from '../components/providers/store-provider';
 import { CartProvider } from '../components/providers/cart-provider';
 import { AuthProvider } from '../components/providers/auth-provider';
+import { WishlistProvider } from '../components/providers/wishlist-provider';
 import { StoreHeader } from '../components/layout/store-header';
 import { StoreFooter } from '../components/layout/store-footer';
 import { BrandPreloader } from '../components/layout/brand-preloader';
@@ -24,8 +25,9 @@ import { CookieNotice } from '../components/legal/cookie-notice';
 import { MetaPixel } from '../components/analytics/meta-pixel';
 import { STORE_COOKIES } from '../lib/cookies';
 import { siteUrl } from '../lib/site-url';
+import { HOME_TITLE } from '../lib/page-meta';
 
-const FALLBACK_DESCRIPTION = 'Shop club, national, kids, and custom football jerseys at Jerzyfy.';
+const FALLBACK_DESCRIPTION = 'Shop club, national, and custom football jerseys at Jerzyfy.';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -37,9 +39,10 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const options = await serverTenantOptions();
     const store = await cachedBootstrap(tenantKey(options));
-    const title = store.website.seoTitle || store.tenant.name;
+    const seoTitle = store.website.seoTitle?.trim();
+    const title = !seoTitle || seoTitle === store.tenant.name ? HOME_TITLE : seoTitle;
     const description = store.website.seoDescription || FALLBACK_DESCRIPTION;
-    const image = store.theme.logo || store.theme.favicon;
+    const image = store.theme.logo;
     return {
       metadataBase: new URL(siteUrl()),
       title: {
@@ -60,13 +63,29 @@ export async function generateMetadata(): Promise<Metadata> {
         description,
         images: image ? [image] : undefined,
       },
-      icons: store.theme.favicon ? [{ rel: 'icon', url: store.theme.favicon }] : undefined,
+      icons: {
+        icon: [
+          { url: '/favicon.ico' },
+          { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+        apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+      },
+      manifest: '/manifest.webmanifest',
     };
   } catch {
     return {
       metadataBase: new URL(siteUrl()),
-      title: 'Store',
+      title: HOME_TITLE,
       description: FALLBACK_DESCRIPTION,
+      icons: {
+        icon: [
+          { url: '/favicon.ico' },
+          { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+        ],
+        apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+      },
+      manifest: '/manifest.webmanifest',
     };
   }
 }
@@ -109,8 +128,9 @@ export default async function RootLayout({
         <StoreProvider value={store} chrome={chrome}>
           <CustomizerBridge />
           <SmoothScroll>
-            <AuthProvider hasSession={hasSession}>
-              <CartProvider>
+              <AuthProvider hasSession={hasSession}>
+                <WishlistProvider>
+                <CartProvider>
                 <CustomCursor />
                 <FilmGrain />
                 <BrandPreloader />
@@ -119,8 +139,9 @@ export default async function RootLayout({
                 <main id="main">{unavailable ? <p className="px-4 py-16 text-center text-sm text-muted-foreground">The store is temporarily unavailable. Please try again shortly.</p> : children}</main>
                 <StoreFooter />
                 <CookieNotice />
-              </CartProvider>
-            </AuthProvider>
+                </CartProvider>
+                </WishlistProvider>
+              </AuthProvider>
           </SmoothScroll>
         </StoreProvider>
         <JsonLd data={organizationJsonLd(store, origin)} />

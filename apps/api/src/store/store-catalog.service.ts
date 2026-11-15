@@ -11,6 +11,7 @@ import {
   toStorefrontProductDetail,
 } from './store-catalog.mapper';
 import type { StoreCatalogQueryDto } from './dto/store-catalog-query.dto';
+import { expandSearchTerms } from './search-synonyms';
 
 /** Active products visible on the online storefront (excludes POS-only). */
 const storefrontProductWhere = {
@@ -213,11 +214,12 @@ export class StoreCatalogService {
       };
     }
     const listed = await this.listProducts(tenantId, { ...query, search, sort: query.sort ?? 'featured' });
+    const categoryTerms = expandSearchTerms(search);
     const categories = await this.prisma.category.findMany({
       where: {
         tenantId,
         status: CatalogStatus.ACTIVE,
-        name: { contains: search, mode: 'insensitive' },
+        OR: categoryTerms.map((term) => ({ name: { contains: term, mode: 'insensitive' as const } })),
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       take: 5,
@@ -377,6 +379,7 @@ export class StoreCatalogService {
       });
     }
     const search = query.search?.trim();
+    const searchTerms = search ? expandSearchTerms(search) : [];
     const categoryIds = await this.resolveCategoryIds(tenantId, query.categoryId, query.categorySlug);
     return {
       tenantId,
@@ -385,13 +388,15 @@ export class StoreCatalogService {
       ...(query.brand ? { brand: { equals: query.brand, mode: 'insensitive' } } : {}),
       ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
       ...(variantFilters.length > 0 ? { variants: { some: { AND: variantFilters } } } : {}),
-      ...(search
+      ...(searchTerms.length > 0
         ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { brand: { contains: search, mode: 'insensitive' } },
-              { variants: { some: { sku: { contains: search, mode: 'insensitive' } } } },
-            ],
+            OR: searchTerms.flatMap((term) => [
+              { name: { contains: term, mode: 'insensitive' as const } },
+              { brand: { contains: term, mode: 'insensitive' as const } },
+              { description: { contains: term, mode: 'insensitive' as const } },
+              { shortDescription: { contains: term, mode: 'insensitive' as const } },
+              { variants: { some: { sku: { contains: term, mode: 'insensitive' as const } } } },
+            ]),
           }
         : {}),
     };

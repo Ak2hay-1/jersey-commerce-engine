@@ -25,7 +25,6 @@ export class HealthController {
     return {
       status: 'ok',
       service: SERVICE_NAME,
-      uptimeSeconds: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
     };
   }

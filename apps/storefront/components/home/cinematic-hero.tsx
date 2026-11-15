@@ -94,8 +94,8 @@ export function CinematicHero({
     DEMO_HERO_IMAGE;
 
   const brand = store.tenant.name?.trim() || 'Jerzyfy';
-  const kicker = section?.heading?.trim() || 'Featured kit';
-  const headline = product?.name || section?.heading?.trim() || brand;
+  const kicker = product?.name?.trim() || 'Featured kit';
+  const headline = section?.heading?.trim() || 'Football Jerseys 2026/27';
   const body =
     section?.subheading?.trim() || 'Match-day kits built for the stands, the street, and every kick-off.';
   const price = formatMoney(product?.lowestPrice, currency);

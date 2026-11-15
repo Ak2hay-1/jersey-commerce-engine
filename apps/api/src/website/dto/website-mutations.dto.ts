@@ -320,6 +320,20 @@ export class UpdateWebsiteSettingsDto {
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   @IsString()
+  @MaxLength(160)
+  grievanceOfficerName?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(320)
+  grievanceOfficerEmail?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
   @MaxLength(2048)
   logo?: string | null;
 

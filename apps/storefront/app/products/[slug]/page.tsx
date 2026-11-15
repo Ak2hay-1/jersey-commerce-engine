@@ -9,12 +9,27 @@ import { ProductDetailActions } from '../../../components/catalog/product-detail
 import { ProductAccordions } from '../../../components/catalog/product-accordions';
 import { ProductRail } from '../../../components/catalog/product-rail';
 import { ChevronRight } from 'lucide-react';
-import { JsonLd, breadcrumbJsonLd, productJsonLd } from '../../../components/seo/json-ld';
+import { JsonLd, absoluteAssetUrl, breadcrumbJsonLd, productJsonLd } from '../../../components/seo/json-ld';
+import { pageShare, productMetaDescription } from '../../../lib/page-meta';
 import { headers } from 'next/headers';
 
 type Params = { slug: string };
 
-export const dynamic = 'force-dynamic';
+const PLAYER_VERSIONS = { name: 'Player Versions', href: '/category/player-versions' };
+
+function liveCategory(
+  category: { name: string; slug: string; status: string } | null,
+): { name: string; href: string } | null {
+  if (!category) {
+    return null;
+  }
+  if (category.status === 'ACTIVE') {
+    return { name: category.name, href: `/category/${category.slug}` };
+  }
+  return PLAYER_VERSIONS;
+}
+
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
@@ -22,17 +37,15 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const options = await serverStoreOptions();
     const product = await cachedProduct(tenantKey(options), slug);
     const title = product.seoTitle || product.name;
-    const description = product.seoDescription || product.shortDescription || undefined;
-    return {
+    const description = productMetaDescription(product);
+    return pageShare({
       title,
       description,
-      alternates: { canonical: `/products/${product.slug}` },
-      openGraph: {
-        title,
-        description,
-        images: product.images[0] ? [{ url: product.images[0].url }] : undefined,
-      },
-    };
+      path: `/products/${product.slug}`,
+      images: product.images[0]?.url
+        ? [{ url: absoluteAssetUrl(product.images[0].url, process.env.NEXT_PUBLIC_STOREFRONT_URL || process.env.NEXT_PUBLIC_API_URL || 'https://www.jerzyfy.in') || product.images[0].url, alt: product.name }]
+        : undefined,
+    });
   } catch (error) {
     if (error instanceof StoreApiError && error.status === 404) {
       notFound();
@@ -69,13 +82,14 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
     throw error;
   }
 
+  const categoryLink = liveCategory(product.category);
   const crumbs = [
     { name: 'Home', href: '/' },
-    ...(product.category ? [{ name: product.category.name, href: `/category/${product.category.slug}` }] : []),
+    ...(categoryLink ? [categoryLink] : []),
     { name: product.name, href: `/products/${product.slug}` },
   ];
 
-  const kicker = [product.brand, product.category?.name].filter(Boolean).join(' · ');
+  const kicker = [product.brand, categoryLink?.name ?? product.category?.name].filter(Boolean).join(' · ');
 
   return (
     <div className="pb-28 md:pb-0">
@@ -124,7 +138,7 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
           title="You might also like"
           products={product.related}
           currency={store.tenant.currency}
-          viewAllHref={product.category ? `/category/${product.category.slug}` : '/products'}
+          viewAllHref={categoryLink?.href ?? '/products'}
         />
       ) : null}
       <JsonLd data={productJsonLd(product, origin, store.tenant.currency)} />

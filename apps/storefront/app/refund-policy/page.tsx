@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { ContactLine, LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
+import { pageShare } from '../../lib/page-meta';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageShare({
   title: 'Returns & refunds',
   description: 'How returns, exchanges, cancellations, and refunds work.',
-  alternates: { canonical: '/refund-policy' },
-};
+  path: '/refund-policy',
+});
 
 export default async function RefundPolicyPage(): Promise<React.JSX.Element> {
   const contact = await loadLegalContact();

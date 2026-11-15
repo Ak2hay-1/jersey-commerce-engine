@@ -15,6 +15,8 @@ export const AUDIT_ACTIONS = {
   WEBHOOK_SIGNATURE_INVALID: 'webhook.signature.invalid',
   CUSTOMER_LOGIN_FAILED: 'customers.login.failed',
   CUSTOMER_OTP_FAILED: 'customers.otp.failed',
+  CUSTOMER_PASSWORD_RESET_REQUESTED: 'customers.password_reset.requested',
+  CUSTOMER_PASSWORD_RESET_COMPLETED: 'customers.password_reset.completed',
   CUSTOMER_DATA_EXPORTED: 'customers.data.exported',
   CUSTOMER_ERASED: 'customers.erased',
   PAYMENT_SETTINGS_UPDATED: 'payment.settings.updated',

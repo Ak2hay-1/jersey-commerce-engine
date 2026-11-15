@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { BadgeCheck, Check, RotateCcw, Ruler, Truck } from 'lucide-react';
+import { BadgeCheck, Check, Heart, RotateCcw, Ruler, Share2, Truck } from 'lucide-react';
 import type { StorefrontProductDetail, StorefrontVariant } from '@jersey-commerce/types';
 import { ProductVariantSelector } from './product-variant-selector';
 import { ProductImage } from './product-image';
@@ -11,6 +11,7 @@ import { openProductAccordion } from './product-accordions';
 import { QuantitySelector } from '../ui/quantity-selector';
 import { PriceDisplay } from './price-display';
 import { useCart } from '../providers/cart-provider';
+import { useWishlist } from '../providers/wishlist-provider';
 import { publicErrorMessage } from '../../lib/errors';
 import { formatMoney } from '../../lib/format';
 import { Alert } from '../ui/alert';
@@ -31,6 +32,8 @@ export function ProductDetailActions({
 }): React.JSX.Element {
   const router = useRouter();
   const { addItem } = useCart();
+  const wishlist = useWishlist();
+  const wishlisted = wishlist.has(product.slug);
   const [selected, setSelected] = useState<StorefrontVariant | undefined>(
     product.variants.length === 1 ? product.variants[0] : undefined,
   );
@@ -38,6 +41,7 @@ export function ProductDetailActions({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [added, setAdded] = useState(false);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
   const [sticky, setSticky] = useState(false);
   const addedTimer = useRef<number | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
@@ -158,6 +162,43 @@ export function ProductDetailActions({
         >
           Buy now
         </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            className="btn btn-secondary cursor-pointer"
+            aria-pressed={wishlisted}
+            onClick={() => wishlist.toggle(product.slug)}
+          >
+            <Heart className={`h-4 w-4 ${wishlisted ? 'fill-current' : ''}`} aria-hidden />
+            {wishlisted ? 'Saved' : 'Wishlist'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary cursor-pointer"
+            onClick={() => {
+              void (async () => {
+                const url = typeof window !== 'undefined' ? window.location.href : '';
+                const title = product.name;
+                try {
+                  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+                    await navigator.share({ title, url, text: title });
+                    return;
+                  }
+                  await navigator.clipboard.writeText(url);
+                  setShareNotice('Link copied');
+                  window.setTimeout(() => setShareNotice(null), 2000);
+                } catch {
+                  setShareNotice('Could not share');
+                  window.setTimeout(() => setShareNotice(null), 2000);
+                }
+              })();
+            }}
+          >
+            <Share2 className="h-4 w-4" aria-hidden />
+            Share
+          </button>
+        </div>
+        {shareNotice ? <p className="text-center text-xs text-muted-foreground">{shareNotice}</p> : null}
       </div>
 
       <ul className="grid grid-cols-3 gap-2">

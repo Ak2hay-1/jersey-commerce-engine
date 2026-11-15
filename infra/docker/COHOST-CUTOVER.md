@@ -1,17 +1,17 @@
-# Cohost Jerzyfy API on the Cullinos VM (shared nginx :80/:443)
+# Cohost Jerzyfy API on a shared VM (host nginx :80/:443)
 
-**Target host:** `95.135.254.46` (Cullinos production)  
-**Old API host:** `45.76.61.16` (`https://45-76-61-16.sslip.io`) — keep as rollback until Vercel is switched  
-**API URL:** `https://api.jerzyfy.in` (A → `95.135.254.46`, then certbot and `NEXT_PUBLIC_API_URL` on Vercel)  
+**Target host:** `95.135.254.73` (shared with Cullinos + other apps)  
+**Previous hosts:** `103.216.169.172`, `95.135.254.46`, earlier Vultr `45.76.61.16` — offline; 2026-11-14 fresh empty DB on `95.135.254.73` (no backup from prior host)  
+**API URL:** `https://api.jerzyfy.in` (Cloudflare origin A → `95.135.254.73`, then certbot; Vercel `NEXT_PUBLIC_API_URL=https://api.jerzyfy.in`)  
 **Tenant:** `jerzyfy`  
 **Frontends (unchanged hosts):** `https://www.jerzyfy.in`, `https://admin.jerzyfy.in` (Vercel)
 
-Cullinos keeps nginx on **80/443**. Jerzyfy runs Docker **postgres + redis + api** only, published as **`127.0.0.1:4000`**. No Jerzyfy Caddy.
+Host nginx keeps **80/443**. Jerzyfy runs Docker **postgres + redis + api** only, published as **`127.0.0.1:4100`** (host `:4000` is reserved by another app on this VM). No Jerzyfy Caddy.
 
 ```
-Internet → nginx :443
-             ├─ *.cullinos.com     → existing
-             └─ api.jerzyfy.in     → 127.0.0.1:4000
+Internet → Cloudflare → nginx :443
+                          ├─ existing shared sites
+                          └─ api.jerzyfy.in → 127.0.0.1:4100
 ```
 
 ---
@@ -33,12 +33,11 @@ Internet → nginx :443
 
 ## Preconditions
 
-1. DNS: `api.jerzyfy.in` **A** → `95.135.254.46` (before certbot).
-2. SSH passwords:
-   - Old: `infra/docker/.vultr-ssh-password` or `$env:VULTR_SSH_PASSWORD`
-   - New: `infra/docker/.cohost-ssh-password` or `$env:COHOST_SSH_PASSWORD`
+1. DNS: `api.jerzyfy.in` **A** → `95.135.254.73` (before certbot).
+2. SSH password: `infra/docker/.cohost-ssh-password` or `$env:COHOST_SSH_PASSWORD`
 3. New VM has Docker + nginx + certbot (Cullinos already does).
 4. Free RAM/disk for a second Postgres/Redis/API (~1GB+).
+5. Fresh empty install (no old-VM dump): clone `/opt/jersey`, then `bash infra/docker/fresh-cohost-bootstrap.sh`
 
 ---
 

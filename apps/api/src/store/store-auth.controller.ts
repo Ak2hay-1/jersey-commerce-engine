@@ -12,16 +12,19 @@ import type { StoreCustomer } from './customer-access.guard';
 import { StoreAuthService } from './store-auth.service';
 import {
   StoreAccountEraseDto,
+  StoreForgotPasswordDto,
   StoreLoginDto,
   StoreOtpRequestDto,
   StoreOtpVerifyDto,
   StoreGoogleExchangeDto,
   StoreProfileUpdateDto,
   StoreRegisterDto,
+  StoreResetPasswordDto,
 } from './dto/store-auth.dto';
 import { StoreOtpService } from './store-otp.service';
 import { StoreGoogleAuthService } from './store-google-auth.service';
 import { StorePrivacyService } from './store-privacy.service';
+import { StorePasswordResetService } from './store-password-reset.service';
 
 @Controller('store')
 @ApiTags('store')
@@ -34,6 +37,7 @@ export class StoreAuthController {
     private readonly otp: StoreOtpService,
     private readonly google: StoreGoogleAuthService,
     private readonly privacy: StorePrivacyService,
+    private readonly passwordReset: StorePasswordResetService,
   ) {}
 
   @Post('auth/register')
@@ -76,6 +80,20 @@ export class StoreAuthController {
   @ApiOperation({ summary: 'Exchange a one-time Google ticket for a customer session' })
   exchangeGoogle(@TenantId() tenantId: string, @Body() dto: StoreGoogleExchangeDto, @Req() request: Request) {
     return this.google.exchange(tenantId, dto.ticket, requestMeta(request));
+  }
+
+  @Post('auth/forgot-password')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Email a password reset link when the customer account exists' })
+  forgotPassword(@TenantId() tenantId: string, @Body() dto: StoreForgotPasswordDto, @Req() request: Request) {
+    return this.passwordReset.request(tenantId, dto.email, requestMeta(request));
+  }
+
+  @Post('auth/reset-password')
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Set a new password using a forgot-password token' })
+  resetPassword(@TenantId() tenantId: string, @Body() dto: StoreResetPasswordDto, @Req() request: Request) {
+    return this.passwordReset.reset(tenantId, dto.token, dto.password, requestMeta(request));
   }
 
   @Post('auth/logout')

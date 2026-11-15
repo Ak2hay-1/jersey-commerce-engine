@@ -8,6 +8,7 @@ import { cachedBootstrap, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
 import { CatalogLayout, type CatalogChip } from '../../../components/catalog/catalog-layout';
 import { JsonLd, breadcrumbJsonLd } from '../../../components/seo/json-ld';
+import { categoryMetaDescription, pageShare } from '../../../lib/page-meta';
 import { headers } from 'next/headers';
 
 type Params = { slug?: string[] };
@@ -26,11 +27,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   }
   try {
     const category = await storeApi.category(leaf, slug.join('/'), await serverStoreOptions());
-    return {
+    return pageShare({
       title: category.name,
-      description: category.description ?? undefined,
-      alternates: { canonical: `/category/${slug.join('/')}` },
-    };
+      description: categoryMetaDescription(category.slug, category.name, category.description),
+      path: `/category/${slug.join('/')}`,
+      images: category.image ? [{ url: category.image }] : undefined,
+    });
   } catch (error) {
     if (error instanceof StoreApiError && error.status === 404) {
       notFound();

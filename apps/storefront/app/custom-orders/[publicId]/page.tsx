@@ -4,10 +4,20 @@ import { storeApi } from '../../../lib/api';
 import { serverStoreOptions } from '../../../lib/server-options';
 import { StoreApiError } from '../../../lib/errors';
 import { CustomOrderStatusView } from './status-view';
+import { pageShare } from '../../../lib/page-meta';
 
-export const metadata: Metadata = {
-  title: 'Custom order',
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ publicId: string }>;
+}): Promise<Metadata> {
+  const { publicId } = await params;
+  return pageShare({
+    title: 'Custom order',
+    description: 'Track your Jerzyfy custom jersey enquiry.',
+    path: `/custom-orders/${publicId}`,
+  });
+}
 
 export default async function CustomOrderPublicPage({
   params,

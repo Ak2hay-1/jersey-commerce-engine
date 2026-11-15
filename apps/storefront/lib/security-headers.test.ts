@@ -20,6 +20,7 @@ describe('storefront security headers', () => {
     expect(csp).toContain('https://cloudflareinsights.com');
     expect(csp).toContain('https://connect.facebook.net');
     expect(csp).toContain('https://www.facebook.com');
+    expect(csp).toContain('https://graph.facebook.com');
     expect(csp).toContain("object-src 'none'");
   });
 

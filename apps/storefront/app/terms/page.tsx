@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ContactLine, LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
+import { pageShare } from '../../lib/page-meta';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageShare({
   title: 'Terms of service',
   description: 'The terms that apply when you shop with us.',
-  alternates: { canonical: '/terms' },
-};
+  path: '/terms',
+});
 
 export default async function TermsPage(): Promise<React.JSX.Element> {
   const contact = await loadLegalContact();

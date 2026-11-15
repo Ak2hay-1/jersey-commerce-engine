@@ -120,7 +120,12 @@ export default function LoginPage(): React.JSX.Element {
               <Input id="email" type="email" autoComplete="username" placeholder="owner@example.com" className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div>
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="password">Password</Label>
+                <a href="/forgot-password" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                  Forgot password?
+                </a>
+              </div>
               <PasswordInput id="password" autoComplete="current-password" className="mt-1" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             {!isSingleTenantMode() && shops.length !== 1 ? (

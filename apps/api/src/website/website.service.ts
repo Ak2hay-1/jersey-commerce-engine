@@ -2,17 +2,16 @@ import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '../prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { assertFound } from '../common/http/assert-found';
 import { AuditService } from '../audit/audit.service';
 import { AUDIT_ACTIONS } from '../audit/audit-actions';
 import type { AuthPrincipal } from '../common/context/request-context';
 import { OBJECT_STORAGE, type ObjectStorage } from '../storage/storage.types';
 import {
   ALLOWED_IMAGE_MIME_TYPES,
-  extensionForMime,
   IMAGE_MAX_BYTES,
   sniffImageMime,
 } from '../storage/image-validation';
+import { optimizeImageToWebp } from '../storage/image-optimize';
 import { toChromeConfig, toHomepageConfig, toFooterConfig } from '../store/store-catalog.mapper';
 import type { UpdateWebsiteSettingsDto } from './dto/website-mutations.dto';
 
@@ -26,11 +25,19 @@ export class WebsiteService {
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
+  /** Ensure a WebsiteSettings row exists (fresh empty DBs may have none after tenant bootstrap). */
+  async ensureSettings(tenantId: string) {
+    const existing = await this.prisma.websiteSettings.findUnique({ where: { tenantId } });
+    if (existing) {
+      return existing;
+    }
+    return this.prisma.websiteSettings.create({
+      data: { tenantId },
+    });
+  }
+
   async getSettings(tenantId: string) {
-    const settings = assertFound(
-      await this.prisma.websiteSettings.findUnique({ where: { tenantId } }),
-      'Website settings not found',
-    );
+    const settings = await this.ensureSettings(tenantId);
     return {
       ...settings,
       footerConfig: toFooterConfig(settings.footerConfig),
@@ -39,7 +46,7 @@ export class WebsiteService {
   }
 
   async updateSettings(tenantId: string, dto: UpdateWebsiteSettingsDto, actor: AuthPrincipal) {
-    const existing = await this.getSettings(tenantId);
+    const existing = await this.ensureSettings(tenantId);
     const homepageConfig = dto.homepageConfig
       ? (toHomepageConfig(dto.homepageConfig) as unknown as Prisma.InputJsonValue)
       : undefined;
@@ -62,6 +69,8 @@ export class WebsiteService {
         contactPhone: dto.contactPhone === undefined ? undefined : dto.contactPhone,
         contactEmail: dto.contactEmail === undefined ? undefined : dto.contactEmail,
         contactAddress: dto.contactAddress === undefined ? undefined : dto.contactAddress,
+        grievanceOfficerName: dto.grievanceOfficerName === undefined ? undefined : dto.grievanceOfficerName,
+        grievanceOfficerEmail: dto.grievanceOfficerEmail === undefined ? undefined : dto.grievanceOfficerEmail,
         logo: dto.logo === undefined ? undefined : dto.logo,
         favicon: dto.favicon === undefined ? undefined : dto.favicon,
         primaryColor: dto.primaryColor === undefined ? undefined : dto.primaryColor,
@@ -112,8 +121,14 @@ export class WebsiteService {
     if (!sniffed || !ALLOWED_IMAGE_MIME_TYPES.includes(sniffed)) {
       throw new BadRequestException('Only JPEG, PNG, and WEBP images are allowed.');
     }
-    const key = `${tenantId}/website/${randomUUID()}.${extensionForMime(sniffed)}`;
-    const stored = await this.storage.put({ tenantId, key, body: file.buffer, contentType: sniffed });
+    const optimized = await optimizeImageToWebp(file.buffer);
+    const key = `${tenantId}/website/${randomUUID()}.${optimized.extension}`;
+    const stored = await this.storage.put({
+      tenantId,
+      key,
+      body: optimized.buffer,
+      contentType: optimized.contentType,
+    });
     await this.audit.log({
       action: AUDIT_ACTIONS.WEBSITE_MEDIA_UPLOADED,
       tenantId,

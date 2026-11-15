@@ -19,10 +19,10 @@ import { toCategoryDetail } from '../catalog/catalog.mapper';
 import { OBJECT_STORAGE, type ObjectStorage } from '../storage/storage.types';
 import {
   ALLOWED_IMAGE_MIME_TYPES,
-  extensionForMime,
   IMAGE_MAX_BYTES,
   sniffImageMime,
 } from '../storage/image-validation';
+import { optimizeImageToWebp } from '../storage/image-optimize';
 import type { CreateCategoryDto, UpdateCategoryDto, CategoryQueryDto } from './dto/category-mutations.dto';
 import type { AuthPrincipal } from '../common/context/request-context';
 
@@ -233,8 +233,14 @@ export class CategoriesService {
     const tenantId = this.tenantContext.currentTenantId;
     const existing = await this.requireCategory(id);
     const previousKey = categoryStorageKeyFromUrl(existing.image, tenantId);
-    const key = `${tenantId}/categories/${existing.id}/${randomUUID()}.${extensionForMime(sniffed)}`;
-    const stored = await this.storage.put({ tenantId, key, body: file.buffer, contentType: sniffed });
+    const optimized = await optimizeImageToWebp(file.buffer);
+    const key = `${tenantId}/categories/${existing.id}/${randomUUID()}.${optimized.extension}`;
+    const stored = await this.storage.put({
+      tenantId,
+      key,
+      body: optimized.buffer,
+      contentType: optimized.contentType,
+    });
 
     const updated = await this.prisma.category.update({
       where: { id: existing.id },

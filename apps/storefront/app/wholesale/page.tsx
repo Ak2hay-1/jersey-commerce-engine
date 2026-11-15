@@ -4,17 +4,22 @@ import { Button } from '@jersey-commerce/ui';
 import { storeApi } from '../../lib/api';
 import { serverStoreOptions } from '../../lib/server-options';
 import { CustomOrderEnquiryForm } from '../../components/custom-orders/enquiry-form';
+import { pageShare } from '../../lib/page-meta';
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const store = await storeApi.bootstrap(await serverStoreOptions());
-    return {
+    return pageShare({
       title: 'Wholesale Jerseys',
       description: `Wholesale football jerseys for retailers, academies, and resellers from ${store.tenant.name}.`,
-      alternates: { canonical: '/wholesale' },
-    };
+      path: '/wholesale',
+    });
   } catch {
-    return { title: 'Wholesale Jerseys' };
+    return pageShare({
+      title: 'Wholesale Jerseys',
+      description: 'Wholesale football jerseys for retailers, academies, and resellers from Jerzyfy.',
+      path: '/wholesale',
+    });
   }
 }
 

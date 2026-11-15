@@ -26,17 +26,19 @@ if ! command -v nginx >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! curl -fsS "http://127.0.0.1:4000/health" >/dev/null 2>&1; then
-  echo "Jerzyfy API not healthy on 127.0.0.1:4000 — run prod-up-cohost.sh first."
+if ! curl -fsS "http://127.0.0.1:4100/health" >/dev/null 2>&1; then
+  echo "Jerzyfy API not healthy on 127.0.0.1:4100 — run prod-up-cohost.sh first."
   exit 1
 fi
+
+ACME_EMAIL="${ACME_EMAIL:-}"
 
 echo "==> Installing nginx site for ${API_HOST}"
 # First-time install: use HTTP-only snippet so certbot can obtain certs before ssl_* paths exist.
 TMP="$(mktemp)"
 cat >"$TMP" <<EOF
 upstream jerzyfy_api {
-    server 127.0.0.1:4000;
+    server 127.0.0.1:4100;
     keepalive 32;
 }
 
@@ -88,9 +90,15 @@ systemctl reload nginx
 
 if command -v certbot >/dev/null 2>&1; then
   echo "==> Requesting/renewing certificate for ${API_HOST}"
-  certbot --nginx -d "${API_HOST}" --non-interactive --agree-tos --redirect \
-    --register-unsafely-without-email || \
-  certbot --nginx -d "${API_HOST}" --non-interactive --agree-tos --redirect
+  if [[ -n "${ACME_EMAIL}" ]]; then
+    certbot --nginx -d "${API_HOST}" --non-interactive --agree-tos --redirect \
+      -m "${ACME_EMAIL}" || \
+    certbot --nginx -d "${API_HOST}" --non-interactive --agree-tos --redirect -m "${ACME_EMAIL}"
+  else
+    certbot --nginx -d "${API_HOST}" --non-interactive --agree-tos --redirect \
+      --register-unsafely-without-email || \
+    certbot --nginx -d "${API_HOST}" --non-interactive --agree-tos --redirect
+  fi
 else
   echo "certbot not installed — obtain TLS manually, then enable HTTPS."
 fi

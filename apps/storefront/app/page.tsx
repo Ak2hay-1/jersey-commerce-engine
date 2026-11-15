@@ -20,6 +20,7 @@ import {
 } from '../components/home/homepage-sections';
 import { CinematicHero } from '../components/home/cinematic-hero';
 import { storeApi } from '../lib/api';
+import { HOME_TITLE, pageShare } from '../lib/page-meta';
 
 const PRODUCT_SECTIONS: ReadonlyArray<HomepageSection['type']> = ['featured-products', 'best-sellers', 'new-arrivals'];
 
@@ -55,33 +56,25 @@ export async function generateMetadata(): Promise<Metadata> {
       cachedBootstrap(key),
       cachedFeatured(key).catch(() => [] as StorefrontProductListItem[]),
     ]);
-    const title = store.website.seoTitle || store.tenant.name;
+    const seoTitle = store.website.seoTitle?.trim();
+    const title = !seoTitle || seoTitle === store.tenant.name ? HOME_TITLE : seoTitle;
     const description =
       store.website.seoDescription || 'Shop club, national, kids, and custom football jerseys at Jerzyfy.';
     const image = featured[0]?.primaryImage?.url || store.theme.logo || store.theme.favicon;
-    return {
+    return pageShare({
       title,
       description,
-      alternates: { canonical: '/' },
-      openGraph: {
-        type: 'website',
-        url: '/',
-        title,
-        description,
-        images: image ? [{ url: image }] : undefined,
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title,
-        description,
-        images: image ? [image] : undefined,
-      },
-    };
+      path: '/',
+      absoluteTitle: true,
+      images: image ? [{ url: image }] : undefined,
+    });
   } catch {
-    return {
-      title: 'Store',
+    return pageShare({
+      title: HOME_TITLE,
       description: 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
-    };
+      path: '/',
+      absoluteTitle: true,
+    });
   }
 }
 

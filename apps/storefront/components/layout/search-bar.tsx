@@ -59,20 +59,27 @@ export function SearchBar({ onNavigate }: { onNavigate?: () => void }): React.JS
 
   return (
     <div ref={box} className="relative w-full">
-      <form onSubmit={submit} role="search">
+      <form onSubmit={submit} role="search" className="relative">
         <label htmlFor="store-search" className="sr-only">
           Search products
         </label>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           id="store-search"
+          type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => (suggestions.length > 0 || searched) && setOpen(true)}
-          placeholder="Search tees, kits, brands"
-          className="h-10 pl-9 text-base md:text-sm"
+          placeholder="Search kits, clubs, brands"
+          className="h-10 pl-9 pr-16 text-base md:text-sm"
           autoComplete="off"
         />
+        <button
+          type="submit"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+        >
+          Go
+        </button>
       </form>
       <AnimatePresence>
         {showList ? (

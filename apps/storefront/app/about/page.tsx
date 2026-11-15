@@ -6,20 +6,25 @@ import { fallbackStore } from '../../lib/fallback-store';
 import { Magnetic } from '../../components/motion/magnetic';
 import { Reveal } from '../../components/motion/reveal';
 import { SplitHeading } from '../../components/motion/split-heading';
+import { pageShare } from '../../lib/page-meta';
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const options = await serverStoreOptions();
     const store = await cachedBootstrap(tenantKey(options));
-    return {
+    return pageShare({
       title: store.website.footer.aboutTitle || 'About',
       description:
         store.website.footer.aboutBody?.slice(0, 160) ||
-        `${store.tenant.name} — football jerseys for club, national, kids, and custom kits.`,
-      alternates: { canonical: '/about' },
-    };
+        `${store.tenant.name} — football jerseys for club, national, and custom kits.`,
+      path: '/about',
+    });
   } catch {
-    return { title: 'About' };
+    return pageShare({
+      title: 'About',
+      description: 'Jerzyfy — football jerseys for club, national, and custom kits.',
+      path: '/about',
+    });
   }
 }
 
@@ -44,7 +49,7 @@ export default async function AboutPage(): Promise<React.JSX.Element> {
   const paragraphs = aboutBody
     ? aboutBody.split(/\n+/).map((part) => part.trim()).filter(Boolean)
     : [
-        `Welcome to ${name}. We sell football jerseys only — club kits, national colours, kids sizes, and blank customs ready for name and number.`,
+        `Welcome to ${name}. We sell football jerseys only — club kits, national colours, and blank customs ready for name and number.`,
         'Every jersey is cut for match day and everyday wear: breathable knits, durable prints, and silhouettes that sit between the stands and the street.',
         'Replica-inspired kits. Fan-first fit. Built to wear hard beyond the final whistle.',
       ];

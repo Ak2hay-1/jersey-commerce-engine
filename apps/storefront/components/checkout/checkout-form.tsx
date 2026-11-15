@@ -21,6 +21,7 @@ import { PromoCodeField } from '../cart/promo-code-field';
 import { Alert } from '../ui/alert';
 import { Input } from '../ui/input';
 import { EmptyState } from '../ui/empty-state';
+import { LoadingSkeleton } from '../ui/loading-skeleton';
 import { blockingCheckoutIssues } from '../../lib/checkout';
 import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
 import { ConsentNotice } from '../legal/consent-notice';
@@ -123,7 +124,7 @@ export function CheckoutForm(): React.JSX.Element {
   const razorpayEnabled = store.payments?.razorpay ?? false;
   const codEnabled = store.payments?.cod ?? false;
   const razorpayKeyId = store.payments?.razorpayKeyId ?? null;
-  const { cart, refresh } = useCart();
+  const { cart, refresh, loading: cartLoading } = useCart();
   const { customer } = useAuth();
   const [step, setStep] = useState(0);
   const [name, setName] = useState(customer?.name ?? '');
@@ -177,6 +178,21 @@ export function CheckoutForm(): React.JSX.Element {
   const canPayOnline = razorpayEnabled;
   const canPayCod = codEnabled && method === 'DELIVERY';
   const checkoutAvailable = canPayOnline || canPayCod;
+  const checkoutUnavailableReason = !checkoutAvailable
+    ? method === 'STORE_PICKUP' && codEnabled && !razorpayEnabled
+      ? 'Online payment is required for store pickup. Enable Razorpay in Admin → Settings → Payments, or choose home delivery if COD is available.'
+      : 'Online checkout is not configured yet. Enable Razorpay with a Key ID and secret in Admin → Settings → Payments (or turn on COD under Shipping).'
+    : null;
+
+  if (cartLoading) {
+    return (
+      <div className="mx-auto max-w-store space-y-4 store-gutter py-10" aria-busy="true">
+        <LoadingSkeleton className="h-12 w-48" />
+        <LoadingSkeleton className="h-40 w-full" />
+        <LoadingSkeleton className="h-40 w-full" />
+      </div>
+    );
+  }
 
   if (!cart || cart.items.length === 0) {
     return <EmptyState title="Your cart is empty" description="Add a piece before checking out." actionHref="/products" actionLabel="Shop products" />;
@@ -466,12 +482,13 @@ export function CheckoutForm(): React.JSX.Element {
             ) : null}
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            {paymentMethod === 'COD'
-              ? 'Pay the courier when your order arrives. COD is collected by Delhivery.'
-              : razorpayEnabled
-                ? 'Pay securely with UPI, cards, or net banking via Razorpay. Your order is confirmed once payment succeeds.'
-                : 'Online checkout is being set up. Contact the store if you need help placing an order.'}
+            {checkoutUnavailableReason
+              ? checkoutUnavailableReason
+              : paymentMethod === 'COD'
+                ? 'Pay the courier when your order arrives. COD is collected by Delhivery.'
+                : 'Pay securely with UPI, cards, or net banking via Razorpay. Your order is confirmed once payment succeeds.'}
           </p>
+          {checkoutUnavailableReason ? <Alert tone="warning">{checkoutUnavailableReason}</Alert> : null}
           <button
             type="submit"
             className="btn btn-lg btn-primary w-full cursor-pointer"

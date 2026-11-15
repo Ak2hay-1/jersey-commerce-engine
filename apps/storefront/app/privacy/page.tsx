@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ContactLine, LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
+import { pageShare } from '../../lib/page-meta';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageShare({
   title: 'Privacy policy',
   description: 'How we collect, use, share, and protect your personal data.',
-  alternates: { canonical: '/privacy' },
-};
+  path: '/privacy',
+});
 
 export default async function PrivacyPage(): Promise<React.JSX.Element> {
   const contact = await loadLegalContact();

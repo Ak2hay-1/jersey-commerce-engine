@@ -34,6 +34,8 @@ interface WebsiteSettings {
   contactPhone?: string | null;
   contactEmail?: string | null;
   contactAddress?: string | null;
+  grievanceOfficerName?: string | null;
+  grievanceOfficerEmail?: string | null;
   logo?: string | null;
   favicon?: string | null;
   primaryColor?: string | null;
@@ -250,6 +252,8 @@ export default function WebsitePage(): React.JSX.Element {
         contactPhone: settings?.contactPhone,
         contactEmail: settings?.contactEmail,
         contactAddress: settings?.contactAddress,
+        grievanceOfficerName: settings?.grievanceOfficerName,
+        grievanceOfficerEmail: settings?.grievanceOfficerEmail,
         socialLinks: Object.fromEntries(
           Object.entries(socialLinks)
             .map(([key, value]) => [key, value.trim()])
@@ -300,6 +304,8 @@ export default function WebsitePage(): React.JSX.Element {
           contactPhone: settings?.contactPhone,
           contactEmail: settings?.contactEmail,
           contactAddress: settings?.contactAddress,
+          grievanceOfficerName: settings?.grievanceOfficerName,
+          grievanceOfficerEmail: settings?.grievanceOfficerEmail,
           logo: settings?.logo ?? null,
           favicon: settings?.favicon ?? null,
           primaryColor: settings?.primaryColor ?? null,
@@ -519,6 +525,35 @@ export default function WebsitePage(): React.JSX.Element {
                     disabled={!canEdit}
                     onChange={(event) =>
                       setSettings((current) => (current ? { ...current, contactAddress: event.target.value } : current))
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="grievanceOfficerName">Grievance officer name</Label>
+                  <Input
+                    id="grievanceOfficerName"
+                    value={settings?.grievanceOfficerName ?? ''}
+                    disabled={!canEdit}
+                    placeholder="Shown on /grievance"
+                    onChange={(event) =>
+                      setSettings((current) =>
+                        current ? { ...current, grievanceOfficerName: event.target.value } : current,
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="grievanceOfficerEmail">Grievance officer email</Label>
+                  <Input
+                    id="grievanceOfficerEmail"
+                    type="email"
+                    value={settings?.grievanceOfficerEmail ?? ''}
+                    disabled={!canEdit}
+                    placeholder="Defaults to contact email if empty"
+                    onChange={(event) =>
+                      setSettings((current) =>
+                        current ? { ...current, grievanceOfficerEmail: event.target.value } : current,
+                      )
                     }
                   />
                 </div>

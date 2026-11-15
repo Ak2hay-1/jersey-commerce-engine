@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
+import { pageShare } from '../../lib/page-meta';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageShare({
   title: 'Grievance officer',
   description: 'How to raise a complaint about an order, our service, or your personal data.',
-  alternates: { canonical: '/grievance' },
-};
+  path: '/grievance',
+});
 
 export default async function GrievancePage(): Promise<React.JSX.Element> {
   const contact = await loadLegalContact();

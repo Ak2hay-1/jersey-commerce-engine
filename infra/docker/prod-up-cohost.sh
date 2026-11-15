@@ -52,10 +52,10 @@ echo "==> Building api"
 echo "==> Starting stack (postgres, redis, api) — no Caddy"
 "${COMPOSE[@]}" up -d postgres redis api
 
-echo "==> Waiting for API health on loopback (http://127.0.0.1:4000/health)"
+echo "==> Waiting for API health on loopback (http://127.0.0.1:4100/health)"
 for i in $(seq 1 60); do
-  if curl -fsS "http://127.0.0.1:4000/health" >/dev/null 2>&1; then
-    echo "API is healthy on 127.0.0.1:4000."
+  if curl -fsS "http://127.0.0.1:4100/health" >/dev/null 2>&1; then
+    echo "API is healthy on 127.0.0.1:4100."
     if curl -fsS "https://${API_HOST}/health" >/dev/null 2>&1; then
       echo "Public https://${API_HOST}/health is also OK (nginx + cert ready)."
     else
@@ -66,6 +66,6 @@ for i in $(seq 1 60); do
   sleep 5
 done
 
-echo "Stack started but http://127.0.0.1:4000/health is not ready yet."
+echo "Stack started but http://127.0.0.1:4100/health is not ready yet."
 echo "Check: ${COMPOSE[*]} logs api"
 exit 1

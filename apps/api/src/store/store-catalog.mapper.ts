@@ -322,7 +322,7 @@ export function defaultHomepageConfig(): HomepageConfig {
       {
         type: 'hero',
         enabled: true,
-        heading: 'New collection launched',
+        heading: 'Football Jerseys 2026/27',
         subheading: 'Streetwear cut for the stands. Kits cut for the street.',
         ctaLabel: 'Shop the drop',
         ctaHref: '/products',
@@ -330,7 +330,7 @@ export function defaultHomepageConfig(): HomepageConfig {
       {
         type: 'statement',
         enabled: true,
-        heading: 'THE TREND IS IN U',
+        heading: 'Football Jerseys 2026/27',
         subheading: 'Cut for the stands. Lived on the street.',
       },
       { type: 'new-arrivals', enabled: true, heading: 'Latest drop' },
@@ -338,7 +338,7 @@ export function defaultHomepageConfig(): HomepageConfig {
         type: 'promo-banner',
         enabled: true,
         heading: 'Premium',
-        subheading: 'Experience unparalleled quality and timeless design. Each piece is crafted to elevate everyday style.',
+        subheading: 'Replica-inspired football jerseys with durable knits and match-day fit.',
       },
       { type: 'featured-products', enabled: true, heading: 'Featured products' },
       { type: 'featured-categories', enabled: true, heading: 'Premium collection' },
@@ -349,15 +349,15 @@ export function defaultHomepageConfig(): HomepageConfig {
         items: [
           { title: 'Free delivery', description: 'Complimentary delivery on orders above ₹2,000.' },
           { title: 'Secure checkout', description: 'Pay safely online with Razorpay.' },
-          { title: 'Quality fabrics', description: 'GSM-first fabrics and durable prints.' },
+          { title: 'Quality fabrics', description: 'Breathable knits and durable prints.' },
           { title: 'Easy returns', description: 'Contact the store if a piece does not fit as expected.' },
         ],
       },
       {
         type: 'cta',
         enabled: true,
-        heading: 'Find your drop',
-        subheading: 'Browse oversized tees, match kits, and custom pieces.',
+        heading: 'Find your kit',
+        subheading: 'Browse club kits, national colours, and custom pieces.',
         ctaLabel: 'Browse the catalog',
         ctaHref: '/products',
       },
@@ -480,6 +480,8 @@ export function toWebsiteSettings(settings: {
   contactPhone: string | null;
   contactEmail: string | null;
   contactAddress: string | null;
+  grievanceOfficerName?: string | null;
+  grievanceOfficerEmail?: string | null;
   socialLinks: unknown;
   businessHours: unknown;
   seoTitle: string | null;
@@ -496,6 +498,8 @@ export function toWebsiteSettings(settings: {
     contactPhone: settings.contactPhone,
     contactEmail: settings.contactEmail,
     contactAddress: settings.contactAddress,
+    grievanceOfficerName: settings.grievanceOfficerName ?? null,
+    grievanceOfficerEmail: settings.grievanceOfficerEmail ?? null,
     socialLinks,
     businessHours: typeof settings.businessHours === 'object' && settings.businessHours !== null
       ? (settings.businessHours as Record<string, unknown>)
@@ -541,6 +545,8 @@ export function toBootstrap(input: {
     contactPhone: string | null;
     contactEmail: string | null;
     contactAddress: string | null;
+    grievanceOfficerName?: string | null;
+    grievanceOfficerEmail?: string | null;
     socialLinks: unknown;
     businessHours: unknown;
     seoTitle: string | null;

@@ -3,6 +3,7 @@ import { storeApi } from '../../../lib/api';
 import { serverStoreOptions } from '../../../lib/server-options';
 import { cachedBootstrap, cachedCategories, tenantKey } from '../../../lib/cached-store';
 import { CatalogLayout, type CatalogChip } from '../../../components/catalog/catalog-layout';
+import { pageShare, PRODUCTS_DESCRIPTION } from '../../../lib/page-meta';
 
 type Search = {
   search?: string;
@@ -15,13 +16,13 @@ type Search = {
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
   const query = await searchParams;
   const title = query.search ? `Search: ${query.search}` : 'Products';
-  return {
+  return pageShare({
     title,
     description: query.search
       ? `Football jerseys matching “${query.search}” at Jerzyfy.`
-      : 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
-    alternates: { canonical: '/products' },
-  };
+      : PRODUCTS_DESCRIPTION,
+    path: '/products',
+  });
 }
 
 export default async function ProductsPage({

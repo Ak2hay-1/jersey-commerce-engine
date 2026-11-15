@@ -452,11 +452,16 @@ export default function ProductDetailPage(): React.JSX.Element {
         title={isNew ? 'Add product' : product?.name ?? 'Product'}
         description={product ? `${statusLabel(product.status)} · ${product.variants.length} variants` : undefined}
         actions={
-          showStockPanel ? (
+          <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
-              <a href="#stock-by-size">Set stock</a>
+              <Link href="/products">Cancel</Link>
             </Button>
-          ) : null
+            {showStockPanel ? (
+              <Button asChild variant="outline">
+                <a href="#stock-by-size">Set stock</a>
+              </Button>
+            ) : null}
+          </div>
         }
       />
       <FormError>{error}</FormError>
@@ -791,11 +796,16 @@ export default function ProductDetailPage(): React.JSX.Element {
               ))}
             </div>
 
-            {canSave ? (
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Saving…' : 'Save product'}
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <Button asChild type="button" variant="outline">
+                <Link href="/products">Cancel</Link>
               </Button>
-            ) : null}
+              {canSave ? (
+                <Button type="submit" disabled={saving}>
+                  {saving ? 'Saving…' : 'Save product'}
+                </Button>
+              ) : null}
+            </div>
           </form>
         </CardContent>
       </Card>

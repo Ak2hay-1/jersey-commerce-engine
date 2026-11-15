@@ -46,7 +46,7 @@ export function buildContentSecurityPolicy(env: NodeJS.ProcessEnv = process.env)
     'img-src': "'self' data: blob: https:" + (api?.startsWith('http:') ? ` ${api}` : ''),
     'media-src': `'self' blob: ${extra([api])}`.trim(),
     'font-src': "'self' data:",
-    'connect-src': `'self' ${extra([api, sentry, razorpay, 'https://cloudflareinsights.com', 'https://www.facebook.com', 'https://connect.facebook.net'])}${isDev ? ' ws: http://localhost:4000' : ''}`.trim(),
+    'connect-src': `'self' ${extra([api, sentry, razorpay, 'https://cloudflareinsights.com', 'https://www.facebook.com', 'https://connect.facebook.net', 'https://graph.facebook.com'])}${isDev ? ' ws: http://localhost:4000' : ''}`.trim(),
     'frame-src': `'self' ${razorpay}`,
     'frame-ancestors': `'self' ${frameAncestorOrigins(env).join(' ')}`,
     'form-action': `'self' ${razorpay}`,

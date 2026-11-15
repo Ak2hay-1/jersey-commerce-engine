@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Plus } from 'lucide-react';
 import { cn } from '@jersey-commerce/ui';
@@ -8,13 +8,65 @@ import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
 
 export const OPEN_ACCORDION_EVENT = 'pdp:open-accordion';
 
-type Item = { id: string; title: string; body: string };
+type Item = { id: string; title: string; body: ReactNode };
+
+const SIZE_CHART = [
+  { size: 'S', chest: '96–101', length: '70' },
+  { size: 'M', chest: '102–107', length: '72' },
+  { size: 'L', chest: '108–113', length: '74' },
+  { size: 'XL', chest: '114–119', length: '76' },
+  { size: 'XXL', chest: '120–125', length: '78' },
+] as const;
+
+function SizeGuideBody(): React.JSX.Element {
+  return (
+    <div className="space-y-4">
+      <p>
+        Our jerseys follow a regular athletic replica fit — true to size for most fans. Prefer a looser street look?
+        Size up. Between sizes? Choose the larger size for comfort across the chest and shoulders.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[18rem] border-collapse text-left text-sm">
+          <caption className="sr-only">Jersey size chart in centimetres</caption>
+          <thead>
+            <tr className="border-b border-white/15 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              <th scope="col" className="py-2 pr-3 font-semibold">
+                Size
+              </th>
+              <th scope="col" className="py-2 pr-3 font-semibold">
+                Chest (cm)
+              </th>
+              <th scope="col" className="py-2 font-semibold">
+                Length (cm)
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {SIZE_CHART.map((row) => (
+              <tr key={row.size} className="border-b border-white/10">
+                <th scope="row" className="py-2.5 pr-3 font-semibold text-foreground">
+                  {row.size}
+                </th>
+                <td className="tabular py-2.5 pr-3">{row.chest}</td>
+                <td className="tabular py-2.5">{row.length}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Measure a favourite jersey flat: chest is armpit to armpit × 2; length is from the high point of the shoulder to
+        the hem.
+      </p>
+    </div>
+  );
+}
 
 const STATIC_ITEMS: Item[] = [
   {
     id: 'fit',
     title: 'Size & fit',
-    body: 'Our jerseys follow a regular athletic replica fit — true to size for most fans. Prefer a looser street look? Size up. Between sizes? Choose the larger size for comfort across the chest and shoulders.',
+    body: <SizeGuideBody />,
   },
   {
     id: 'care',
@@ -85,7 +137,7 @@ export function ProductAccordions({ description }: { description?: string | null
                   transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
                   className="overflow-hidden"
                 >
-                  <p className="whitespace-pre-line pb-5 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                  <div className="whitespace-pre-line pb-5 text-sm leading-relaxed text-muted-foreground">{item.body}</div>
                 </motion.div>
               ) : null}
             </AnimatePresence>

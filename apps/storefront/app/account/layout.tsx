@@ -2,8 +2,14 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { RequireCustomer } from '../../components/account/require-customer';
 import { AccountNav } from '../../components/account/account-nav';
+import { pageShare } from '../../lib/page-meta';
 
-export const metadata: Metadata = { title: 'Account' };
+export const metadata: Metadata = pageShare({
+  title: 'Account',
+  description: 'Your Jerzyfy orders and profile.',
+  path: '/account',
+  noIndex: true,
+});
 
 export default function AccountLayout({ children }: { children: ReactNode }): React.JSX.Element {
   return (

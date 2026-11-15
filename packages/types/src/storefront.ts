@@ -148,8 +148,8 @@ export const DEFAULT_STOREFRONT_FOOTER: StorefrontFooter = {
   aboutBody: '',
   materialsTitle: 'What materials we use',
   materials: [
-    'Premium cotton and French terry for oversized tees.',
     'Breathable knits for replica-inspired match kits.',
+    'Durable prints built for match day and everyday wear.',
     'Low-impact dyes and non-toxic prints wherever possible.',
     'Pieces built to be worn hard, washed often, and kept.',
   ],
@@ -188,6 +188,8 @@ export interface StorefrontWebsiteSettings {
   contactPhone: string | null;
   contactEmail: string | null;
   contactAddress: string | null;
+  grievanceOfficerName: string | null;
+  grievanceOfficerEmail: string | null;
   socialLinks: StorefrontSocialLinks;
   businessHours: Record<string, unknown> | null;
   seoTitle: string | null;

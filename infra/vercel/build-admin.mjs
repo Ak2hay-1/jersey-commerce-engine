@@ -27,7 +27,13 @@ if (!apiUrl) {
   process.exit(1);
 }
 
-const storefrontUrl = (process.env.NEXT_PUBLIC_STOREFRONT_URL || '').trim().replace(/\/$/, '');
+// Prefer env; default to the live Jerzyfy storefront so "Open live site" never ships as localhost.
+const storefrontUrl = (
+  process.env.NEXT_PUBLIC_STOREFRONT_URL ||
+  (process.env.NEXT_PUBLIC_SINGLE_TENANT === 'false' ? '' : 'https://www.jerzyfy.in')
+)
+  .trim()
+  .replace(/\/$/, '');
 
 function run(command, args, env = {}) {
   const result = spawnSync(command, args, {

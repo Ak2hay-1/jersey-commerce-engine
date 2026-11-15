@@ -6,8 +6,9 @@ import 'lenis/dist/lenis.css';
 
 export function SmoothScroll({ children }: { children: ReactNode }): React.JSX.Element {
   useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (media.matches) {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const desktop = window.matchMedia('(pointer: fine) and (min-width: 1024px)');
+    if (reduceMotion.matches || !desktop.matches) {
       return;
     }
     const lenis = new Lenis({
