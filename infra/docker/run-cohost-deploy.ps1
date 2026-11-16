@@ -49,7 +49,8 @@ bash infra/docker/prod-up-cohost.sh
 docker compose -f infra/docker/docker-compose.api.yml -f infra/docker/docker-compose.cohost.yml --env-file infra/docker/.env.production exec -T postgres \
   psql -U jersey -d jersey_commerce -c \
   "UPDATE tenants SET shipping_calculation_mode = 'FIXED', shipping_fixed_amount = 99, free_shipping_min_subtotal = 2000 WHERE slug = '$TenantSlug';" || true
-curl -fsS "http://127.0.0.1:4000/health"
+# Cohost publishes the API on host loopback 4100 (see docker-compose.cohost.yml).
+curl -fsS "http://127.0.0.1:4100/health"
 curl -fsS "https://$ApiHost/health" || echo "(public health not ready — check nginx/DNS)"
 "@
 
