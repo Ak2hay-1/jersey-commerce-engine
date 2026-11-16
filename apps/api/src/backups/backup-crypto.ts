@@ -1,4 +1,11 @@
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scryptSync,
+} from 'node:crypto';
+import { createReadStream, createWriteStream, promises as fs } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 
 /**
  * Encrypted backup layout: MAGIC | salt(16) | iv(12) | authTag(16) | ciphertext.
@@ -11,7 +18,20 @@ const TAG_BYTES = 16;
 const HEADER_BYTES = MAGIC.length + SALT_BYTES + IV_BYTES + TAG_BYTES;
 const MIN_KEY_LENGTH = 32;
 
+/** Legacy JSON shop snapshot. */
 export const ENCRYPTED_BACKUP_EXTENSION = '.json.gz.enc';
+/** Full-app crash-recovery package (pg_dump + uploads). */
+export const ENCRYPTED_APP_BACKUP_EXTENSION = '.app.tar.gz.enc';
+export const APP_BACKUP_EXTENSION = '.app.tar.gz';
+
+export function isBackupArtifactName(name: string): boolean {
+  return (
+    name.endsWith('.json.gz') ||
+    name.endsWith(ENCRYPTED_BACKUP_EXTENSION) ||
+    name.endsWith(APP_BACKUP_EXTENSION) ||
+    name.endsWith(ENCRYPTED_APP_BACKUP_EXTENSION)
+  );
+}
 
 function deriveKey(secret: string, salt: Buffer): Buffer {
   if (secret.length < MIN_KEY_LENGTH) {
@@ -43,4 +63,67 @@ export function decryptBackup(data: Buffer, secret: string): Buffer {
   const decipher = createDecipheriv('aes-256-gcm', deriveKey(secret, salt), iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(data.subarray(offset)), decipher.final()]);
+}
+
+/**
+ * Stream-encrypt a file into the same JZBK1 envelope without loading the whole payload into RAM.
+ * Writes a placeholder auth tag, then seeks back to fill it after the ciphertext is finalized.
+ */
+export async function encryptBackupFile(
+  inputPath: string,
+  outputPath: string,
+  secret: string,
+): Promise<void> {
+  const salt = randomBytes(SALT_BYTES);
+  const iv = randomBytes(IV_BYTES);
+  const cipher = createCipheriv('aes-256-gcm', deriveKey(secret, salt), iv);
+  const header = Buffer.concat([MAGIC, salt, iv, Buffer.alloc(TAG_BYTES)]);
+
+  const headerHandle = await fs.open(outputPath, 'w', 0o600);
+  try {
+    await headerHandle.write(header);
+  } finally {
+    await headerHandle.close();
+  }
+
+  const out = createWriteStream(outputPath, { flags: 'a', mode: 0o600 });
+  await pipeline(createReadStream(inputPath), cipher, out);
+
+  const tag = cipher.getAuthTag();
+  const handle = await fs.open(outputPath, 'r+');
+  try {
+    await handle.write(tag, 0, TAG_BYTES, MAGIC.length + SALT_BYTES + IV_BYTES);
+  } finally {
+    await handle.close();
+  }
+}
+
+/** Stream-decrypt a JZBK1 file to a plain output path. */
+export async function decryptBackupFile(
+  inputPath: string,
+  outputPath: string,
+  secret: string,
+): Promise<void> {
+  const handle = await fs.open(inputPath, 'r');
+  let header: Buffer;
+  try {
+    header = Buffer.alloc(HEADER_BYTES);
+    const { bytesRead } = await handle.read(header, 0, HEADER_BYTES, 0);
+    if (bytesRead < HEADER_BYTES || !header.subarray(0, MAGIC.length).equals(MAGIC)) {
+      throw new Error('Not a Jerzyfy encrypted backup file.');
+    }
+  } finally {
+    await handle.close();
+  }
+
+  let offset = MAGIC.length;
+  const salt = header.subarray(offset, (offset += SALT_BYTES));
+  const iv = header.subarray(offset, (offset += IV_BYTES));
+  const tag = header.subarray(offset, (offset += TAG_BYTES));
+  const decipher = createDecipheriv('aes-256-gcm', deriveKey(secret, salt), iv);
+  decipher.setAuthTag(tag);
+
+  const out = createWriteStream(outputPath, { mode: 0o600 });
+  const input = createReadStream(inputPath, { start: HEADER_BYTES });
+  await pipeline(input, decipher, out);
 }

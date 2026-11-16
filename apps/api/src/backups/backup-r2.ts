@@ -4,8 +4,9 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { createReadStream, promises as fs } from 'node:fs';
 import path from 'node:path';
-import { ENCRYPTED_BACKUP_EXTENSION } from './backup-crypto';
+import { isBackupArtifactName } from './backup-crypto';
 
 export interface R2BackupConfig {
   endpoint: string;
@@ -51,10 +52,7 @@ export function backupObjectPrefix(tenantSlug: string): string {
 }
 
 function isBackupObjectName(name: string, slugPrefix: string): boolean {
-  return (
-    name.startsWith(slugPrefix) &&
-    (name.endsWith('.json.gz') || name.endsWith(ENCRYPTED_BACKUP_EXTENSION))
-  );
+  return name.startsWith(slugPrefix) && isBackupArtifactName(name);
 }
 
 export function createR2BackupClient(config: R2BackupConfig): S3Client {
@@ -81,6 +79,26 @@ export async function putBackupObject(
       Key: key,
       Body: body,
       ContentType: 'application/octet-stream',
+      ContentLength: body.byteLength,
+    }),
+  );
+}
+
+/** Upload a backup file from disk (avoids loading large app packages entirely as a second Buffer copy when possible). */
+export async function putBackupObjectFromFile(
+  client: S3Client,
+  config: R2BackupConfig,
+  key: string,
+  filePath: string,
+): Promise<void> {
+  const stats = await fs.stat(filePath);
+  await client.send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: createReadStream(filePath),
+      ContentType: 'application/octet-stream',
+      ContentLength: stats.size,
     }),
   );
 }

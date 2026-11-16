@@ -1,5 +1,8 @@
 /**
- * Restores a Jerzyfy backup into an EMPTY database (after `prisma migrate deploy`).
+ * Restores a legacy Jerzyfy JSON shop snapshot into an EMPTY database (after `prisma migrate deploy`).
+ *
+ * For full-app crash recovery (.app.tar.gz / .app.tar.gz.enc), use:
+ *   infra/docker/restore-app-backup.sh
  *
  * Usage:
  *   DATABASE_URL=... [BACKUP_ENCRYPTION_KEY=...] npm run backup:restore -w @jersey-commerce/api -- <backup file> [--confirm]

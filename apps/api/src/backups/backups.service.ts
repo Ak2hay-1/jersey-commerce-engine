@@ -13,9 +13,9 @@ import {
   toPaginationMeta,
   type PaginationQueryDto,
 } from '../common/dto/pagination-query.dto';
-import { backupFileName, buildTenantBackupPayload, compressBackupPayload } from './backup-exporter';
 import { assertSafeBackupPath } from './backup-path';
-import { ENCRYPTED_BACKUP_EXTENSION, encryptBackup } from './backup-crypto';
+import { isBackupArtifactName } from './backup-crypto';
+import { buildFullAppBackup } from './backup-app-package';
 import {
   AUTO_ENABLE_BACKUP_PATH,
   shouldAutoEnableBackupSettings,
@@ -24,11 +24,15 @@ import {
   backupObjectKey,
   createR2BackupClient,
   pruneR2Backups,
-  putBackupObject,
+  putBackupObjectFromFile,
   resolveR2BackupConfig,
 } from './backup-r2';
 import { computeNextRunAt, DEFAULT_SCHEDULE_TIME } from './backup-schedule';
 import type { UpdateBackupSettingsDto } from './dto/update-backup-settings.dto';
+
+function uploadsRoot(): string {
+  return process.env.MEDIA_LOCAL_ROOT?.trim() || path.join(process.cwd(), 'uploads');
+}
 
 const STALE_RUN_MS = 2 * 60 * 60 * 1000;
 const inFlight = new Set<string>();
@@ -373,15 +377,18 @@ export class BackupsService {
       if (!encryptionKey && process.env.NODE_ENV === 'production') {
         throw new Error('BACKUP_ENCRYPTION_KEY is not configured; refusing to write an unencrypted backup.');
       }
-      const payload = await buildTenantBackupPayload(this.prisma, tenantId);
-      const compressed = encryptionKey
-        ? encryptBackup(compressBackupPayload(payload), encryptionKey)
-        : compressBackupPayload(payload);
-      const fileName = backupFileName(tenant.slug, new Date(), Boolean(encryptionKey));
-      const filePath = path.join(destinationPath, fileName);
-      const partialPath = `${filePath}.partial`;
-      await fs.writeFile(partialPath, compressed, { mode: 0o600 });
-      await fs.rename(partialPath, filePath);
+      const databaseUrl = (this.config.get('DATABASE_URL', { infer: true }) ?? '').trim();
+      if (!databaseUrl) {
+        throw new Error('DATABASE_URL is not configured; cannot create a full-app backup.');
+      }
+
+      const artifact = await buildFullAppBackup({
+        databaseUrl,
+        uploadsRoot: uploadsRoot(),
+        tenantSlug: tenant.slug,
+        destinationPath,
+        encryptionKey: encryptionKey || null,
+      });
 
       const r2Config = resolveR2BackupConfig({
         R2_ACCOUNT_ID: this.config.get('R2_ACCOUNT_ID', { infer: true }) ?? '',
@@ -393,8 +400,8 @@ export class BackupsService {
       let r2ObjectKey: string | null = null;
       if (r2Config) {
         const client = createR2BackupClient(r2Config);
-        r2ObjectKey = backupObjectKey(tenant.slug, fileName);
-        await putBackupObject(client, r2Config, r2ObjectKey, compressed);
+        r2ObjectKey = backupObjectKey(tenant.slug, artifact.fileName);
+        await putBackupObjectFromFile(client, r2Config, r2ObjectKey, artifact.filePath);
         try {
           await pruneR2Backups(client, r2Config, tenant.slug, settings.retainCopies);
         } catch (pruneError) {
@@ -421,9 +428,9 @@ export class BackupsService {
           where: { id: run.id },
           data: {
             status: 'SUCCESS',
-            fileName,
-            filePath,
-            fileSizeBytes: compressed.byteLength,
+            fileName: artifact.fileName,
+            filePath: artifact.filePath,
+            fileSizeBytes: artifact.fileSizeBytes,
             finishedAt,
           },
         }),
@@ -439,9 +446,11 @@ export class BackupsService {
             entityId: run.id,
             newValue: {
               trigger,
-              fileName,
-              filePath,
-              fileSizeBytes: compressed.byteLength,
+              fileName: artifact.fileName,
+              filePath: artifact.filePath,
+              fileSizeBytes: artifact.fileSizeBytes,
+              format: artifact.manifest.format,
+              version: artifact.manifest.version,
               ...(r2ObjectKey ? { r2ObjectKey, r2Bucket: r2Config!.bucket } : {}),
             },
           },
@@ -504,9 +513,7 @@ export class BackupsService {
     try {
       const names = await fs.readdir(destinationPath);
       const files = names
-        .filter(
-          (name) => name.startsWith(prefix) && (name.endsWith('.json.gz') || name.endsWith(ENCRYPTED_BACKUP_EXTENSION)),
-        )
+        .filter((name) => name.startsWith(prefix) && isBackupArtifactName(name))
         .map((name) => ({ name, fullPath: path.join(destinationPath, name) }));
       const withStats = await Promise.all(
         files.map(async (file) => {

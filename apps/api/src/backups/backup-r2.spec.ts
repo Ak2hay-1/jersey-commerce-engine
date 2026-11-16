@@ -1,4 +1,4 @@
-import { ENCRYPTED_BACKUP_EXTENSION } from './backup-crypto';
+import { ENCRYPTED_APP_BACKUP_EXTENSION, ENCRYPTED_BACKUP_EXTENSION } from './backup-crypto';
 import {
   backupObjectKey,
   backupObjectPrefix,
@@ -59,6 +59,9 @@ describe('backupObjectKey / backupObjectPrefix', () => {
     expect(backupObjectKey('Demo Jersey Store!', `jersey-Demo-Jersey-Store-2026${ENCRYPTED_BACKUP_EXTENSION}`)).toBe(
       `backups/Demo-Jersey-Store/jersey-Demo-Jersey-Store-2026${ENCRYPTED_BACKUP_EXTENSION}`,
     );
+    expect(
+      backupObjectKey('Demo Jersey Store!', `jersey-Demo-Jersey-Store-2026${ENCRYPTED_APP_BACKUP_EXTENSION}`),
+    ).toBe(`backups/Demo-Jersey-Store/jersey-Demo-Jersey-Store-2026${ENCRYPTED_APP_BACKUP_EXTENSION}`);
   });
 
   it('uses only the basename of the file name', () => {

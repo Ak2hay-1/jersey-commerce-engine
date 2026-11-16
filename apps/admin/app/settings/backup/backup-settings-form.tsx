@@ -159,9 +159,10 @@ export function BackupSettingsForm(): React.JSX.Element {
             </Badge>
           </div>
           <CardDescription>
-            Save an encrypted copy of all shop data to a folder on the API server. When Cloudflare R2 is
-            configured on the server, each run is also uploaded offsite. Time of day uses{' '}
-            {auth.tenant?.timezone ?? 'the tenant timezone'}.
+            Save an encrypted full-app backup (Postgres database dump plus catalogue and media uploads)
+            to a folder on the API server. Use this to rebuild Jerzyfy from scratch after a crash. When
+            Cloudflare R2 is configured on the server, each run is also uploaded offsite. Time of day
+            uses {auth.tenant?.timezone ?? 'the tenant timezone'}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -185,8 +186,9 @@ export function BackupSettingsForm(): React.JSX.Element {
             />
             <span className="mt-1 block text-xs font-normal text-muted-foreground">
               Absolute path on the API server (Docker: <code>/backups</code>). Offsite copies go to the
-              private R2 bucket configured via <code>R2_*</code> env on the API — restore still uses a
-              downloaded file plus <code>backup:decrypt</code> / <code>backup:restore</code>.
+              private R2 bucket configured via <code>R2_*</code> env on the API. Rebuild from scratch
+              with <code>infra/docker/restore-app-backup.sh</code> after <code>backup:decrypt</code> if
+              needed. Legacy JSON snapshots still use <code>backup:restore</code>.
             </span>
           </label>
 

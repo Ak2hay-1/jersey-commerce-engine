@@ -1,5 +1,14 @@
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { decryptBackup, encryptBackup, isEncryptedBackup } from './backup-crypto';
+import {
+  decryptBackup,
+  decryptBackupFile,
+  encryptBackup,
+  encryptBackupFile,
+  isEncryptedBackup,
+} from './backup-crypto';
 import { backupFileName, compressBackupPayload } from './backup-exporter';
 
 const KEY = 'k'.repeat(48);
@@ -38,4 +47,28 @@ describe('backup-crypto', () => {
     expect(backupFileName('demo-jersey-store', at, true)).toMatch(/\.json\.gz\.enc$/);
     expect(backupFileName('demo-jersey-store', at)).toMatch(/\.json\.gz$/);
   });
+
+  it(
+    'stream-encrypts and decrypts a file with the same envelope',
+    async () => {
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'jerzyfy-crypto-'));
+      const plainPath = path.join(dir, 'plain.bin');
+      const encPath = path.join(dir, 'plain.bin.enc');
+      const outPath = path.join(dir, 'out.bin');
+      const payload = Buffer.alloc(64 * 1024, 0x5a);
+      payload.write('jerzyfy-full-app-backup', 0);
+      try {
+        await fs.writeFile(plainPath, payload);
+        await encryptBackupFile(plainPath, encPath, KEY);
+        const encrypted = await fs.readFile(encPath);
+        expect(isEncryptedBackup(encrypted)).toBe(true);
+        expect(encrypted.includes(Buffer.from('jerzyfy-full-app-backup'))).toBe(false);
+        await decryptBackupFile(encPath, outPath, KEY);
+        expect(await fs.readFile(outPath)).toEqual(payload);
+      } finally {
+        await fs.rm(dir, { recursive: true, force: true });
+      }
+    },
+    15_000,
+  );
 });
