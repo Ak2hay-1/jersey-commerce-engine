@@ -27,6 +27,8 @@ const SHOP_LINKS = [
   { href: '/products', label: 'All products' },
   { href: '/custom-orders', label: 'Customize' },
   { href: '/wholesale', label: 'Wholesale' },
+  { href: '/quality-check', label: 'Quality Check' },
+  { href: '/size-chart', label: 'Size Chart' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
   { href: '/account', label: 'Account' },

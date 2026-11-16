@@ -4,27 +4,18 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Plus } from 'lucide-react';
 import { cn } from '@jersey-commerce/ui';
+import { DEFAULT_STOREFRONT_GUIDES, type StorefrontGuidesConfig } from '@jersey-commerce/types';
 import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
+import { useStore } from '../providers/store-provider';
 
 export const OPEN_ACCORDION_EVENT = 'pdp:open-accordion';
 
 type Item = { id: string; title: string; body: ReactNode };
 
-const SIZE_CHART = [
-  { size: 'S', chest: '96–101', length: '70' },
-  { size: 'M', chest: '102–107', length: '72' },
-  { size: 'L', chest: '108–113', length: '74' },
-  { size: 'XL', chest: '114–119', length: '76' },
-  { size: 'XXL', chest: '120–125', length: '78' },
-] as const;
-
-function SizeGuideBody(): React.JSX.Element {
+function SizeGuideBody({ guides }: { guides: StorefrontGuidesConfig }): React.JSX.Element {
   return (
     <div className="space-y-4">
-      <p>
-        Our jerseys follow a regular athletic replica fit — true to size for most fans. Prefer a looser street look?
-        Size up. Between sizes? Choose the larger size for comfort across the chest and shoulders.
-      </p>
+      <p>{guides.sizeChartIntro}</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[18rem] border-collapse text-left text-sm">
           <caption className="sr-only">Jersey size chart in centimetres</caption>
@@ -42,7 +33,7 @@ function SizeGuideBody(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {SIZE_CHART.map((row) => (
+            {guides.sizeChartRows.map((row) => (
               <tr key={row.size} className="border-b border-white/10">
                 <th scope="row" className="py-2.5 pr-3 font-semibold text-foreground">
                   {row.size}
@@ -54,20 +45,12 @@ function SizeGuideBody(): React.JSX.Element {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Measure a favourite jersey flat: chest is armpit to armpit × 2; length is from the high point of the shoulder to
-        the hem.
-      </p>
+      {guides.sizeChartNote ? <p className="text-xs text-muted-foreground">{guides.sizeChartNote}</p> : null}
     </div>
   );
 }
 
-const STATIC_ITEMS: Item[] = [
-  {
-    id: 'fit',
-    title: 'Size & fit',
-    body: <SizeGuideBody />,
-  },
+const CARE_ITEMS: Item[] = [
   {
     id: 'care',
     title: 'Care instructions',
@@ -91,10 +74,19 @@ export function openProductAccordion(id: string): void {
 }
 
 export function ProductAccordions({ description }: { description?: string | null }): React.JSX.Element {
-  const items = useMemo<Item[]>(
-    () => (description?.trim() ? [{ id: 'details', title: 'Details', body: description.trim() }, ...STATIC_ITEMS] : STATIC_ITEMS),
-    [description],
-  );
+  const store = useStore();
+  const guides = store.website.chrome?.guides ?? DEFAULT_STOREFRONT_GUIDES;
+  const items = useMemo<Item[]>(() => {
+    const fitItem: Item = {
+      id: 'fit',
+      title: 'Size & fit',
+      body: <SizeGuideBody guides={guides} />,
+    };
+    const staticItems = [fitItem, ...CARE_ITEMS];
+    return description?.trim()
+      ? [{ id: 'details', title: 'Details', body: description.trim() }, ...staticItems]
+      : staticItems;
+  }, [description, guides]);
   const [open, setOpen] = useState<string | null>(items[0]?.id ?? null);
   const reduced = useReducedMotion();
 

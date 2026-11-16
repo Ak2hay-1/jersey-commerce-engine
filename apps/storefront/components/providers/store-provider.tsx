@@ -58,6 +58,7 @@ function mergeBootstrap(base: StorefrontBootstrap, draft: CustomizerDraftPayload
       draft.website?.chrome?.headerNav?.length
         ? draft.website.chrome.headerNav
         : (base.website.chrome?.headerNav ?? DEFAULT_STOREFRONT_CHROME.headerNav),
+    guides: draft.website?.chrome?.guides ?? base.website.chrome?.guides ?? DEFAULT_STOREFRONT_CHROME.guides,
   };
   const footer: StorefrontFooter = {
     ...DEFAULT_STOREFRONT_FOOTER,

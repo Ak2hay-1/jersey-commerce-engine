@@ -9,6 +9,9 @@ import type {
   StorefrontChromeConfig,
   StorefrontCustomer,
   StorefrontFooter,
+  StorefrontGuidesConfig,
+  StorefrontQualityTier,
+  StorefrontSizeChartRow,
   StorefrontProductDetail,
   StorefrontProductListItem,
   StorefrontTheme,
@@ -17,7 +20,12 @@ import type {
   StorefrontAuthMethods,
   StorefrontPaymentMethods,
 } from '@jersey-commerce/types';
-import { DEFAULT_STOREFRONT_CHROME, DEFAULT_STOREFRONT_FOOTER, HOMEPAGE_SECTION_TYPES } from '@jersey-commerce/types';
+import {
+  DEFAULT_STOREFRONT_CHROME,
+  DEFAULT_STOREFRONT_FOOTER,
+  DEFAULT_STOREFRONT_GUIDES,
+  HOMEPAGE_SECTION_TYPES,
+} from '@jersey-commerce/types';
 import { sortUniqueSizes } from '@jersey-commerce/utils';
 import { availableQuantity } from '../inventory/inventory-math';
 import { toCategorySummary, toImageDto } from '../catalog/catalog.mapper';
@@ -417,9 +425,101 @@ export function toFooterConfig(value: unknown): StorefrontFooter {
   };
 }
 
+function toQualityTier(value: unknown): StorefrontQualityTier[] {
+  if (!Array.isArray(value)) {
+    return DEFAULT_STOREFRONT_GUIDES.qualityTiers.map((tier) => ({
+      ...tier,
+      bullets: [...tier.bullets],
+    }));
+  }
+  const tiers = value
+    .map((item, index) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+      const row = item as Record<string, unknown>;
+      const id = typeof row.id === 'string' ? row.id.trim().slice(0, 64) : `tier-${index + 1}`;
+      const title = typeof row.title === 'string' ? row.title.trim().slice(0, 120) : '';
+      const intro = typeof row.intro === 'string' ? row.intro.trim().slice(0, 600) : '';
+      const closing = typeof row.closing === 'string' ? row.closing.trim().slice(0, 400) : '';
+      const bullets = Array.isArray(row.bullets)
+        ? row.bullets
+            .filter((bullet): bullet is string => typeof bullet === 'string')
+            .map((bullet) => bullet.trim().slice(0, 200))
+            .filter(Boolean)
+            .slice(0, 12)
+        : [];
+      if (!title) {
+        return null;
+      }
+      return { id: id || `tier-${index + 1}`, title, intro, bullets, closing };
+    })
+    .filter((item): item is StorefrontQualityTier => Boolean(item))
+    .slice(0, 8);
+  return tiers.length
+    ? tiers
+    : DEFAULT_STOREFRONT_GUIDES.qualityTiers.map((tier) => ({
+        ...tier,
+        bullets: [...tier.bullets],
+      }));
+}
+
+function toSizeChartRows(value: unknown): StorefrontSizeChartRow[] {
+  if (!Array.isArray(value)) {
+    return DEFAULT_STOREFRONT_GUIDES.sizeChartRows.map((row) => ({ ...row }));
+  }
+  const rows = value
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+      const row = item as Record<string, unknown>;
+      const size = typeof row.size === 'string' ? row.size.trim().slice(0, 16) : '';
+      const chest = typeof row.chest === 'string' ? row.chest.trim().slice(0, 40) : '';
+      const length = typeof row.length === 'string' ? row.length.trim().slice(0, 40) : '';
+      if (!size || !chest || !length) {
+        return null;
+      }
+      return { size, chest, length };
+    })
+    .filter((item): item is StorefrontSizeChartRow => Boolean(item))
+    .slice(0, 16);
+  return rows.length ? rows : DEFAULT_STOREFRONT_GUIDES.sizeChartRows.map((row) => ({ ...row }));
+}
+
+export function toGuidesConfig(value: unknown): StorefrontGuidesConfig {
+  if (!value || typeof value !== 'object') {
+    return {
+      ...DEFAULT_STOREFRONT_GUIDES,
+      qualityTiers: DEFAULT_STOREFRONT_GUIDES.qualityTiers.map((tier) => ({
+        ...tier,
+        bullets: [...tier.bullets],
+      })),
+      sizeChartRows: DEFAULT_STOREFRONT_GUIDES.sizeChartRows.map((row) => ({ ...row })),
+    };
+  }
+  const record = value as Record<string, unknown>;
+  return {
+    qualityTiers: toQualityTier(record.qualityTiers),
+    sizeChartIntro:
+      typeof record.sizeChartIntro === 'string' && record.sizeChartIntro.trim()
+        ? record.sizeChartIntro.trim().slice(0, 800)
+        : DEFAULT_STOREFRONT_GUIDES.sizeChartIntro,
+    sizeChartRows: toSizeChartRows(record.sizeChartRows),
+    sizeChartNote:
+      typeof record.sizeChartNote === 'string' && record.sizeChartNote.trim()
+        ? record.sizeChartNote.trim().slice(0, 400)
+        : DEFAULT_STOREFRONT_GUIDES.sizeChartNote,
+  };
+}
+
 export function toChromeConfig(value: unknown): StorefrontChromeConfig {
   if (!value || typeof value !== 'object') {
-    return { ...DEFAULT_STOREFRONT_CHROME, headerNav: [...DEFAULT_STOREFRONT_CHROME.headerNav] };
+    return {
+      ...DEFAULT_STOREFRONT_CHROME,
+      headerNav: [...DEFAULT_STOREFRONT_CHROME.headerNav],
+      guides: toGuidesConfig(DEFAULT_STOREFRONT_GUIDES),
+    };
   }
   const record = value as Record<string, unknown>;
   const messages = Array.isArray(record.announcementMessages)
@@ -449,6 +549,7 @@ export function toChromeConfig(value: unknown): StorefrontChromeConfig {
   return {
     announcementMessages: messages.length ? messages : [...DEFAULT_STOREFRONT_CHROME.announcementMessages],
     headerNav: headerNav.length ? headerNav : [...DEFAULT_STOREFRONT_CHROME.headerNav],
+    guides: toGuidesConfig(record.guides),
   };
 }
 

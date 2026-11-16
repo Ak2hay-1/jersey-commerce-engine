@@ -34,7 +34,8 @@ export type CustomizerPanelId =
   | 'hero'
   | 'sections'
   | 'footer'
-  | 'about';
+  | 'about'
+  | 'guides';
 
 export const CUSTOMIZER_PANELS: Array<{ id: CustomizerPanelId; label: string }> = [
   { id: 'branding', label: 'Branding' },
@@ -46,4 +47,5 @@ export const CUSTOMIZER_PANELS: Array<{ id: CustomizerPanelId; label: string }> 
   { id: 'sections', label: 'Homepage sections' },
   { id: 'footer', label: 'Footer & socials' },
   { id: 'about', label: 'About' },
+  { id: 'guides', label: 'Guides' },
 ];

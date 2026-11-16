@@ -165,9 +165,99 @@ export interface StorefrontHeaderNavItem {
   label: string;
 }
 
+export interface StorefrontQualityTier {
+  id: string;
+  title: string;
+  intro: string;
+  bullets: string[];
+  closing: string;
+}
+
+export interface StorefrontSizeChartRow {
+  size: string;
+  chest: string;
+  length: string;
+}
+
+export interface StorefrontGuidesConfig {
+  qualityTiers: StorefrontQualityTier[];
+  sizeChartIntro: string;
+  sizeChartRows: StorefrontSizeChartRow[];
+  sizeChartNote: string;
+}
+
+export const DEFAULT_STOREFRONT_GUIDES: StorefrontGuidesConfig = {
+  qualityTiers: [
+    {
+      id: 'master',
+      title: 'MASTER / FAN VERSION',
+      intro: 'Everyday match-day quality — the classic fan jersey for stands, street, and training.',
+      bullets: [
+        'Comfortable replica-inspired fabric',
+        'Regular athletic fit',
+        'Durable printed logos & crests',
+        'Breathable for all-day wear',
+        'Great value for weekly wear',
+      ],
+      closing: 'Perfect for fans who want authentic look and everyday comfort without match-day pricing.',
+    },
+    {
+      id: 'player',
+      title: 'PLAYER VERSION {Authentic}',
+      intro: 'The highest quality for modern football jerseys, inspired by what professionals wear on the pitch.',
+      bullets: [
+        'Premium performance fabric',
+        'Lightweight & breathable',
+        'Athletic/slim fit',
+        'Heat-pressed logos & authentic-style detailing',
+        'Premium Thailand imported quality',
+      ],
+      closing: 'Perfect for those who want the closest experience to a professional match jersey.',
+    },
+    {
+      id: 'full-sleeves',
+      title: 'FULL SLEEVES JERSEYS',
+      intro: 'Same kit energy with long sleeves for cooler evenings, travel days, and layered looks.',
+      bullets: [
+        'Full-length sleeves with athletic cut',
+        'Breathable knit that layers well',
+        'True-to-kit colourways & crests',
+        'Comfortable cuff finish',
+        'Works for match day and off-pitch wear',
+      ],
+      closing: 'Choose full sleeves when you want coverage without losing jersey silhouette.',
+    },
+    {
+      id: 'retro',
+      title: 'AUTHENTIC RETRO JERSEYS',
+      intro: 'Classic seasons brought back — heritage colourways, period detailing, and throwback fits.',
+      bullets: [
+        'Season-inspired heritage designs',
+        'Soft, durable fabric with vintage feel',
+        'Period-correct logos & numbering style',
+        'Relaxed to regular retro fit',
+        'Collectible club & national classics',
+      ],
+      closing: 'Built for fans who wear history — iconic kits from seasons that still hit.',
+    },
+  ],
+  sizeChartIntro:
+    'Our jerseys follow a regular athletic replica fit — true to size for most fans. Prefer a looser street look? Size up. Between sizes? Choose the larger size for comfort across the chest and shoulders.',
+  sizeChartRows: [
+    { size: 'S', chest: '96–101', length: '70' },
+    { size: 'M', chest: '102–107', length: '72' },
+    { size: 'L', chest: '108–113', length: '74' },
+    { size: 'XL', chest: '114–119', length: '76' },
+    { size: 'XXL', chest: '120–125', length: '78' },
+  ],
+  sizeChartNote:
+    'Measure a favourite jersey flat: chest is armpit to armpit × 2; length is from the high point of the shoulder to the hem. All measurements in centimetres.',
+};
+
 export interface StorefrontChromeConfig {
   announcementMessages: string[];
   headerNav: StorefrontHeaderNavItem[];
+  guides: StorefrontGuidesConfig;
 }
 
 export const DEFAULT_STOREFRONT_CHROME: StorefrontChromeConfig = {
@@ -182,6 +272,7 @@ export const DEFAULT_STOREFRONT_CHROME: StorefrontChromeConfig = {
     { href: '/custom-orders', label: 'Customize' },
     { href: '/wholesale', label: 'Wholesale' },
   ],
+  guides: DEFAULT_STOREFRONT_GUIDES,
 };
 
 export interface StorefrontWebsiteSettings {

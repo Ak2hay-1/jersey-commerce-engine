@@ -6,6 +6,7 @@ import {
   COLLECTION_TILE_SPEC,
   DEFAULT_STOREFRONT_CHROME,
   DEFAULT_STOREFRONT_FOOTER,
+  DEFAULT_STOREFRONT_GUIDES,
   HERO_BANNER_SPEC,
   HOMEPAGE_SECTION_TYPES,
   type CategoryDetail,
@@ -175,6 +176,18 @@ export default function WebsitePage(): React.JSX.Element {
             nextSettings.chromeConfig?.headerNav?.length
               ? nextSettings.chromeConfig.headerNav
               : DEFAULT_STOREFRONT_CHROME.headerNav,
+          guides: {
+            ...DEFAULT_STOREFRONT_GUIDES,
+            ...(nextSettings.chromeConfig?.guides ?? {}),
+            qualityTiers:
+              nextSettings.chromeConfig?.guides?.qualityTiers?.length
+                ? nextSettings.chromeConfig.guides.qualityTiers
+                : DEFAULT_STOREFRONT_GUIDES.qualityTiers,
+            sizeChartRows:
+              nextSettings.chromeConfig?.guides?.sizeChartRows?.length
+                ? nextSettings.chromeConfig.guides.sizeChartRows
+                : DEFAULT_STOREFRONT_GUIDES.sizeChartRows,
+          },
         });
         setSocialLinks({
           instagram: nextSettings.socialLinks?.instagram ?? '',
@@ -321,6 +334,26 @@ export default function WebsitePage(): React.JSX.Element {
           chromeConfig: {
             announcementMessages: chrome.announcementMessages.map((item) => item.trim()).filter(Boolean),
             headerNav: chrome.headerNav.filter((item) => item.href.trim() && item.label.trim()),
+            guides: {
+              qualityTiers: chrome.guides.qualityTiers
+                .map((tier) => ({
+                  ...tier,
+                  title: tier.title.trim(),
+                  intro: tier.intro.trim(),
+                  closing: tier.closing.trim(),
+                  bullets: tier.bullets.map((bullet) => bullet.trim()).filter(Boolean),
+                }))
+                .filter((tier) => tier.title),
+              sizeChartIntro: chrome.guides.sizeChartIntro.trim(),
+              sizeChartRows: chrome.guides.sizeChartRows
+                .map((row) => ({
+                  size: row.size.trim(),
+                  chest: row.chest.trim(),
+                  length: row.length.trim(),
+                }))
+                .filter((row) => row.size && row.chest && row.length),
+              sizeChartNote: chrome.guides.sizeChartNote.trim(),
+            },
           },
           socialLinks: Object.fromEntries(
             Object.entries(socialLinks)
@@ -335,6 +368,18 @@ export default function WebsitePage(): React.JSX.Element {
       setChrome({
         ...DEFAULT_STOREFRONT_CHROME,
         ...(updated.chromeConfig ?? chrome),
+        guides: {
+          ...DEFAULT_STOREFRONT_GUIDES,
+          ...(updated.chromeConfig?.guides ?? chrome.guides),
+          qualityTiers:
+            updated.chromeConfig?.guides?.qualityTiers?.length
+              ? updated.chromeConfig.guides.qualityTiers
+              : chrome.guides.qualityTiers,
+          sizeChartRows:
+            updated.chromeConfig?.guides?.sizeChartRows?.length
+              ? updated.chromeConfig.guides.sizeChartRows
+              : chrome.guides.sizeChartRows,
+        },
       });
       setSaved('Storefront saved.');
       setRefreshKey((value) => value + 1);
@@ -911,6 +956,253 @@ export default function WebsitePage(): React.JSX.Element {
                     }))
                   }
                 />
+              </div>
+            ) : null}
+
+            {panel === 'guides' ? (
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Quality Check tiers</p>
+                  <p className="text-muted-foreground">Shown on /quality-check. One bullet per line.</p>
+                  {chrome.guides.qualityTiers.map((tier, index) => (
+                    <div key={tier.id || `tier-${index}`} className="space-y-2 rounded border p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Tier {index + 1}
+                      </p>
+                      <Input
+                        value={tier.title}
+                        disabled={!canEdit}
+                        placeholder="Title"
+                        onChange={(event) =>
+                          setChrome((current) => ({
+                            ...current,
+                            guides: {
+                              ...current.guides,
+                              qualityTiers: current.guides.qualityTiers.map((row, i) =>
+                                i === index ? { ...row, title: event.target.value } : row,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      <textarea
+                        className="min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                        value={tier.intro}
+                        disabled={!canEdit}
+                        placeholder="Intro"
+                        onChange={(event) =>
+                          setChrome((current) => ({
+                            ...current,
+                            guides: {
+                              ...current.guides,
+                              qualityTiers: current.guides.qualityTiers.map((row, i) =>
+                                i === index ? { ...row, intro: event.target.value } : row,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      <textarea
+                        className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                        value={tier.bullets.join('\n')}
+                        disabled={!canEdit}
+                        placeholder="Bullets (one per line)"
+                        onChange={(event) =>
+                          setChrome((current) => ({
+                            ...current,
+                            guides: {
+                              ...current.guides,
+                              qualityTiers: current.guides.qualityTiers.map((row, i) =>
+                                i === index
+                                  ? { ...row, bullets: event.target.value.split('\n') }
+                                  : row,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      <textarea
+                        className="min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                        value={tier.closing}
+                        disabled={!canEdit}
+                        placeholder="Closing line"
+                        onChange={(event) =>
+                          setChrome((current) => ({
+                            ...current,
+                            guides: {
+                              ...current.guides,
+                              qualityTiers: current.guides.qualityTiers.map((row, i) =>
+                                i === index ? { ...row, closing: event.target.value } : row,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      {canEdit ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setChrome((current) => ({
+                              ...current,
+                              guides: {
+                                ...current.guides,
+                                qualityTiers: current.guides.qualityTiers.filter((_, i) => i !== index),
+                              },
+                            }))
+                          }
+                        >
+                          Remove tier
+                        </Button>
+                      ) : null}
+                    </div>
+                  ))}
+                  {canEdit ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setChrome((current) => ({
+                          ...current,
+                          guides: {
+                            ...current.guides,
+                            qualityTiers: [
+                              ...current.guides.qualityTiers,
+                              {
+                                id: `tier-${current.guides.qualityTiers.length + 1}`,
+                                title: 'New tier',
+                                intro: '',
+                                bullets: [''],
+                                closing: '',
+                              },
+                            ],
+                          },
+                        }))
+                      }
+                    >
+                      Add tier
+                    </Button>
+                  ) : null}
+                </div>
+
+                <div className="space-y-3 border-t pt-4">
+                  <p className="text-sm font-medium">Size chart</p>
+                  <p className="text-muted-foreground">Shown on /size-chart and product Size &amp; fit.</p>
+                  <textarea
+                    className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                    value={chrome.guides.sizeChartIntro}
+                    disabled={!canEdit}
+                    placeholder="Intro"
+                    onChange={(event) =>
+                      setChrome((current) => ({
+                        ...current,
+                        guides: { ...current.guides, sizeChartIntro: event.target.value },
+                      }))
+                    }
+                  />
+                  {chrome.guides.sizeChartRows.map((row, index) => (
+                    <div key={`size-${index}`} className="grid grid-cols-[4rem_1fr_1fr_auto] gap-2">
+                      <Input
+                        value={row.size}
+                        disabled={!canEdit}
+                        placeholder="Size"
+                        onChange={(event) =>
+                          setChrome((current) => ({
+                            ...current,
+                            guides: {
+                              ...current.guides,
+                              sizeChartRows: current.guides.sizeChartRows.map((item, i) =>
+                                i === index ? { ...item, size: event.target.value } : item,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      <Input
+                        value={row.chest}
+                        disabled={!canEdit}
+                        placeholder="Chest (cm)"
+                        onChange={(event) =>
+                          setChrome((current) => ({
+                            ...current,
+                            guides: {
+                              ...current.guides,
+                              sizeChartRows: current.guides.sizeChartRows.map((item, i) =>
+                                i === index ? { ...item, chest: event.target.value } : item,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      <Input
+                        value={row.length}
+                        disabled={!canEdit}
+                        placeholder="Length (cm)"
+                        onChange={(event) =>
+                          setChrome((current) => ({
+                            ...current,
+                            guides: {
+                              ...current.guides,
+                              sizeChartRows: current.guides.sizeChartRows.map((item, i) =>
+                                i === index ? { ...item, length: event.target.value } : item,
+                              ),
+                            },
+                          }))
+                        }
+                      />
+                      {canEdit ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setChrome((current) => ({
+                              ...current,
+                              guides: {
+                                ...current.guides,
+                                sizeChartRows: current.guides.sizeChartRows.filter((_, i) => i !== index),
+                              },
+                            }))
+                          }
+                        >
+                          Remove
+                        </Button>
+                      ) : null}
+                    </div>
+                  ))}
+                  {canEdit ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setChrome((current) => ({
+                          ...current,
+                          guides: {
+                            ...current.guides,
+                            sizeChartRows: [...current.guides.sizeChartRows, { size: '', chest: '', length: '' }],
+                          },
+                        }))
+                      }
+                    >
+                      Add size row
+                    </Button>
+                  ) : null}
+                  <textarea
+                    className="min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                    value={chrome.guides.sizeChartNote}
+                    disabled={!canEdit}
+                    placeholder="Footnote"
+                    onChange={(event) =>
+                      setChrome((current) => ({
+                        ...current,
+                        guides: { ...current.guides, sizeChartNote: event.target.value },
+                      }))
+                    }
+                  />
+                </div>
               </div>
             ) : null}
           </div>

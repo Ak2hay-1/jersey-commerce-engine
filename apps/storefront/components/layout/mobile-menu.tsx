@@ -18,15 +18,35 @@ const PRIMARY = [
 ];
 
 const WHOLESALE_LINK = { href: '/wholesale', label: 'Wholesale', id: 'wholesale' };
+const QUALITY_CHECK_LINK = { href: '/quality-check', label: 'Quality Check', id: 'quality-check' };
+const SIZE_CHART_LINK = { href: '/size-chart', label: 'Size Chart', id: 'size-chart' };
+
+type NavLink = { href: string; label: string; id: string };
+
+function isNationalJerseysHref(href: string): boolean {
+  return href === '/category/national-jerseys' || href.endsWith('/national-jerseys');
+}
 
 /** CMS-saved header nav predates Wholesale, so slot it in after Customize when missing. */
-function withWholesale<T extends { href: string; label: string; id: string }>(items: T[]): Array<T | typeof WHOLESALE_LINK> {
+function withWholesale(items: NavLink[]): NavLink[] {
   if (items.some((item) => item.href === WHOLESALE_LINK.href)) {
     return items;
   }
   const customIndex = items.findIndex((item) => item.href === '/custom-orders');
   const insertAt = customIndex === -1 ? items.length : customIndex + 1;
   return [...items.slice(0, insertAt), WHOLESALE_LINK, ...items.slice(insertAt)];
+}
+
+/** Append Quality Check / Size Chart when CMS header nav does not include them. */
+function withGuides(items: NavLink[]): NavLink[] {
+  const next = [...items];
+  if (!next.some((item) => item.href === QUALITY_CHECK_LINK.href)) {
+    next.push(QUALITY_CHECK_LINK);
+  }
+  if (!next.some((item) => item.href === SIZE_CHART_LINK.href)) {
+    next.push(SIZE_CHART_LINK);
+  }
+  return next;
 }
 
 export function MobileMenu({
@@ -41,15 +61,18 @@ export function MobileMenu({
   onClose: () => void;
 }): React.JSX.Element {
   const reduced = useReducedMotion();
-  const primary =
+  const primary = withGuides(
     headerNav?.length
       ? withWholesale(headerNav.map((item, index) => ({ ...item, id: `nav-${index}` })))
-      : PRIMARY;
+      : PRIMARY,
+  );
   const extras = navigation
-    .filter((item) => !item.parentId)
+    .filter((item) => !item.parentId && item.slug !== 'national-jerseys')
     .map((item) => ({ href: `/category/${item.slug}`, label: item.name, id: item.id }));
   const seen = new Set(primary.map((item) => item.href));
-  const links = [...primary, ...extras.filter((item) => !seen.has(item.href))];
+  const links = [...primary, ...extras.filter((item) => !seen.has(item.href))].filter(
+    (item) => !isNationalJerseysHref(item.href),
+  );
 
   useEffect(() => {
     if (!open) {

@@ -262,6 +262,86 @@ export class HeaderNavItemDto {
   label!: string;
 }
 
+export class QualityTierDto {
+  @ApiPropertyOptional({ example: 'player' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  id?: string;
+
+  @ApiProperty({ example: 'PLAYER VERSION {Authentic}' })
+  @IsString()
+  @MaxLength(120)
+  title!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(600)
+  intro?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  @MaxLength(200, { each: true })
+  bullets?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  closing?: string;
+}
+
+export class SizeChartRowDto {
+  @ApiProperty({ example: 'M' })
+  @IsString()
+  @MaxLength(16)
+  size!: string;
+
+  @ApiProperty({ example: '102–107' })
+  @IsString()
+  @MaxLength(40)
+  chest!: string;
+
+  @ApiProperty({ example: '72' })
+  @IsString()
+  @MaxLength(40)
+  length!: string;
+}
+
+export class GuidesConfigDto {
+  @ApiPropertyOptional({ type: [QualityTierDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @ValidateNested({ each: true })
+  @Type(() => QualityTierDto)
+  qualityTiers?: QualityTierDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(800)
+  sizeChartIntro?: string;
+
+  @ApiPropertyOptional({ type: [SizeChartRowDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(16)
+  @ValidateNested({ each: true })
+  @Type(() => SizeChartRowDto)
+  sizeChartRows?: SizeChartRowDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  sizeChartNote?: string;
+}
+
 export class ChromeConfigDto {
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -278,6 +358,12 @@ export class ChromeConfigDto {
   @ValidateNested({ each: true })
   @Type(() => HeaderNavItemDto)
   headerNav?: HeaderNavItemDto[];
+
+  @ApiPropertyOptional({ type: GuidesConfigDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => GuidesConfigDto)
+  guides?: GuidesConfigDto;
 }
 
 export class UpdateWebsiteSettingsDto {
