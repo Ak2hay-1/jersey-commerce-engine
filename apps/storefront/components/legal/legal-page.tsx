@@ -22,7 +22,7 @@ export interface LegalContact {
   phone: string | null;
   whatsapp: string | null;
   address: string | null;
-  grievanceOfficerName: string;
+  grievanceOfficerName: string | null;
   grievanceEmail: string | null;
 }
 
@@ -32,8 +32,7 @@ export async function loadLegalContact(): Promise<LegalContact> {
   let phone: string | null = null;
   let whatsapp: string | null = null;
   let address: string | null = null;
-  let grievanceOfficerName =
-    process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME?.trim() || 'Grievance Officer';
+  let grievanceOfficerName = process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME?.trim() || null;
   let grievanceEmail = process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_EMAIL?.trim() || null;
   try {
     const store = await cachedBootstrap(tenantKey(await serverStoreOptions()));
@@ -45,14 +44,13 @@ export async function loadLegalContact(): Promise<LegalContact> {
     grievanceOfficerName =
       store.website.grievanceOfficerName?.trim() ||
       process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME?.trim() ||
-      'Grievance Officer';
+      null;
     grievanceEmail =
       store.website.grievanceOfficerEmail?.trim() ||
       process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_EMAIL?.trim() ||
-      email;
+      null;
   } catch {
     // Policy pages must still render when the API is unreachable.
-    grievanceEmail = grievanceEmail || email;
   }
   return {
     storeName,

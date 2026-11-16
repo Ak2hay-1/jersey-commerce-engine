@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
 import { pageShare } from '../../lib/page-meta';
 
@@ -23,32 +24,59 @@ export default async function GrievancePage(): Promise<React.JSX.Element> {
       }
     >
       <LegalSection title="Contact">
-        <dl className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-          <dt className="font-semibold text-foreground">Name</dt>
-          <dd>{contact.grievanceOfficerName}</dd>
-          <dt className="font-semibold text-foreground">Business</dt>
-          <dd>{contact.storeName}</dd>
-          {contact.grievanceEmail ? (
-            <>
-              <dt className="font-semibold text-foreground">Email</dt>
-              <dd>
-                <a href={`mailto:${contact.grievanceEmail}`} className="text-foreground underline underline-offset-4">
-                  {contact.grievanceEmail}
-                </a>
-              </dd>
-            </>
-          ) : null}
-          {contact.phone ? (
-            <>
-              <dt className="font-semibold text-foreground">Phone</dt>
-              <dd>
-                <a href={`tel:${contact.phone}`} className="text-foreground underline underline-offset-4">
-                  {contact.phone}
-                </a>
-              </dd>
-            </>
-          ) : null}
-        </dl>
+        {contact.grievanceOfficerName || contact.grievanceEmail || contact.phone || contact.email ? (
+          <dl className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+            {contact.grievanceOfficerName ? (
+              <>
+                <dt className="font-semibold text-foreground">Name</dt>
+                <dd>{contact.grievanceOfficerName}</dd>
+              </>
+            ) : null}
+            <dt className="font-semibold text-foreground">Business</dt>
+            <dd>{contact.storeName}</dd>
+            {contact.grievanceEmail ? (
+              <>
+                <dt className="font-semibold text-foreground">Email</dt>
+                <dd>
+                  <a
+                    href={`mailto:${contact.grievanceEmail}`}
+                    className="text-foreground underline underline-offset-4"
+                  >
+                    {contact.grievanceEmail}
+                  </a>
+                </dd>
+              </>
+            ) : null}
+            {contact.phone ? (
+              <>
+                <dt className="font-semibold text-foreground">Phone</dt>
+                <dd>
+                  <a href={`tel:${contact.phone}`} className="text-foreground underline underline-offset-4">
+                    {contact.phone}
+                  </a>
+                </dd>
+              </>
+            ) : null}
+            {!contact.grievanceEmail && contact.email ? (
+              <>
+                <dt className="font-semibold text-foreground">General email</dt>
+                <dd>
+                  <a href={`mailto:${contact.email}`} className="text-foreground underline underline-offset-4">
+                    {contact.email}
+                  </a>
+                </dd>
+              </>
+            ) : null}
+          </dl>
+        ) : (
+          <p>
+            Grievance officer details are being updated. Meanwhile, use the{' '}
+            <Link href="/contact" className="text-foreground underline underline-offset-4">
+              contact page
+            </Link>
+            .
+          </p>
+        )}
       </LegalSection>
 
       <LegalSection title="What to include">
