@@ -12,10 +12,18 @@ import { StoreBootstrapController } from './store-bootstrap.controller';
 import { StoreCatalogController } from './store-catalog.controller';
 import { StoreAuthController } from './store-auth.controller';
 import { StoreGoogleCallbackController } from './store-google-callback.controller';
+import { StoreContactController } from './store-contact.controller';
+import { StoreContactService } from './store-contact.service';
 
 @Module({
   imports: [StoreCoreModule, OrdersModule, AuthSettingsModule],
-  controllers: [StoreBootstrapController, StoreCatalogController, StoreAuthController, StoreGoogleCallbackController],
+  controllers: [
+    StoreBootstrapController,
+    StoreCatalogController,
+    StoreAuthController,
+    StoreGoogleCallbackController,
+    StoreContactController,
+  ],
   providers: [
     StoreCatalogService,
     StoreAuthService,
@@ -23,6 +31,7 @@ import { StoreGoogleCallbackController } from './store-google-callback.controlle
     StoreGoogleAuthService,
     StorePrivacyService,
     StorePasswordResetService,
+    StoreContactService,
   ],
 })
 export class StoreModule {}

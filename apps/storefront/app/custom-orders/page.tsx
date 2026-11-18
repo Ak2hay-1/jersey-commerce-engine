@@ -31,13 +31,16 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
 
   return (
     <div>
-      <section className="bg-foreground text-background">
+      <section className="border-b border-foreground/10 bg-[hsl(var(--surface-1))]">
         <div className="mx-auto grid max-w-store gap-8 store-gutter py-12 md:grid-cols-2 md:py-24">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">Teamwear studio</p>
-            <h1 className="mt-3 break-words font-heading text-[clamp(2rem,9vw,4.5rem)] uppercase leading-[0.9] tracking-wide md:text-7xl">Create Your Team Jersey</h1>
-            <p className="mt-4 max-w-md text-lg text-background/75">
-              Custom kits for clubs, colleges, corporates, and tournaments — names, numbers, logos, and bulk sizes, quoted and produced to order.
+            <h1 className="mt-3 break-words font-heading text-[clamp(2rem,9vw,4.5rem)] uppercase leading-[0.9] tracking-wide md:text-7xl">
+              Create Your Team Jersey
+            </h1>
+            <p className="mt-4 max-w-md text-lg text-muted-foreground">
+              Custom kits for clubs, colleges, corporates, and tournaments — names, numbers, logos, and bulk sizes, quoted
+              and produced to order.
             </p>
             <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90">
               <a href="#enquiry">Start an enquiry</a>
@@ -50,7 +53,7 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
               'Approve the design',
               'Pay a deposit and we start production',
             ].map((item, index) => (
-              <li key={item} className="border border-background/15 px-4 py-3">
+              <li key={item} className="border border-foreground/15 bg-[hsl(var(--surface-2)/0.45)] px-4 py-3">
                 <span className="font-heading text-xl text-accent">0{index + 1}</span>
                 <p className="mt-1">{item}</p>
               </li>
@@ -75,23 +78,26 @@ export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
         </div>
       </section>
 
-      <section className="bg-muted">
+      <section className="border-y border-foreground/10 bg-[hsl(var(--surface-1))]">
         <div className="mx-auto max-w-store store-gutter py-12 md:py-14">
           <h2 className="font-heading text-3xl uppercase tracking-wide">Customization</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {config.customizationOptions.map((option) => (
-              <div key={option.id} className="bg-background p-5">
-                <h3 className="font-heading text-xl uppercase tracking-wide">{option.name}</h3>
-                {option.description ? <p className="mt-2 text-sm text-muted-foreground">{option.description}</p> : null}
-                <p className="mt-3 text-sm">
-                  {option.pricingType === 'PERCENTAGE'
-                    ? `${option.price}%`
-                    : option.pricingType === 'PER_ITEM'
-                      ? `${formatMoney(option.price, currency)} / item`
-                      : formatMoney(option.price, currency)}
-                </p>
-              </div>
-            ))}
+            {config.customizationOptions.map((option) => {
+              const percentLabel = `${Number.parseFloat(option.price)}%`;
+              return (
+                <div key={option.id} className="border border-foreground/15 bg-[hsl(var(--surface-2)/0.45)] p-5">
+                  <h3 className="font-heading text-xl uppercase tracking-wide">{option.name}</h3>
+                  {option.description ? <p className="mt-2 text-sm text-muted-foreground">{option.description}</p> : null}
+                  <p className="mt-3 text-sm">
+                    {option.pricingType === 'PERCENTAGE'
+                      ? percentLabel
+                      : option.pricingType === 'PER_ITEM'
+                        ? `${formatMoney(option.price, currency)} / item`
+                        : formatMoney(option.price, currency)}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

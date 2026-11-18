@@ -386,7 +386,7 @@ export function LoginForm(): React.JSX.Element {
     <AuthShell
       shopName={shopName}
       title="Sign in"
-      subtitle="Welcome back. Pick the sign-in option that works for you."
+      subtitle="Welcome back. Sign in with your email and password."
       footer={
         methods.passwordLogin || methods.emailOtp || methods.smsOtp ? (
           <>

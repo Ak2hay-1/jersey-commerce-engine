@@ -149,6 +149,14 @@ export function CheckoutForm(): React.JSX.Element {
   }, [customer]);
 
   useEffect(() => {
+    setAddress((current) => ({
+      ...current,
+      fullName: name.trim() || current.fullName,
+      phone: phone.trim() || current.phone,
+    }));
+  }, [name, phone]);
+
+  useEffect(() => {
     if (!cart || cart.items.length === 0) {
       return;
     }
@@ -230,7 +238,14 @@ export function CheckoutForm(): React.JSX.Element {
           paymentMethod,
           shippingMode: method === 'DELIVERY' ? shippingMode : undefined,
           customer: { name, email: email || undefined, phone: phone || undefined },
-          shippingAddress: method === 'DELIVERY' ? toShippingDto(address) : undefined,
+          shippingAddress:
+            method === 'DELIVERY'
+              ? toShippingDto({
+                  ...address,
+                  fullName: name.trim() || address.fullName,
+                  phone: phone.trim() || address.phone,
+                })
+              : undefined,
           notes: paymentMethod === 'ONLINE' ? 'ONLINE' : 'COD',
         },
         { idempotencyKey: checkoutKeyForCart(cartId) },
@@ -412,7 +427,7 @@ export function CheckoutForm(): React.JSX.Element {
                 exit={reduced ? { opacity: 0 } : { opacity: 0, y: -6 }}
                 transition={{ duration: MOTION_DURATION, ease: MOTION_EASE }}
               >
-                <AddressForm value={address} onChange={setAddress} />
+                <AddressForm value={address} onChange={setAddress} omitContactFields />
                 {shippingQuote ? (
                   <div className="space-y-3 rounded-[var(--radius)] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
                     <p className={shippingQuote.serviceability.serviceable ? 'text-emerald-300' : 'text-red-300'}>

@@ -346,14 +346,14 @@ async function main(): Promise<void> {
         {
           type: 'marquee',
           enabled: true,
-          heading: 'Club · National · Custom · Kids',
+          heading: 'Club · National · Custom',
           subheading: 'Wear the game · Match day ready',
         },
         {
           type: 'statement',
           enabled: true,
           heading: 'WEAR THE GAME',
-          subheading: 'Club, national, kids, and custom kits.',
+          subheading: 'Club, national, and custom kits.',
         },
         {
           type: 'new-arrivals',
@@ -411,17 +411,17 @@ async function main(): Promise<void> {
       sunday: { open: '11:00', close: '20:00' },
     } as Prisma.InputJsonValue,
     seoTitle: 'Jerzyfy — Football Jerseys',
-    seoDescription: 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
+    seoDescription: 'Shop club, national, and custom football jerseys at Jerzyfy.',
     footerConfig: {
       kicker: 'Jerzyfy',
       heading: 'The game never stops. Neither should your style.',
-      body: 'Jerzyfy is a football jersey store — club kits, national colours, kids sizes, and custom prints.',
+      body: 'Jerzyfy is a football jersey store — club kits, national colours, and custom prints.',
       aboutTitle: 'About us',
       aboutBody: 'Welcome to Jerzyfy. Add your story and product collections from the Admin website settings.',
       materialsTitle: 'What we offer',
       materials: [
         'Club and national team-inspired football jerseys.',
-        'Youth sizes for young fans.',
+        'Adult sizes S–XXL for match day and everyday wear.',
         'Custom name and number printing.',
       ],
       showCollections: false,

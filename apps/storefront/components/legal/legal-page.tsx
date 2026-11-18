@@ -6,7 +6,7 @@ import { fallbackStore } from '../../lib/fallback-store';
 
 // Policy copy is a template pending counsel review (DPDP Act 2023, IT Rules 2021,
 // Consumer Protection (E-Commerce) Rules 2020). Bump this date whenever the text changes.
-export const LEGAL_LAST_UPDATED = '10 October 2026';
+export const LEGAL_LAST_UPDATED = '16 November 2026';
 
 export const LEGAL_LINKS = [
   { href: '/privacy', label: 'Privacy policy' },

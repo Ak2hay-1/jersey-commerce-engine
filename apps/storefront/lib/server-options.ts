@@ -1,9 +1,13 @@
 import { cookies, headers } from 'next/headers';
 import { STORE_COOKIES } from './cookies';
-import { defaultTenantSlug, tenantSlugFromHost } from './tenant';
+import { defaultTenantSlug, isSingleTenantMode, tenantSlugFromHost } from './tenant';
 import type { StoreRequestOptions } from './api';
 
 export async function serverTenantOptions(): Promise<StoreRequestOptions> {
+  // Single-tenant: avoid headers() so marketing pages can stay in the ISR/cache path.
+  if (isSingleTenantMode()) {
+    return { tenantSlug: defaultTenantSlug() };
+  }
   const headerStore = await headers();
   const host = headerStore.get('host');
   const tenantSlug =

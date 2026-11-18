@@ -4,51 +4,14 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Plus } from 'lucide-react';
 import { cn } from '@jersey-commerce/ui';
-import { DEFAULT_STOREFRONT_GUIDES, type StorefrontGuidesConfig } from '@jersey-commerce/types';
+import { DEFAULT_STOREFRONT_GUIDES } from '@jersey-commerce/types';
 import { MOTION_DURATION, MOTION_EASE } from '../motion/presence';
 import { useStore } from '../providers/store-provider';
+import { SizeGuideBody } from './size-guide-dialog';
 
 export const OPEN_ACCORDION_EVENT = 'pdp:open-accordion';
 
 type Item = { id: string; title: string; body: ReactNode };
-
-function SizeGuideBody({ guides }: { guides: StorefrontGuidesConfig }): React.JSX.Element {
-  return (
-    <div className="space-y-4">
-      <p>{guides.sizeChartIntro}</p>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[18rem] border-collapse text-left text-sm">
-          <caption className="sr-only">Jersey size chart in centimetres</caption>
-          <thead>
-            <tr className="border-b border-white/15 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              <th scope="col" className="py-2 pr-3 font-semibold">
-                Size
-              </th>
-              <th scope="col" className="py-2 pr-3 font-semibold">
-                Chest (cm)
-              </th>
-              <th scope="col" className="py-2 font-semibold">
-                Length (cm)
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {guides.sizeChartRows.map((row) => (
-              <tr key={row.size} className="border-b border-white/10">
-                <th scope="row" className="py-2.5 pr-3 font-semibold text-foreground">
-                  {row.size}
-                </th>
-                <td className="tabular py-2.5 pr-3">{row.chest}</td>
-                <td className="tabular py-2.5">{row.length}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {guides.sizeChartNote ? <p className="text-xs text-muted-foreground">{guides.sizeChartNote}</p> : null}
-    </div>
-  );
-}
 
 const CARE_ITEMS: Item[] = [
   {

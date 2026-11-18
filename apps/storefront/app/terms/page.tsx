@@ -34,7 +34,7 @@ export default async function TermsPage(): Promise<React.JSX.Element> {
 
       <LegalSection title="Products and pricing">
         <p>
-          We sell football jerseys, including club, national, kids, and custom kits. Product photos are
+          We sell football jerseys, including club, national, and custom kits. Product photos are
           representative; colours may vary slightly by screen. Prices are in Indian Rupees and include applicable
           GST unless stated otherwise. Shipping charges are shown at checkout.
         </p>

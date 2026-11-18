@@ -7,9 +7,9 @@ import { BadgeCheck, Check, Heart, RotateCcw, Ruler, Share2, Truck } from 'lucid
 import type { StorefrontProductDetail, StorefrontVariant } from '@jersey-commerce/types';
 import { ProductVariantSelector } from './product-variant-selector';
 import { ProductImage } from './product-image';
-import { openProductAccordion } from './product-accordions';
 import { QuantitySelector } from '../ui/quantity-selector';
 import { PriceDisplay } from './price-display';
+import { SizeGuideDialog } from './size-guide-dialog';
 import { useCart } from '../providers/cart-provider';
 import { useWishlist } from '../providers/wishlist-provider';
 import { publicErrorMessage } from '../../lib/errors';
@@ -119,14 +119,17 @@ export function ProductDetailActions({
         selectedId={selected?.id}
         onSelect={setSelected}
         sizeGuide={
-          <button
-            type="button"
-            className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            onClick={() => openProductAccordion('fit')}
-          >
-            <Ruler className="h-3.5 w-3.5" aria-hidden />
-            Size guide
-          </button>
+          <SizeGuideDialog
+            trigger={
+              <button
+                type="button"
+                className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                <Ruler className="h-3.5 w-3.5" aria-hidden />
+                Size guide
+              </button>
+            }
+          />
         }
       />
 

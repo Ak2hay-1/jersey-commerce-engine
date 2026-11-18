@@ -105,6 +105,7 @@ export const AUDIT_ACTIONS = {
   ORDER_STOCK_RESERVED: 'orders.stock.reserved',
   ORDER_STOCK_RELEASED: 'orders.stock.released',
   ORDER_STOCK_CONSUMED: 'orders.stock.consumed',
+  CONTACT_MESSAGE_CREATED: 'contact.message.created',
   CUSTOM_ORDER_ENQUIRY_CREATED: 'custom_orders.enquiry.created',
   CUSTOM_ORDER_CREATED: 'custom_orders.created',
   CUSTOM_ORDER_UPDATED: 'custom_orders.updated',

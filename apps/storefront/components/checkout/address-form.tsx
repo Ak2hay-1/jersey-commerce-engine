@@ -29,9 +29,12 @@ export function emptyAddress(): AddressValue {
 export function AddressForm({
   value,
   onChange,
+  omitContactFields = false,
 }: {
   value: AddressValue;
   onChange: (value: AddressValue) => void;
+  /** When contact name/phone were already collected earlier in checkout. */
+  omitContactFields?: boolean;
 }): React.JSX.Element {
   function field<K extends keyof AddressValue>(key: K) {
     return {
@@ -42,14 +45,18 @@ export function AddressForm({
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
-        Full name
-        <Input required autoComplete="name" {...field('fullName')} />
-      </label>
-      <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
-        Phone
-        <Input required autoComplete="tel" inputMode="tel" {...field('phone')} />
-      </label>
+      {!omitContactFields ? (
+        <>
+          <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
+            Full name
+            <Input required autoComplete="name" {...field('fullName')} />
+          </label>
+          <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
+            Phone
+            <Input required autoComplete="tel" inputMode="tel" {...field('phone')} />
+          </label>
+        </>
+      ) : null}
       <label className="grid gap-1.5 text-sm text-muted-foreground md:col-span-2">
         Address
         <Input required autoComplete="address-line1" {...field('addressLine1')} />

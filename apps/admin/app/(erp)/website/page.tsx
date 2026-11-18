@@ -179,10 +179,11 @@ export default function WebsitePage(): React.JSX.Element {
           guides: {
             ...DEFAULT_STOREFRONT_GUIDES,
             ...(nextSettings.chromeConfig?.guides ?? {}),
-            qualityTiers:
+            qualityTiers: (
               nextSettings.chromeConfig?.guides?.qualityTiers?.length
                 ? nextSettings.chromeConfig.guides.qualityTiers
-                : DEFAULT_STOREFRONT_GUIDES.qualityTiers,
+                : DEFAULT_STOREFRONT_GUIDES.qualityTiers
+            ).filter((tier) => tier.id !== 'full-sleeves'),
             sizeChartRows:
               nextSettings.chromeConfig?.guides?.sizeChartRows?.length
                 ? nextSettings.chromeConfig.guides.sizeChartRows
@@ -371,10 +372,11 @@ export default function WebsitePage(): React.JSX.Element {
         guides: {
           ...DEFAULT_STOREFRONT_GUIDES,
           ...(updated.chromeConfig?.guides ?? chrome.guides),
-          qualityTiers:
+          qualityTiers: (
             updated.chromeConfig?.guides?.qualityTiers?.length
               ? updated.chromeConfig.guides.qualityTiers
-              : chrome.guides.qualityTiers,
+              : chrome.guides.qualityTiers
+          ).filter((tier) => tier.id !== 'full-sleeves'),
           sizeChartRows:
             updated.chromeConfig?.guides?.sizeChartRows?.length
               ? updated.chromeConfig.guides.sizeChartRows

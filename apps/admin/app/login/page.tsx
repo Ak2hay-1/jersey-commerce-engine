@@ -117,7 +117,7 @@ export default function LoginPage(): React.JSX.Element {
           <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="username" placeholder="owner@example.com" className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" autoComplete="username" placeholder="you@jerzyfy.in" className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div>
               <div className="flex items-center justify-between gap-2">

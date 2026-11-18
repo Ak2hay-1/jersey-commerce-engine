@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Facebook, Instagram, MessageCircle, Twitter, Youtube } from 'lucide-react';
+import { ContactForm } from '../../components/contact/contact-form';
 import { loadLegalContact } from '../../components/legal/legal-page';
 import { whatsappHref } from '../../lib/contact';
 import { pageShare } from '../../lib/page-meta';
@@ -94,6 +95,16 @@ export default async function ContactPage(): Promise<React.JSX.Element> {
           Contact details are being updated. Meanwhile, use the grievance officer channel for formal complaints.
         </p>
       ) : null}
+
+      <div className="mt-12 border-t border-foreground/10 pt-10">
+        <h2 className="font-heading text-xl uppercase tracking-wide">Send a message</h2>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+          Tell us about an order, a size question, or a custom kit — we will reply by email.
+        </p>
+        <div className="mt-6 max-w-lg">
+          <ContactForm />
+        </div>
+      </div>
 
       {socialEntries.length > 0 ? (
         <div className="mt-12">

@@ -61,7 +61,7 @@ export default async function ProductsPage({
       kicker={query.search ? 'Search' : 'Catalog'}
       title={query.search ? `“${query.search}”` : 'All jerseys'}
       description={
-        query.search ? undefined : 'Club, national, kids and custom football kits — match-day ready.'
+        query.search ? undefined : 'Club, national, and custom football kits — match-day ready.'
       }
       chips={chips}
       result={result}

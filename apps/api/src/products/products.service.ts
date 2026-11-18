@@ -36,7 +36,10 @@ import { InventoryService } from '../inventory/inventory.service';
 const listInclude = {
   category: true,
   warehouse: true,
-  images: { orderBy: { sortOrder: 'asc' as const } },
+  images: {
+    orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }],
+    take: 1,
+  },
   variants: { select: { sellingPrice: true }, orderBy: { sellingPrice: 'asc' as const } },
 } satisfies Prisma.ProductInclude;
 
@@ -139,24 +142,30 @@ export class ProductsService {
     const totalItems = await this.prisma.product.count({ where });
 
     if (sort === 'price-asc' || sort === 'price-desc') {
-      const priced = await this.prisma.product.findMany({
+      const matching = await this.prisma.product.findMany({
         where,
-        select: {
-          id: true,
-          createdAt: true,
-          variants: { select: { sellingPrice: true }, orderBy: { sellingPrice: 'asc' }, take: 1 },
-        },
+        select: { id: true },
       });
-      priced.sort((a, b) => {
-        const left = a.variants[0]?.sellingPrice ?? new Prisma.Decimal(0);
-        const right = b.variants[0]?.sellingPrice ?? new Prisma.Decimal(0);
-        const compared = new Prisma.Decimal(left).comparedTo(right);
-        if (compared === 0) {
-          return b.createdAt.getTime() - a.createdAt.getTime();
-        }
-        return sort === 'price-asc' ? compared : -compared;
-      });
-      const pageIds = priced.slice(skip, skip + take).map((item) => item.id);
+      if (matching.length === 0) {
+        return { items: [], meta: toPaginationMeta(page, pageSize, totalItems) };
+      }
+      const matchingIds = matching.map((row) => row.id);
+      const direction = sort === 'price-asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+      const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT p.id
+        FROM products p
+        LEFT JOIN LATERAL (
+          SELECT pv.selling_price
+          FROM product_variants pv
+          WHERE pv.product_id = p.id
+          ORDER BY pv.selling_price ASC
+          LIMIT 1
+        ) cheapest ON TRUE
+        WHERE p.id IN (${Prisma.join(matchingIds)})
+        ORDER BY cheapest.selling_price ${direction} NULLS LAST, p.created_at DESC
+        LIMIT ${take} OFFSET ${skip}
+      `;
+      const pageIds = rows.map((row) => row.id);
       const unordered = await this.prisma.product.findMany({
         where: { tenantId, id: { in: pageIds } },
         include: listInclude,

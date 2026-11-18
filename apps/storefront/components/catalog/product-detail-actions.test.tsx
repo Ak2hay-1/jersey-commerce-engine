@@ -10,6 +10,14 @@ vi.mock('../providers/cart-provider', () => ({
   useCart: () => ({ addItem }),
 }));
 
+vi.mock('../providers/wishlist-provider', () => ({
+  useWishlist: () => ({ has: () => false, toggle: vi.fn() }),
+}));
+
+vi.mock('../providers/store-provider', () => ({
+  useStore: () => ({ website: { chrome: null } }),
+}));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
@@ -63,7 +71,7 @@ describe('product detail', () => {
     render(<ProductDetailActions product={product} currency="INR" />);
     expect(screen.getByText(/2,499/)).toBeInTheDocument();
     expect(screen.getByText(/2,999/)).toBeInTheDocument();
-    expect(screen.getByText('Save 17%')).toBeInTheDocument();
+    expect(screen.getByText('−17%')).toBeInTheDocument();
   });
 
   it('requires a variant before adding to cart', async () => {

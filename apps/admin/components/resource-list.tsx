@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Input } from '@jersey-commerce/ui';
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
@@ -33,8 +33,18 @@ export function ResourceList<T>({
   tableClassName,
 }: ResourceListProps<T>): React.JSX.Element {
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const extraKey = JSON.stringify(extraQuery ?? {});
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
   const qs = useMemo(
     () =>
       queryString({
@@ -55,11 +65,8 @@ export function ResourceList<T>({
       <Input
         aria-label="Search"
         placeholder="Search"
-        value={search}
-        onChange={(event) => {
-          setPage(1);
-          setSearch(event.target.value);
-        }}
+        value={searchInput}
+        onChange={(event) => setSearchInput(event.target.value)}
         className="max-w-sm"
       />
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

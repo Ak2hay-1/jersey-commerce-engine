@@ -59,7 +59,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const seoTitle = store.website.seoTitle?.trim();
     const title = !seoTitle || seoTitle === store.tenant.name ? HOME_TITLE : seoTitle;
     const description =
-      store.website.seoDescription || 'Shop club, national, kids, and custom football jerseys at Jerzyfy.';
+      store.website.seoDescription || 'Shop club, national, and custom football jerseys at Jerzyfy.';
     const image = featured[0]?.primaryImage?.url || store.theme.logo || store.theme.favicon;
     return pageShare({
       title,
@@ -71,7 +71,7 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {
     return pageShare({
       title: HOME_TITLE,
-      description: 'Shop club, national, kids, and custom football jerseys at Jerzyfy.',
+      description: 'Shop club, national, and custom football jerseys at Jerzyfy.',
       path: '/',
       absoluteTitle: true,
     });
@@ -184,8 +184,8 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           kicker="Limited edition"
           heading="Master versions"
           subheading="Player-spec fabrics, heat-pressed crests and a match-day cut. The kits the pros wear, built for the stands."
-          ctaLabel="Shop master versions"
-          ctaHref="/products?search=master"
+          ctaLabel="Shop master kits"
+          ctaHref="/products"
           image={cover?.primaryImage?.url}
           imageAlt={cover?.primaryImage?.altText ?? cover?.name}
         />,

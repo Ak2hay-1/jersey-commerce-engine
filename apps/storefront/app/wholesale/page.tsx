@@ -32,7 +32,7 @@ const STEPS = [
 
 const BENEFITS = [
   { title: 'Tiered pricing', body: 'Better per-piece rates as your quantity grows — quoted per order, not a fixed list price.' },
-  { title: 'Size-ratio packs', body: 'Order by size split (S–XXL, kids) so your shelf matches what your customers actually buy.' },
+  { title: 'Size-ratio packs', body: 'Order by size split (S–XXL) so your shelf matches what your customers actually buy.' },
   { title: 'Repeat restocks', body: 'Your enquiries, quotes, and balances stay on one account, so reordering a best-seller is quick.' },
 ];
 
@@ -54,7 +54,7 @@ export default async function WholesalePage(): Promise<React.JSX.Element> {
               Wholesale Jerseys
             </h1>
             <p className="mt-4 max-w-md text-lg text-muted-foreground">
-              Stock club, national, and kids football jerseys for your store, academy, or event — bulk quantities at trade pricing.
+              Stock club, national, and custom football jerseys for your store, academy, or event — bulk quantities at trade pricing.
             </p>
             <Button asChild size="lg" className="mt-8 bg-accent text-accent-foreground hover:bg-accent/90">
               <a href="#enquiry">Request a wholesale quote</a>

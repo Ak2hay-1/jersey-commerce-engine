@@ -456,8 +456,9 @@ function toQualityTier(value: unknown): StorefrontQualityTier[] {
     })
     .filter((item): item is StorefrontQualityTier => Boolean(item))
     .slice(0, 8);
-  return tiers.length
-    ? tiers
+  const filtered = tiers.filter((tier) => tier.id !== 'full-sleeves');
+  return filtered.length
+    ? filtered
     : DEFAULT_STOREFRONT_GUIDES.qualityTiers.map((tier) => ({
         ...tier,
         bullets: [...tier.bullets],

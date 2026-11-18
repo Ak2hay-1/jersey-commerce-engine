@@ -38,7 +38,7 @@ export default async function PrivacyPage(): Promise<React.JSX.Element> {
 
       <LegalSection title="Why we use it">
         <ul className="list-disc space-y-2 pl-5">
-          <li>To create and secure your account, including one-time passcodes sent by email or SMS.</li>
+          <li>To create and secure your account with email and password authentication.</li>
           <li>To process payments, fulfil and ship orders, issue GST invoices, and handle returns.</li>
           <li>To send order, shipping, and invoice updates by email, SMS, or WhatsApp.</li>
           <li>To prevent fraud, enforce our terms, and meet legal, tax, and accounting obligations.</li>
@@ -51,8 +51,7 @@ export default async function PrivacyPage(): Promise<React.JSX.Element> {
         <ul className="list-disc space-y-2 pl-5">
           <li>Razorpay — payment processing.</li>
           <li>Delhivery — shipping and delivery tracking.</li>
-          <li>MSG91 and our email provider — OTP, order, and invoice messages (SMS, WhatsApp, email).</li>
-          <li>Google — only if you choose &ldquo;Sign in with Google&rdquo;.</li>
+          <li>MSG91 and our email provider — order and invoice messages (SMS, WhatsApp, email).</li>
           <li>Meta — advertising measurement via the Meta Pixel on this website.</li>
           <li>Hosting and infrastructure providers that run this website and our servers.</li>
         </ul>
@@ -99,7 +98,6 @@ export default async function PrivacyPage(): Promise<React.JSX.Element> {
       <LegalSection title="Children">
         <p>
           Our store is not directed at children. Accounts must be created and orders placed by an adult (18 or over).
-          Parents or guardians may buy kids&apos; jerseys on behalf of a child.
         </p>
       </LegalSection>
 

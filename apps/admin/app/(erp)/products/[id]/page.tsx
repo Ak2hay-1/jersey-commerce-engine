@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, Input, Label } from '@jersey-commerce/ui';
 import type { CategoryDetail, ProductDetail, ProductVariantDto } from '@jersey-commerce/types';
-import { ADULT_SIZES, KIDS_SIZES } from '@jersey-commerce/utils';
+import { ADULT_SIZES } from '@jersey-commerce/utils';
 import { apiRequest, queryString } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/env';
 import { statusLabel } from '@/lib/format';
@@ -126,6 +126,8 @@ export default function ProductDetailPage(): React.JSX.Element {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [stockRefreshKey, setStockRefreshKey] = useState(0);
+  const [loadingProduct, setLoadingProduct] = useState(!isNew);
+  const [hydrated, setHydrated] = useState(isNew);
 
   useEffect(() => {
     return () => {
@@ -162,19 +164,26 @@ export default function ProductDetailPage(): React.JSX.Element {
     });
   }
 
-  async function loadProduct(id: string): Promise<void> {
-    const row = await apiRequest<ProductDetail>(`/products/${id}`);
-    setProduct(row);
-    setName(row.name);
-    setBrand(row.brand ?? '');
-    setCategoryId(row.category?.id ?? '');
-    setStatus(row.status);
-    setFeatured(row.featured);
-    setSalesChannel(row.salesChannel ?? 'ONLINE_AND_POS');
-    setWarehouseId(row.warehouseId ?? '');
-    setShortDescription(row.shortDescription ?? '');
-    setDescription(row.description ?? '');
-    setVariants(row.variants.length ? row.variants.map(fromApi) : [emptyVariant()]);
+  async function loadProduct(productId: string): Promise<void> {
+    setLoadingProduct(true);
+    setHydrated(false);
+    try {
+      const row = await apiRequest<ProductDetail>(`/products/${productId}`);
+      setProduct(row);
+      setName(row.name);
+      setBrand(row.brand ?? '');
+      setCategoryId(row.category?.id ?? '');
+      setStatus(row.status);
+      setFeatured(row.featured);
+      setSalesChannel(row.salesChannel ?? 'ONLINE_AND_POS');
+      setWarehouseId(row.warehouseId ?? '');
+      setShortDescription(row.shortDescription ?? '');
+      setDescription(row.description ?? '');
+      setVariants(row.variants.length ? row.variants.map(fromApi) : [emptyVariant()]);
+      setHydrated(true);
+    } finally {
+      setLoadingProduct(false);
+    }
   }
 
   useEffect(() => {
@@ -191,7 +200,10 @@ export default function ProductDetailPage(): React.JSX.Element {
       })
       .catch(() => setWarehouses([]));
     if (!isNew) {
-      loadProduct(id).catch((err: Error) => setError(err.message));
+      loadProduct(id).catch((err: Error) => {
+        setError(err.message);
+        setLoadingProduct(false);
+      });
     }
   }, [isNew, id]);
 
@@ -237,10 +249,6 @@ export default function ProductDetailPage(): React.JSX.Element {
 
   function addAdultSizes(): void {
     addSizePreset(ADULT_SIZES);
-  }
-
-  function addKidsSizes(): void {
-    addSizePreset(KIDS_SIZES);
   }
 
   function collectPendingImages(): PendingImage[] {
@@ -300,7 +308,7 @@ export default function ProductDetailPage(): React.JSX.Element {
     const compound = variants.find((variant) => looksLikeCompoundSize(variant.size));
     if (compound) {
       setError(
-        `Size "${compound.size.trim()}" looks like multiple sizes in one field. Use one size per variant (e.g. S), or click Add adult sizes / Add kids sizes.`,
+        `Size "${compound.size.trim()}" looks like multiple sizes in one field. Use one size per variant (e.g. S), or click Add adult sizes.`,
       );
       return;
     }
@@ -443,8 +451,32 @@ export default function ProductDetailPage(): React.JSX.Element {
     }
   }
 
-  const canSave = (isNew && auth.can('products.create')) || (!isNew && auth.can('products.update'));
-  const showStockPanel = !isNew && auth.can('inventory.read');
+  const canSave =
+    hydrated && ((isNew && auth.can('products.create')) || (!isNew && auth.can('products.update')));
+  const showStockPanel = !isNew && hydrated && auth.can('inventory.read');
+
+  if (!isNew && loadingProduct) {
+    return (
+      <div className="space-y-4" aria-busy="true">
+        <PageHeader
+          title="Loading product…"
+          actions={
+            <Button asChild variant="outline">
+              <Link href="/products">Cancel</Link>
+            </Button>
+          }
+        />
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+            <div className="h-10 animate-pulse rounded-md bg-muted" />
+            <div className="h-32 animate-pulse rounded-md bg-muted" />
+            <div className="h-48 animate-pulse rounded-md bg-muted" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -630,9 +662,6 @@ export default function ProductDetailPage(): React.JSX.Element {
                   <Button type="button" variant="outline" size="sm" onClick={() => addAdultSizes()}>
                     Add adult sizes
                   </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => addKidsSizes()}>
-                    Add kids sizes
-                  </Button>
                   <Button type="button" variant="outline" size="sm" onClick={() => setVariants((rows) => [...rows, emptyVariant()])}>
                     Add variant
                   </Button>
@@ -801,7 +830,7 @@ export default function ProductDetailPage(): React.JSX.Element {
                 <Link href="/products">Cancel</Link>
               </Button>
               {canSave ? (
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" disabled={saving || !hydrated}>
                   {saving ? 'Saving…' : 'Save product'}
                 </Button>
               ) : null}
@@ -812,34 +841,38 @@ export default function ProductDetailPage(): React.JSX.Element {
 
       {!isNew ? <ProductStockPanel productId={id} refreshKey={stockRefreshKey} /> : null}
 
-      {!isNew && product?.images?.length ? (
+      {!isNew && hydrated ? (
         <Card>
           <CardContent className="space-y-3 p-4 text-sm">
             <p className="font-medium">Saved images</p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {product.images.map((image) => {
-                const src = resolveMediaUrl(image.url);
-                return (
-                  <div key={image.id} className="space-y-2 rounded-md border p-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={image.altText ?? product.name} className="h-36 w-full rounded object-cover" />
-                    <div className="flex flex-wrap items-center gap-2">
-                      {image.isPrimary ? <span className="text-xs font-medium">Primary</span> : null}
-                      {auth.can('products.update') && !image.isPrimary ? (
-                        <Button type="button" variant="outline" size="sm" onClick={() => void setPrimaryImage(image.id)}>
-                          Set primary
-                        </Button>
-                      ) : null}
-                      {auth.can('products.update') ? (
-                        <Button type="button" variant="outline" size="sm" onClick={() => void removeImage(image.id)}>
-                          Remove
-                        </Button>
-                      ) : null}
+            {product?.images?.length ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {product.images.map((image) => {
+                  const src = resolveMediaUrl(image.url);
+                  return (
+                    <div key={image.id} className="space-y-2 rounded-md border p-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={image.altText ?? product.name} className="h-36 w-full rounded object-cover" />
+                      <div className="flex flex-wrap items-center gap-2">
+                        {image.isPrimary ? <span className="text-xs font-medium">Primary</span> : null}
+                        {auth.can('products.update') && !image.isPrimary ? (
+                          <Button type="button" variant="outline" size="sm" onClick={() => void setPrimaryImage(image.id)}>
+                            Set primary
+                          </Button>
+                        ) : null}
+                        {auth.can('products.update') ? (
+                          <Button type="button" variant="outline" size="sm" onClick={() => void removeImage(image.id)}>
+                            Remove
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No images saved yet. Upload front, side, and back above, then save.</p>
+            )}
           </CardContent>
         </Card>
       ) : null}

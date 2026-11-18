@@ -24,10 +24,17 @@ export function CheckoutSummary({
     shippingQuote?.calculationMode === 'DELHIVERY' && shippingQuote.shippingAmount
       ? shippingQuote.shippingAmount
       : totals.shippingAmount;
+  const merchandiseNet = Number(totals.subtotal) - Number(totals.discount);
+  const qualifiesFreeShipping = merchandiseNet >= 2000;
+  const pickup = quote?.fulfillmentMethod === 'STORE_PICKUP';
+  // Don't show "Free" for under-threshold carts before address/shipping is known
+  // (DELHIVERY quotes can return 0 until a pincode is entered).
+  const shippingPending = !pickup && !shippingQuote && Number(shippingAmount) <= 0 && !qualifiesFreeShipping;
   const merchandise = Number(totals.total) - Number(totals.shippingAmount);
+  const resolvedShipping = shippingPending ? '99.00' : shippingAmount;
   const displayTotal =
-    shippingQuote?.calculationMode === 'DELHIVERY'
-      ? (merchandise + Number(shippingAmount)).toFixed(2)
+    shippingQuote?.calculationMode === 'DELHIVERY' || shippingPending
+      ? (merchandise + Number(resolvedShipping)).toFixed(2)
       : totals.total;
 
   return (
@@ -75,9 +82,22 @@ export function CheckoutSummary({
               <dd className="tabular">−{formatMoney(totals.discount, currency)}</dd>
             </div>
           ) : null}
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Shipping{shippingQuote?.selectedMode ? ` (${shippingQuote.selectedMode})` : ''}</dt>
-            <dd className="tabular">{Number(shippingAmount) > 0 ? formatMoney(shippingAmount, currency) : 'Free'}</dd>
+          <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">
+              Shipping{shippingQuote?.selectedMode ? ` (${shippingQuote.selectedMode})` : ''}
+            </dt>
+            <dd className="tabular text-right">
+              {pickup || qualifiesFreeShipping || (Number(resolvedShipping) <= 0 && !shippingPending) ? (
+                'Free'
+              ) : shippingPending ? (
+                <span className="text-muted-foreground">
+                  {formatMoney('99.00', currency)}
+                  <span className="mt-0.5 block text-[11px] font-normal">Est. · free above ₹2,000</span>
+                </span>
+              ) : (
+                formatMoney(resolvedShipping, currency)
+              )}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Tax</dt>

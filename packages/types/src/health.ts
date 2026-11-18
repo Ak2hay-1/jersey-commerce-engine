@@ -4,6 +4,7 @@ export interface HealthResponse {
   timestamp: string;
 }
 
+/** @deprecated Kept for older clients; public /ready no longer returns per-dependency checks. */
 export interface ReadinessCheck {
   name: string;
   status: 'up' | 'down';
@@ -13,6 +14,5 @@ export interface ReadinessCheck {
 export interface ReadinessResponse {
   status: 'ok' | 'degraded';
   service: string;
-  checks: ReadinessCheck[];
   timestamp: string;
 }

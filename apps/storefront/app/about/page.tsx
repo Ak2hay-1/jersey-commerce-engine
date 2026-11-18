@@ -76,7 +76,7 @@ export default async function AboutPage(): Promise<React.JSX.Element> {
               : [
                   'Breathable performance knits for replica-inspired football jerseys.',
                   'Durable crests and prints built for repeated washes.',
-                  'Youth-friendly fits for kids match-day kits.',
+                  'Athletic fits for match day and everyday wear.',
                   'Blank bases ready for custom name and number printing.',
                 ]
             ).map((item) => (
@@ -87,7 +87,7 @@ export default async function AboutPage(): Promise<React.JSX.Element> {
         <div>
           <h2 className="font-heading text-2xl uppercase">The kit</h2>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            Club, national, kids, and custom — one catalog focused on football jerseys so every drop stays sharp.
+            Club, national, and custom — one catalog focused on football jerseys so every drop stays sharp.
           </p>
         </div>
       </div>

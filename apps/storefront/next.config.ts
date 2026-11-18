@@ -27,7 +27,66 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../..'),
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: storefrontSecurityHeaders() }];
+    const security = storefrontSecurityHeaders();
+    const publicCache = {
+      key: 'Cache-Control',
+      value: 'public, s-maxage=60, stale-while-revalidate=300',
+    };
+    const privateNoStore = {
+      key: 'Cache-Control',
+      value: 'private, no-store',
+    };
+    return [
+      { source: '/:path*', headers: security },
+      {
+        source: '/cart',
+        headers: [...security, privateNoStore],
+      },
+      {
+        source: '/checkout',
+        headers: [...security, privateNoStore],
+      },
+      {
+        source: '/account/:path*',
+        headers: [...security, privateNoStore],
+      },
+      {
+        source: '/auth/:path*',
+        headers: [...security, privateNoStore],
+      },
+      {
+        source: '/',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/products',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/products/:path*',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/category/:path*',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/about',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/contact',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/size-chart',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/quality-check',
+        headers: [...security, publicCache],
+      },
+    ];
   },
   async redirects() {
     return [
@@ -35,6 +94,11 @@ const nextConfig: NextConfig = {
         source: '/category/ac-milan-26-27-away-master-version',
         destination: '/category/player-versions',
         permanent: true,
+      },
+      {
+        source: '/auth/signup',
+        destination: '/auth/register',
+        permanent: false,
       },
     ];
   },

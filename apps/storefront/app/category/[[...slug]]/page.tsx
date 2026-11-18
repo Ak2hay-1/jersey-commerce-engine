@@ -3,13 +3,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import { storeApi } from '../../../lib/api';
-import { serverStoreOptions } from '../../../lib/server-options';
+import { serverTenantOptions } from '../../../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
 import { CatalogLayout, type CatalogChip } from '../../../components/catalog/catalog-layout';
 import { JsonLd, breadcrumbJsonLd } from '../../../components/seo/json-ld';
 import { categoryMetaDescription, pageShare } from '../../../lib/page-meta';
-import { headers } from 'next/headers';
+import { siteUrl } from '../../../lib/site-url';
 
 type Params = { slug?: string[] };
 type Search = {
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     return { title: 'Category' };
   }
   try {
-    const category = await storeApi.category(leaf, slug.join('/'), await serverStoreOptions());
+    const category = await storeApi.category(leaf, slug.join('/'), await serverTenantOptions());
     return pageShare({
       title: category.name,
       description: categoryMetaDescription(category.slug, category.name, category.description),
@@ -53,7 +53,7 @@ export default async function CategoryPage({
   if (slug.length === 0) {
     notFound();
   }
-  const options = await serverStoreOptions();
+  const options = await serverTenantOptions();
   const leaf = slug[slug.length - 1] ?? '';
   let category;
   try {
@@ -78,8 +78,7 @@ export default async function CategoryPage({
       options,
     ),
   ]);
-  const host = (await headers()).get('host');
-  const origin = `${host?.includes('localhost') ? 'http' : 'https'}://${host ?? 'localhost:3000'}`;
+  const origin = siteUrl();
   const basePath = `/category/${slug.join('/')}`;
   const crumbs = [{ name: 'Home', href: '/' }, ...slug.map((part, index) => ({ name: part.replace(/-/g, ' '), href: `/category/${slug.slice(0, index + 1).join('/')}` }))];
   crumbs[crumbs.length - 1] = { name: category.name, href: basePath };

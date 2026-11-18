@@ -170,7 +170,8 @@ export const storeApi = {
   product(slug: string, options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductDetail>(`/store/products/${encodeURIComponent(slug)}`, {
       ...options,
-      cache: options?.cache ?? 'no-store',
+      next: options?.next ?? { revalidate: 60, tags: ['store-products'] },
+      cache: options?.cache,
     });
   },
 
@@ -478,6 +479,18 @@ export const storeApi = {
 
   order(id: string, options?: StoreRequestOptions) {
     return storeFetch<OrderDetail>(`/store/orders/${encodeURIComponent(id)}`, { ...options, cache: 'no-store' });
+  },
+
+  submitContactMessage(
+    input: { name: string; email: string; phone?: string; message: string },
+    options?: StoreRequestOptions,
+  ) {
+    return storeFetch<{ ok: true }>('/store/contact', {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(input),
+      cache: 'no-store',
+    });
   },
 
   customOrderConfig(options?: StoreRequestOptions) {

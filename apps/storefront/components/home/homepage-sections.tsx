@@ -12,6 +12,17 @@ import { EditorialBanner } from './editorial-banner';
 export { CollectionGrid } from './collection-grid';
 export { EditorialBanner } from './editorial-banner';
 
+/** CMS once pointed master banners at a dead search; send shoppers to the catalog instead. */
+function normalizeMasterCta(href?: string | null): string | undefined {
+  if (!href) {
+    return undefined;
+  }
+  if (/[?&]search=master\b/i.test(href)) {
+    return '/products';
+  }
+  return href;
+}
+
 export function FeaturedCategories({
   section,
   categories,
@@ -80,7 +91,7 @@ export function PromoBanner({
       heading={section.heading || 'Master versions'}
       subheading={section.subheading}
       ctaLabel={section.ctaLabel || 'Shop the range'}
-      ctaHref={section.ctaHref || '/products'}
+      ctaHref={normalizeMasterCta(section.ctaHref) || '/products'}
       image={section.image || image}
       imageAlt={imageAlt}
       reverse={reverse}

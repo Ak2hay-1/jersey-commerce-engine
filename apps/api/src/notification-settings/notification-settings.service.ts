@@ -14,6 +14,7 @@ import type { UpdateNotificationSettingsDto } from './dto/update-notification-se
 export type TelegramNotifyEvent =
   | 'ORDER_CREATED'
   | 'CUSTOM_ORDER_CREATED'
+  | 'CONTACT_MESSAGE'
   | 'PAYMENT_CONFIRMED'
   | 'ORDER_STATUS_CHANGED'
   | 'POS_SALE';
@@ -68,6 +69,8 @@ function eventEnabled(row: NotificationSettingsRecord, event: TelegramNotifyEven
       return row.notifyOrderCreated;
     case 'CUSTOM_ORDER_CREATED':
       return row.notifyCustomOrderCreated;
+    case 'CONTACT_MESSAGE':
+      return row.notifyOrderCreated || row.notifyCustomOrderCreated;
     case 'PAYMENT_CONFIRMED':
       return row.notifyPaymentConfirmed;
     case 'ORDER_STATUS_CHANGED':

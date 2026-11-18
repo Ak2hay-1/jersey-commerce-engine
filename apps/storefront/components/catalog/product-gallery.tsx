@@ -56,7 +56,7 @@ export function ProductGallery({ images, name }: { images: ProductImageDto[]; na
   return (
     <div className={cn('flex flex-col gap-3', multiple && 'md:flex-row-reverse md:items-start')}>
       <div
-        className="product-card-media relative aspect-[4/5] w-full min-w-0 flex-1 overflow-hidden rounded-[calc(var(--radius)+4px)]"
+        className="product-card-media relative aspect-[4/5] w-full min-w-0 overflow-hidden rounded-[calc(var(--radius)+4px)] md:aspect-auto md:h-[min(80vh,46rem)]"
         onTouchStart={(event) => {
           touchX.current = event.changedTouches[0]?.clientX ?? null;
         }}

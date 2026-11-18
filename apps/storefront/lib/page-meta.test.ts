@@ -14,8 +14,12 @@ describe('pageShare', () => {
       url: '/cart',
       title: 'Cart',
       description: 'Review the football jerseys in your Jerzyfy cart before checkout.',
+      images: [{ url: '/demo/hero.jpg', width: 1200, height: 630 }],
     });
-    expect(meta.twitter).toMatchObject({ title: 'Cart' });
+    expect(meta.twitter).toMatchObject({
+      title: 'Cart',
+      images: ['/demo/hero.jpg'],
+    });
   });
 
   it('can mark a page absolute and noindex', () => {

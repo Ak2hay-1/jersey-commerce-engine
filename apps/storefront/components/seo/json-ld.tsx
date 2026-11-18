@@ -30,6 +30,25 @@ export function absoluteAssetUrl(url: string | null | undefined, origin: string)
   return `${base}${path}`;
 }
 
+function organizationAddress(store: StorefrontBootstrap) {
+  const street = store.website.contactAddress?.trim() || store.tenant.address?.trim() || undefined;
+  const city = store.tenant.city?.trim() || undefined;
+  const region = store.tenant.state?.trim() || undefined;
+  const postalCode = store.tenant.postalCode?.trim() || undefined;
+  const country = store.tenant.country?.trim() || undefined;
+  if (!street && !city && !region && !postalCode && !country) {
+    return undefined;
+  }
+  return {
+    '@type': 'PostalAddress',
+    streetAddress: street,
+    addressLocality: city,
+    addressRegion: region,
+    postalCode,
+    addressCountry: country,
+  };
+}
+
 export function organizationJsonLd(store: StorefrontBootstrap, origin: string) {
   return {
     '@context': 'https://schema.org',
@@ -37,16 +56,32 @@ export function organizationJsonLd(store: StorefrontBootstrap, origin: string) {
     name: store.tenant.name,
     url: origin,
     logo: absoluteAssetUrl(store.theme.logo, origin),
-    email: store.website.contactEmail ?? undefined,
-    telephone: store.website.contactPhone ?? undefined,
+    email: store.website.contactEmail ?? store.tenant.contactEmail ?? undefined,
+    telephone: store.website.contactPhone ?? store.tenant.contactPhone ?? undefined,
+    address: organizationAddress(store),
   };
 }
 
+function productDescription(product: StorefrontProductDetail): string | undefined {
+  const parts = [
+    product.seoDescription?.trim(),
+    product.shortDescription?.trim(),
+    product.description?.trim(),
+    product.category?.name ? `${product.name} — ${product.category.name} football jersey from Jerzyfy.` : undefined,
+    product.name,
+  ].filter(Boolean);
+  return parts[0];
+}
+
 export function productJsonLd(product: StorefrontProductDetail, origin: string, currency: string) {
-  const image = product.images[0]?.url;
+  const images = product.images
+    .map((image) => absoluteAssetUrl(image.url, origin))
+    .filter((url): url is string => Boolean(url));
+  const primarySku = product.variants[0]?.sku;
   const offers = product.variants.map((variant) => ({
     '@type': 'Offer',
     sku: variant.sku,
+    mpn: variant.sku,
     priceCurrency: currency,
     price: variant.sellingPrice,
     availability:
@@ -57,10 +92,12 @@ export function productJsonLd(product: StorefrontProductDetail, origin: string, 
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    description: product.seoDescription || product.shortDescription || product.description || undefined,
-    image: image ? [absoluteAssetUrl(image, origin)] : undefined,
-    brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
-    sku: product.variants[0]?.sku,
+    description: productDescription(product),
+    image: images.length ? images : undefined,
+    brand: product.brand ? { '@type': 'Brand', name: product.brand } : { '@type': 'Brand', name: 'Jerzyfy' },
+    sku: primarySku,
+    mpn: primarySku,
+    productID: product.slug,
     offers,
   };
 }

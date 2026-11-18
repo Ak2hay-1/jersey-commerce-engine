@@ -215,19 +215,6 @@ export const DEFAULT_STOREFRONT_GUIDES: StorefrontGuidesConfig = {
       closing: 'Perfect for those who want the closest experience to a professional match jersey.',
     },
     {
-      id: 'full-sleeves',
-      title: 'FULL SLEEVES JERSEYS',
-      intro: 'Same kit energy with long sleeves for cooler evenings, travel days, and layered looks.',
-      bullets: [
-        'Full-length sleeves with athletic cut',
-        'Breathable knit that layers well',
-        'True-to-kit colourways & crests',
-        'Comfortable cuff finish',
-        'Works for match day and off-pitch wear',
-      ],
-      closing: 'Choose full sleeves when you want coverage without losing jersey silhouette.',
-    },
-    {
       id: 'retro',
       title: 'AUTHENTIC RETRO JERSEYS',
       intro: 'Classic seasons brought back — heritage colourways, period detailing, and throwback fits.',

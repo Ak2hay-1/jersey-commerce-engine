@@ -27,22 +27,13 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({
-  children,
-  hasSession = false,
-}: {
-  children: React.ReactNode;
-  hasSession?: boolean;
-}): React.JSX.Element {
+export function AuthProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
   const [customer, setCustomer] = useState<StorefrontCustomer | null>(null);
-  const [loading, setLoading] = useState(hasSession);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasSession) {
-      setCustomer(null);
-      setLoading(false);
-      return;
-    }
+    // Session cookie is httpOnly — probe /me on the client so the root layout
+    // does not need cookies() (which forces every page dynamic).
     void (async () => {
       try {
         setCustomer(await storeApi.me());
@@ -52,7 +43,7 @@ export function AuthProvider({
         setLoading(false);
       }
     })();
-  }, [hasSession]);
+  }, []);
 
   const persist = useCallback(async (token: string, next: StorefrontCustomer) => {
     await persistSessionTokens({ customerToken: token });

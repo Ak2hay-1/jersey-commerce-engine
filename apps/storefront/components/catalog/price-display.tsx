@@ -31,7 +31,7 @@ export function PriceDisplay({
           {compareFormatted}
         </span>
       ) : null}
-      {discount ? <span className="badge badge-sale">Save {discount}%</span> : null}
+      {discount ? <span className="badge badge-sale">−{discount}%</span> : null}
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
-import { cookies, headers } from 'next/headers';
 import './globals.css';
 import { display, inter } from '../lib/fonts';
 import { serverTenantOptions } from '../lib/server-options';
@@ -19,13 +18,11 @@ import { BrandPreloader } from '../components/layout/brand-preloader';
 import { CartDrawer } from '../components/cart/cart-drawer';
 import { JsonLd, organizationJsonLd } from '../components/seo/json-ld';
 import { SmoothScroll } from '../components/motion/smooth-scroll';
-import { CustomCursor } from '../components/motion/custom-cursor';
-import { FilmGrain } from '../components/motion/film-grain';
+import { ClientAtmosphere } from '../components/motion/client-atmosphere';
 import { CookieNotice } from '../components/legal/cookie-notice';
 import { MetaPixel } from '../components/analytics/meta-pixel';
-import { STORE_COOKIES } from '../lib/cookies';
 import { siteUrl } from '../lib/site-url';
-import { HOME_TITLE } from '../lib/page-meta';
+import { DEFAULT_OG_IMAGE, HOME_TITLE } from '../lib/page-meta';
 
 const FALLBACK_DESCRIPTION = 'Shop club, national, and custom football jerseys at Jerzyfy.';
 
@@ -42,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const seoTitle = store.website.seoTitle?.trim();
     const title = !seoTitle || seoTitle === store.tenant.name ? HOME_TITLE : seoTitle;
     const description = store.website.seoDescription || FALLBACK_DESCRIPTION;
-    const image = store.theme.logo;
+    const image = store.theme.logo || DEFAULT_OG_IMAGE;
     return {
       metadataBase: new URL(siteUrl()),
       title: {
@@ -55,13 +52,13 @@ export async function generateMetadata(): Promise<Metadata> {
         url: '/',
         title,
         description,
-        images: image ? [{ url: image }] : undefined,
+        images: [{ url: image, width: 1200, height: 630 }],
       },
       twitter: {
         card: 'summary_large_image',
         title,
         description,
-        images: image ? [image] : undefined,
+        images: [image],
       },
       icons: {
         icon: [
@@ -78,6 +75,18 @@ export async function generateMetadata(): Promise<Metadata> {
       metadataBase: new URL(siteUrl()),
       title: HOME_TITLE,
       description: FALLBACK_DESCRIPTION,
+      openGraph: {
+        type: 'website',
+        title: HOME_TITLE,
+        description: FALLBACK_DESCRIPTION,
+        images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: HOME_TITLE,
+        description: FALLBACK_DESCRIPTION,
+        images: [DEFAULT_OG_IMAGE],
+      },
       icons: {
         icon: [
           { url: '/favicon.ico' },
@@ -95,11 +104,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>): Promise<React.JSX.Element> {
-  const headerStore = await headers();
-  const cookieStore = await cookies();
-  const hasSession = Boolean(cookieStore.get(STORE_COOKIES.customer)?.value);
-  const host = headerStore.get('host');
-  const origin = `${host?.includes('localhost') ? 'http' : 'https'}://${host ?? 'localhost:3000'}`;
+  const origin = siteUrl();
   let store = fallbackStore;
   let chrome = DEFAULT_STORE_CHROME;
   let unavailable = false;
@@ -128,20 +133,27 @@ export default async function RootLayout({
         <StoreProvider value={store} chrome={chrome}>
           <CustomizerBridge />
           <SmoothScroll>
-              <AuthProvider hasSession={hasSession}>
-                <WishlistProvider>
+            <AuthProvider>
+              <WishlistProvider>
                 <CartProvider>
-                <CustomCursor />
-                <FilmGrain />
-                <BrandPreloader />
-                <StoreHeader />
-                <CartDrawer />
-                <main id="main">{unavailable ? <p className="px-4 py-16 text-center text-sm text-muted-foreground">The store is temporarily unavailable. Please try again shortly.</p> : children}</main>
-                <StoreFooter />
-                <CookieNotice />
+                  <ClientAtmosphere />
+                  <BrandPreloader />
+                  <StoreHeader />
+                  <CartDrawer />
+                  <main id="main">
+                    {unavailable ? (
+                      <p className="px-4 py-16 text-center text-sm text-muted-foreground">
+                        The store is temporarily unavailable. Please try again shortly.
+                      </p>
+                    ) : (
+                      children
+                    )}
+                  </main>
+                  <StoreFooter />
+                  <CookieNotice />
                 </CartProvider>
-                </WishlistProvider>
-              </AuthProvider>
+              </WishlistProvider>
+            </AuthProvider>
           </SmoothScroll>
         </StoreProvider>
         <JsonLd data={organizationJsonLd(store, origin)} />

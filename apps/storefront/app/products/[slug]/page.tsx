@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { serverStoreOptions } from '../../../lib/server-options';
+import { serverTenantOptions } from '../../../lib/server-options';
 import { cachedBootstrap, cachedProduct, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
 import { ProductGallery } from '../../../components/catalog/product-gallery';
@@ -11,7 +11,7 @@ import { ProductRail } from '../../../components/catalog/product-rail';
 import { ChevronRight } from 'lucide-react';
 import { JsonLd, absoluteAssetUrl, breadcrumbJsonLd, productJsonLd } from '../../../components/seo/json-ld';
 import { pageShare, productMetaDescription } from '../../../lib/page-meta';
-import { headers } from 'next/headers';
+import { siteUrl } from '../../../lib/site-url';
 
 type Params = { slug: string };
 
@@ -34,7 +34,7 @@ export const revalidate = 60;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const options = await serverStoreOptions();
+    const options = await serverTenantOptions();
     const product = await cachedProduct(tenantKey(options), slug);
     const title = product.seoTitle || product.name;
     const description = productMetaDescription(product);
@@ -56,10 +56,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function ProductPage({ params }: { params: Promise<Params> }): Promise<React.JSX.Element> {
   const { slug } = await params;
-  const options = await serverStoreOptions();
+  const options = await serverTenantOptions();
   const tenantSlug = tenantKey(options);
-  const host = (await headers()).get('host');
-  const origin = `${host?.includes('localhost') ? 'http' : 'https'}://${host ?? 'localhost:3000'}`;
+  const origin = siteUrl();
 
   let product;
   let store;
@@ -113,12 +112,12 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
             );
           })}
         </nav>
-        <div className="grid gap-8 lg:grid-cols-12 lg:gap-14">
-          <div className="lg:col-span-7">
+        <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-14">
+          <div className="lg:col-span-7 lg:sticky lg:top-24 lg:self-start">
             <ProductGallery images={product.images} name={product.name} />
           </div>
           <div className="lg:col-span-5">
-            <div className="space-y-7 lg:sticky lg:top-24">
+            <div className="space-y-7 lg:sticky lg:top-24 lg:self-start">
               <div className="space-y-3">
                 {kicker ? <p className="text-micro text-muted-foreground">{kicker}</p> : null}
                 <h1 className="font-display break-words text-[clamp(2.25rem,4.4vw,3.5rem)]">{product.name}</h1>
