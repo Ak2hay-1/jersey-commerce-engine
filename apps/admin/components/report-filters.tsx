@@ -55,14 +55,14 @@ export function ReportFilters({
 
   return (
     <form
-      className="grid gap-3 rounded-lg border bg-background p-3 md:grid-cols-4 lg:grid-cols-6"
+      className="grid gap-3 rounded-2xl border border-border/60 bg-card p-3 shadow-[var(--erp-shadow)] md:grid-cols-4 lg:grid-cols-6"
       onSubmit={(event) => event.preventDefault()}
     >
       <div>
         <Label htmlFor="preset">Date range</Label>
         <select
           id="preset"
-          className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+          className="mt-1 flex h-9 w-full cursor-pointer rounded-full border border-input bg-transparent px-3 text-sm"
           value={value.preset}
           onChange={(event) => onChange({ ...value, preset: event.target.value as DateRangePreset })}
         >
@@ -113,7 +113,7 @@ export function ReportFilters({
           <Label htmlFor="source">Channel</Label>
           <select
             id="source"
-            className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+            className="mt-1 flex h-9 w-full cursor-pointer rounded-full border border-input bg-transparent px-3 text-sm"
             value={value.source ?? ''}
             onChange={(event) => onChange({ ...value, source: event.target.value || undefined })}
           >
@@ -130,7 +130,7 @@ export function ReportFilters({
           <Label htmlFor="payment">Payment</Label>
           <select
             id="payment"
-            className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+            className="mt-1 flex h-9 w-full cursor-pointer rounded-full border border-input bg-transparent px-3 text-sm"
             value={value.paymentMethod ?? ''}
             onChange={(event) => onChange({ ...value, paymentMethod: event.target.value || undefined })}
           >
@@ -157,7 +157,7 @@ export function ReportFilters({
       {extra}
       {exportAllowed && onExport ? (
         <div className="flex items-end">
-          <Button type="button" variant="outline" onClick={onExport}>
+          <Button type="button" variant="outline" className="rounded-full" onClick={onExport}>
             Export CSV
           </Button>
         </div>

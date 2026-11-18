@@ -1,1 +1,153 @@
 @import '@jersey-commerce/ui/styles';
+
+:root {
+  --background: 220 16% 94%;
+  --foreground: 222 22% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 22% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 22% 12%;
+  --primary: 222 22% 12%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 220 14% 92%;
+  --secondary-foreground: 222 22% 12%;
+  --muted: 220 14% 92%;
+  --muted-foreground: 220 9% 46%;
+  --accent: 220 14% 92%;
+  --accent-foreground: 222 22% 12%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 220 14% 88%;
+  --input: 220 14% 88%;
+  --ring: 222 22% 12%;
+  --radius: 1.25rem;
+
+  --erp-canvas: 220 16% 94%;
+  --erp-shell: 0 0% 100%;
+  --erp-lime: 72 88% 72%;
+  --erp-lime-foreground: 222 22% 12%;
+  --erp-peach: 18 100% 94%;
+  --erp-lavender: 255 100% 95%;
+  --erp-mint: 168 70% 92%;
+  --erp-orange: 24 95% 53%;
+  --erp-purple: 262 70% 58%;
+  --erp-cyan: 187 72% 45%;
+  --erp-shadow: 0 10px 40px rgba(15, 23, 42, 0.06);
+}
+
+.dark {
+  --background: 222 20% 8%;
+  --foreground: 210 20% 96%;
+  --card: 222 16% 12%;
+  --card-foreground: 210 20% 96%;
+  --popover: 222 16% 12%;
+  --popover-foreground: 210 20% 96%;
+  --primary: 72 88% 72%;
+  --primary-foreground: 222 22% 12%;
+  --secondary: 222 14% 16%;
+  --secondary-foreground: 210 20% 96%;
+  --muted: 222 14% 16%;
+  --muted-foreground: 215 12% 65%;
+  --accent: 222 14% 16%;
+  --accent-foreground: 210 20% 96%;
+  --destructive: 0 62% 40%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 222 12% 20%;
+  --input: 222 12% 20%;
+  --ring: 72 88% 72%;
+
+  --erp-canvas: 222 20% 8%;
+  --erp-shell: 222 16% 11%;
+  --erp-lime: 72 70% 55%;
+  --erp-lime-foreground: 222 22% 10%;
+  --erp-peach: 18 40% 18%;
+  --erp-lavender: 255 30% 18%;
+  --erp-mint: 168 30% 16%;
+  --erp-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+body {
+  background-color: hsl(var(--erp-canvas));
+}
+
+.erp-shell-frame {
+  border-radius: 1.75rem;
+  background: hsl(var(--erp-shell));
+  box-shadow: var(--erp-shadow);
+}
+
+.erp-card {
+  border-radius: 1.25rem;
+  border: 1px solid transparent;
+  background: hsl(var(--card));
+  box-shadow: var(--erp-shadow);
+}
+
+.erp-stat-peach {
+  background: hsl(var(--erp-peach));
+}
+
+.erp-stat-lavender {
+  background: hsl(var(--erp-lavender));
+}
+
+.erp-stat-mint {
+  background: hsl(var(--erp-mint));
+}
+
+.erp-nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 9999px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.erp-nav-pill:hover {
+  background: hsl(var(--muted));
+}
+
+.erp-nav-pill[data-active='true'] {
+  background: hsl(var(--erp-lime));
+  color: hsl(var(--erp-lime-foreground));
+}
+
+.erp-top-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  background: hsl(var(--muted));
+  padding: 0.35rem;
+}
+
+/* Soften shared Card/Table/Button primitives inside the staff portal */
+.erp-main [class*='rounded-xl'],
+.erp-main [class*='rounded-lg'],
+.erp-main [class*='rounded-md'] {
+  border-radius: 1.25rem;
+}
+
+.erp-main button,
+.erp-main a[class*='inline-flex'] {
+  border-radius: 9999px;
+}
+
+.erp-main .shadow,
+.erp-main .shadow-sm {
+  box-shadow: var(--erp-shadow);
+}
+
+.erp-main .border {
+  border-color: hsl(var(--border) / 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erp-nav-pill {
+    transition: none;
+  }
+}

@@ -54,13 +54,13 @@ export function DesktopModeSwitch({
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-md border p-0.5" role="group" aria-label="Staff mode">
+    <div className="flex items-center gap-1 rounded-full border border-border/70 bg-muted/70 p-0.5" role="group" aria-label="Staff mode">
       {showPos ? (
         <Button
           type="button"
           size="sm"
           variant={active === 'pos' ? 'default' : 'ghost'}
-          className={cn('h-8 px-3')}
+          className={cn('h-8 rounded-full px-3')}
           aria-pressed={active === 'pos'}
           onClick={() => switchStaffMode('pos', active)}
         >
@@ -71,7 +71,7 @@ export function DesktopModeSwitch({
         type="button"
         size="sm"
         variant={active === 'erp' ? 'default' : 'ghost'}
-        className={cn('h-8 px-3')}
+        className={cn('h-8 rounded-full px-3')}
         aria-pressed={active === 'erp'}
         onClick={() => switchStaffMode('erp', active)}
       >

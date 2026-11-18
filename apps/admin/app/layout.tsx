@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import Script from 'next/script';
 import { AuthProvider } from '@/lib/auth';
 import { RealtimeProvider } from '@/lib/realtime';
+import { ThemeProvider } from '@/lib/theme';
 import { getStaffPortal } from '@/lib/env';
 import { inter } from '@/lib/fonts';
 import './globals.css';
@@ -21,12 +22,17 @@ export default function RootLayout({
   children: ReactNode;
 }>): React.JSX.Element {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <Script src="/runtime-config.js" strategy="beforeInteractive" />
-        <AuthProvider>
-          <RealtimeProvider>{children}</RealtimeProvider>
-        </AuthProvider>
+        <Script id="jerzyfy-theme-boot" strategy="beforeInteractive">
+          {`(function(){try{var t=localStorage.getItem('jerzyfy-erp-theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();`}
+        </Script>
+        <ThemeProvider>
+          <AuthProvider>
+            <RealtimeProvider>{children}</RealtimeProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

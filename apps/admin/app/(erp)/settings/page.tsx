@@ -11,9 +11,9 @@ export default function SettingsPage(): React.JSX.Element {
     <div className="space-y-4">
       <PageHeader title="Settings" description="Shop configuration for payments, shipping, notifications, sign-in, and backups." />
       <div className="grid gap-3 md:grid-cols-2">
-        <Card>
-          <CardHeader className="p-4"><CardTitle className="text-sm">Business</CardTitle></CardHeader>
-          <CardContent className="p-4 pt-0 text-sm">
+        <Card className="erp-card border-0">
+          <CardHeader className="p-5"><CardTitle className="text-sm">Business</CardTitle></CardHeader>
+          <CardContent className="p-5 pt-0 text-sm">
             <p>{auth.tenant?.name}</p>
             <p className="text-muted-foreground">{auth.tenant?.slug}</p>
             <p>Timezone {auth.tenant?.timezone}</p>
@@ -21,50 +21,50 @@ export default function SettingsPage(): React.JSX.Element {
           </CardContent>
         </Card>
         {auth.can('settings.read') || auth.can('settings.manage') ? (
-          <Link href="/settings/payments">
-            <Card className="h-full hover:bg-muted/40">
-              <CardHeader className="p-4"><CardTitle className="text-sm">Payments</CardTitle></CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+          <Link href="/settings/payments" className="cursor-pointer">
+            <Card className="erp-card h-full border-0 transition-colors hover:bg-muted/40">
+              <CardHeader className="p-5"><CardTitle className="text-sm">Payments</CardTitle></CardHeader>
+              <CardContent className="p-5 pt-0 text-sm text-muted-foreground">
                 Razorpay integration for secure online checkout on the storefront.
               </CardContent>
             </Card>
           </Link>
         ) : null}
         {auth.can('settings.read') || auth.can('settings.manage') ? (
-          <Link href="/settings/shipping">
-            <Card className="h-full hover:bg-muted/40">
-              <CardHeader className="p-4"><CardTitle className="text-sm">Shipping</CardTitle></CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+          <Link href="/settings/shipping" className="cursor-pointer">
+            <Card className="erp-card h-full border-0 transition-colors hover:bg-muted/40">
+              <CardHeader className="p-5"><CardTitle className="text-sm">Shipping</CardTitle></CardHeader>
+              <CardContent className="p-5 pt-0 text-sm text-muted-foreground">
                 Delhivery courier: warehouse, COD, rates, labels, and tracking.
               </CardContent>
             </Card>
           </Link>
         ) : null}
         {auth.can('settings.read') || auth.can('settings.manage') ? (
-          <Link href="/settings/authentication">
-            <Card className="h-full hover:bg-muted/40">
-              <CardHeader className="p-4"><CardTitle className="text-sm">Authentication</CardTitle></CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+          <Link href="/settings/authentication" className="cursor-pointer">
+            <Card className="erp-card h-full border-0 transition-colors hover:bg-muted/40">
+              <CardHeader className="p-5"><CardTitle className="text-sm">Authentication</CardTitle></CardHeader>
+              <CardContent className="p-5 pt-0 text-sm text-muted-foreground">
                 Email OTP, SMS OTP, Google Sign-In, and password login for storefront customers.
               </CardContent>
             </Card>
           </Link>
         ) : null}
         {auth.can('settings.read') || auth.can('settings.manage') ? (
-          <Link href="/settings/notifications">
-            <Card className="h-full hover:bg-muted/40">
-              <CardHeader className="p-4"><CardTitle className="text-sm">Notifications</CardTitle></CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
+          <Link href="/settings/notifications" className="cursor-pointer">
+            <Card className="erp-card h-full border-0 transition-colors hover:bg-muted/40">
+              <CardHeader className="p-5"><CardTitle className="text-sm">Notifications</CardTitle></CardHeader>
+              <CardContent className="p-5 pt-0 text-sm text-muted-foreground">
                 Telegram bot alerts for new orders, payments, status changes, and POS sales.
               </CardContent>
             </Card>
           </Link>
         ) : null}
         {auth.can('settings.read') || auth.can('settings.manage') ? (
-          <Link href="/settings/backup">
-            <Card className="h-full hover:bg-muted/40">
-              <CardHeader className="p-4"><CardTitle className="text-sm">Automatic backups</CardTitle></CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">Schedule folder backups on the API server.</CardContent>
+          <Link href="/settings/backup" className="cursor-pointer">
+            <Card className="erp-card h-full border-0 transition-colors hover:bg-muted/40">
+              <CardHeader className="p-5"><CardTitle className="text-sm">Automatic backups</CardTitle></CardHeader>
+              <CardContent className="p-5 pt-0 text-sm text-muted-foreground">Schedule folder backups on the API server.</CardContent>
             </Card>
           </Link>
         ) : null}

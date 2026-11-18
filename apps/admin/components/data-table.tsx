@@ -38,13 +38,16 @@ export function DataTable<T>({
   tableClassName,
 }: DataTableProps<T>): React.JSX.Element {
   return (
-    <div className="rounded-lg border bg-background">
+    <div className="overflow-hidden rounded-2xl border border-border/60 bg-card">
       <Table className={tableClassName}>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader>
-          <TableRow>
+          <TableRow className="hover:bg-transparent">
             {columns.map((column) => (
-              <TableHead key={column.key} className={column.hideOnMobile ? `hidden md:table-cell ${column.className ?? ''}` : column.className}>
+              <TableHead
+                key={column.key}
+                className={column.hideOnMobile ? `hidden md:table-cell ${column.className ?? ''}` : column.className}
+              >
                 {column.header}
               </TableHead>
             ))}
@@ -73,7 +76,7 @@ export function DataTable<T>({
             ? rows.map((row, index) => {
                 const href = rowHref?.(row);
                 return (
-                  <TableRow key={index}>
+                  <TableRow key={index} className="hover:bg-muted/40">
                     {columns.map((column, columnIndex) => {
                       const content = column.render(row);
                       return (
@@ -82,7 +85,11 @@ export function DataTable<T>({
                           className={column.hideOnMobile ? `hidden md:table-cell ${column.className ?? ''}` : column.className}
                         >
                           {href && columnIndex === 0 ? (
-                            <Link href={href} prefetch={false} className="font-medium text-foreground underline-offset-4 hover:underline">
+                            <Link
+                              href={href}
+                              prefetch={false}
+                              className="cursor-pointer font-medium text-foreground underline-offset-4 hover:underline"
+                            >
                               {content}
                             </Link>
                           ) : (
@@ -98,18 +105,19 @@ export function DataTable<T>({
         </TableBody>
       </Table>
       {onPageChange ? (
-        <div className="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between border-t border-border/60 px-3 py-2 text-xs text-muted-foreground">
           <span>
             Page {page} of {totalPages}
           </span>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+            <Button type="button" variant="outline" size="sm" className="rounded-full" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
               Previous
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="rounded-full"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
             >

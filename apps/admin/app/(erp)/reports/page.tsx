@@ -23,12 +23,12 @@ export default function ReportsIndexPage(): React.JSX.Element {
       <PageHeader title="Reports" description="Reports from live ledgers. Gross profit is not net profit." />
       <div className="grid gap-3 md:grid-cols-2">
         {REPORTS.filter((report) => auth.can(report.permission)).map((report) => (
-          <Link key={report.href} href={report.href}>
-            <Card className="h-full hover:bg-muted/40">
-              <CardHeader className="p-4">
+          <Link key={report.href} href={report.href} className="cursor-pointer">
+            <Card className="erp-card h-full border-0 transition-colors hover:bg-muted/40">
+              <CardHeader className="p-5">
                 <CardTitle className="text-sm">{report.label}</CardTitle>
               </CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-muted-foreground">{report.blurb}</CardContent>
+              <CardContent className="p-5 pt-0 text-sm text-muted-foreground">{report.blurb}</CardContent>
             </Card>
           </Link>
         ))}

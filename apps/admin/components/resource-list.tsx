@@ -67,7 +67,7 @@ export function ResourceList<T>({
         placeholder="Search"
         value={searchInput}
         onChange={(event) => setSearchInput(event.target.value)}
-        className="max-w-sm"
+        className="max-w-sm rounded-full"
       />
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <DataTable

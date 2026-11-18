@@ -105,10 +105,13 @@ export default function LoginPage(): React.JSX.Element {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/40 p-6">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[hsl(var(--erp-canvas))] p-6">
       <DesktopModeSwitch active="erp" />
-      <Card className="w-full max-w-md">
+      <Card className="erp-card w-full max-w-md border-0 shadow-[var(--erp-shadow)]">
         <CardHeader>
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">
+            J
+          </div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{SHOP_BRAND}</p>
           <CardTitle className="mt-1">{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
@@ -117,23 +120,23 @@ export default function LoginPage(): React.JSX.Element {
           <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="username" placeholder="you@jerzyfy.in" className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" autoComplete="username" placeholder="you@jerzyfy.in" className="mt-1 rounded-full" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div>
               <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="password">Password</Label>
-                <a href="/forgot-password" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                <a href="/forgot-password" className="cursor-pointer text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
                   Forgot password?
                 </a>
               </div>
-              <PasswordInput id="password" autoComplete="current-password" className="mt-1" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <PasswordInput id="password" autoComplete="current-password" className="mt-1 rounded-full" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             {!isSingleTenantMode() && shops.length !== 1 ? (
               <div>
                 <Label htmlFor="shop">Shop</Label>
                 <select
                   id="shop"
-                  className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="mt-1 flex h-9 w-full cursor-pointer rounded-full border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   value={tenantSlug}
                   onChange={(event) => setTenantSlug(event.target.value)}
                 >
@@ -147,7 +150,7 @@ export default function LoginPage(): React.JSX.Element {
               </div>
             ) : null}
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button type="submit" className="w-full rounded-full" disabled={submitting}>
               {submitting ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
