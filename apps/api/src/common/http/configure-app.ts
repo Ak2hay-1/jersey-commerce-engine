@@ -54,6 +54,7 @@ export function configureHttpApp(app: INestApplication, options: ConfigureHttpAp
       { path: '', method: RequestMethod.GET },
       { path: 'health', method: RequestMethod.GET },
       { path: 'ready', method: RequestMethod.GET },
+      { path: 'robots.txt', method: RequestMethod.GET },
     ],
   });
 
