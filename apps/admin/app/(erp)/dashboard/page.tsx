@@ -1,10 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, Package, ShoppingBag, Users } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@jersey-commerce/ui';
-import type { DashboardSummary, DashboardWidgets, RevenueSeries, SalesReportResult } from '@jersey-commerce/types';
+import type {
+  CustomOrderReportResult,
+  DashboardSummary,
+  DashboardWidgets,
+  ExpenseReportResult,
+  InventoryReportResult,
+  RevenueSeries,
+  SalesReportResult,
+} from '@jersey-commerce/types';
 import { realtimeAffectsResource } from '@jersey-commerce/utils';
 import { apiRequest, queryString } from '@/lib/api';
 import { formatMoney, formatNumber, formatDateTime, statusLabel } from '@/lib/format';
@@ -13,14 +22,47 @@ import { useRealtimeReload } from '@/lib/realtime';
 import { DataTable } from '@/components/data-table';
 import { KpiCard } from '@/components/page-header';
 import { ReportFilters, type ReportFilterValue } from '@/components/report-filters';
-import { OrdersOverviewChart } from '@/components/dashboard/orders-overview-chart';
-import { PurchaseAnalyticsChart } from '@/components/dashboard/purchase-analytics-chart';
-import { SaleAnalyticsDonut } from '@/components/dashboard/sale-analytics-donut';
+
+const OrdersOverviewChart = dynamic(
+  () => import('@/components/dashboard/orders-overview-chart').then((mod) => mod.OrdersOverviewChart),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-2xl" /> },
+);
+const PurchaseAnalyticsChart = dynamic(
+  () => import('@/components/dashboard/purchase-analytics-chart').then((mod) => mod.PurchaseAnalyticsChart),
+  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-2xl" /> },
+);
+const SaleAnalyticsDonut = dynamic(
+  () => import('@/components/dashboard/sale-analytics-donut').then((mod) => mod.SaleAnalyticsDonut),
+  { ssr: false, loading: () => <Skeleton className="h-52 w-full rounded-2xl" /> },
+);
+const RevenueChart = dynamic(
+  () => import('@/components/revenue-chart').then((mod) => mod.RevenueChart),
+  { ssr: false, loading: () => <Skeleton className="h-56 w-full rounded-2xl" /> },
+);
+const DashboardBarChart = dynamic(
+  () => import('@/components/dashboard/dashboard-bar-chart').then((mod) => mod.DashboardBarChart),
+  { ssr: false, loading: () => <Skeleton className="h-56 w-full rounded-2xl" /> },
+);
+const ExpensesRevenueChart = dynamic(
+  () => import('@/components/dashboard/expenses-revenue-chart').then((mod) => mod.ExpensesRevenueChart),
+  { ssr: false, loading: () => <Skeleton className="h-56 w-full rounded-2xl" /> },
+);
 
 interface PeriodSnapshot {
   revenue: number;
   orders: number;
 }
+
+interface SalesStatusSummary {
+  byStatus: Array<{ status: string; count: number; total: string }>;
+}
+
+const CHART_COLORS = [
+  'hsl(var(--erp-orange))',
+  'hsl(var(--erp-purple))',
+  'hsl(var(--erp-cyan))',
+  'hsl(var(--erp-lime))',
+];
 
 function moneyNumber(value: string | number | null | undefined): number {
   const n = Number(value ?? 0);
@@ -44,6 +86,28 @@ function productCode(productId: string): string {
   return productId.replace(/[^a-zA-Z0-9]/g, '').slice(-4).toUpperCase() || '—';
 }
 
+function ChartCard({
+  title,
+  hint,
+  loading,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  loading?: boolean;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <div className="erp-card p-5">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">{title}</h2>
+        {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      </div>
+      {loading ? <Skeleton className="h-56 w-full rounded-2xl" /> : children}
+    </div>
+  );
+}
+
 export default function DashboardPage(): React.JSX.Element {
   const auth = useAuth();
   const [filters, setFilters] = useState<ReportFilterValue>({ preset: 'last_30_days' });
@@ -51,6 +115,10 @@ export default function DashboardPage(): React.JSX.Element {
   const [widgets, setWidgets] = useState<DashboardWidgets | null>(null);
   const [salesReport, setSalesReport] = useState<SalesReportResult | null>(null);
   const [revenue, setRevenue] = useState<RevenueSeries | null>(null);
+  const [salesStatus, setSalesStatus] = useState<SalesStatusSummary | null>(null);
+  const [inventoryTotals, setInventoryTotals] = useState<InventoryReportResult['totals'] | null>(null);
+  const [customOrders, setCustomOrders] = useState<CustomOrderReportResult | null>(null);
+  const [expenses, setExpenses] = useState<ExpenseReportResult | null>(null);
   const [todaySnap, setTodaySnap] = useState<PeriodSnapshot | null>(null);
   const [monthSnap, setMonthSnap] = useState<PeriodSnapshot | null>(null);
   const [yesterdaySnap, setYesterdaySnap] = useState<PeriodSnapshot | null>(null);
@@ -80,34 +148,72 @@ export default function DashboardPage(): React.JSX.Element {
           page: 1,
           pageSize: 1,
         });
-        const [nextSummary, nextWidgets, nextSales, nextRevenue, today, month, yesterday, customersPage] =
-          await Promise.all([
-            apiRequest<DashboardSummary>(`/dashboard/summary${qs}`),
-            apiRequest<DashboardWidgets>(`/dashboard/widgets${qs}`),
-            auth.can('reports.read')
-              ? apiRequest<SalesReportResult>(`/reports/sales${chartQs}`).catch(() => null)
-              : Promise.resolve(null),
-            canSales ? apiRequest<RevenueSeries>(`/dashboard/revenue${qs}`).catch(() => null) : Promise.resolve(null),
-            canSales
-              ? apiRequest<DashboardSummary>(`/dashboard/summary${queryString({ preset: 'today' })}`).catch(() => null)
-              : Promise.resolve(null),
-            canSales
-              ? apiRequest<DashboardSummary>(`/dashboard/summary${queryString({ preset: 'this_month' })}`).catch(() => null)
-              : Promise.resolve(null),
-            canSales
-              ? apiRequest<DashboardSummary>(`/dashboard/summary${queryString({ preset: 'yesterday' })}`).catch(() => null)
-              : Promise.resolve(null),
-            auth.can('customers.read')
-              ? apiRequest<{ items: unknown[]; meta: { totalItems: number } }>(
-                  `/customers${queryString({ page: 1, pageSize: 1 })}`,
-                ).catch(() => null)
-              : Promise.resolve(null),
-          ]);
+        const [
+          nextSummary,
+          nextWidgets,
+          nextSales,
+          nextRevenue,
+          nextStatus,
+          nextInventory,
+          nextCustomOrders,
+          nextExpenses,
+          today,
+          month,
+          yesterday,
+          customersPage,
+        ] = await Promise.all([
+          apiRequest<DashboardSummary>(`/dashboard/summary${qs}`),
+          apiRequest<DashboardWidgets>(`/dashboard/widgets${qs}`),
+          auth.can('reports.read')
+            ? apiRequest<SalesReportResult>(`/reports/sales${chartQs}`).catch(() => null)
+            : Promise.resolve(null),
+          canSales ? apiRequest<RevenueSeries>(`/dashboard/revenue${qs}`).catch(() => null) : Promise.resolve(null),
+          auth.can('reports.read')
+            ? apiRequest<SalesStatusSummary>(`/reports/sales-summary${qs}`).catch(() => null)
+            : Promise.resolve(null),
+          auth.can('inventory.read')
+            ? apiRequest<InventoryReportResult>(
+                `/reports/inventory${queryString({ page: 1, pageSize: 1 })}`,
+              ).catch(() => null)
+            : Promise.resolve(null),
+          auth.can('customOrders.read')
+            ? apiRequest<CustomOrderReportResult>(`/reports/custom-orders${qs}`).catch(() => null)
+            : Promise.resolve(null),
+          auth.can('expenses.read')
+            ? apiRequest<ExpenseReportResult>(
+                `/reports/expenses${queryString({
+                  preset: filters.preset,
+                  from: filters.preset === 'custom' ? filters.from : undefined,
+                  to: filters.preset === 'custom' ? filters.to : undefined,
+                  page: 1,
+                  pageSize: 1,
+                })}`,
+              ).catch(() => null)
+            : Promise.resolve(null),
+          canSales
+            ? apiRequest<DashboardSummary>(`/dashboard/summary${queryString({ preset: 'today' })}`).catch(() => null)
+            : Promise.resolve(null),
+          canSales
+            ? apiRequest<DashboardSummary>(`/dashboard/summary${queryString({ preset: 'this_month' })}`).catch(() => null)
+            : Promise.resolve(null),
+          canSales
+            ? apiRequest<DashboardSummary>(`/dashboard/summary${queryString({ preset: 'yesterday' })}`).catch(() => null)
+            : Promise.resolve(null),
+          auth.can('customers.read')
+            ? apiRequest<{ items: unknown[]; meta: { totalItems: number } }>(
+                `/customers${queryString({ page: 1, pageSize: 1 })}`,
+              ).catch(() => null)
+            : Promise.resolve(null),
+        ]);
 
         setSummary(nextSummary);
         setWidgets(nextWidgets);
         setSalesReport(nextSales);
         setRevenue(nextRevenue);
+        setSalesStatus(nextStatus);
+        setInventoryTotals(nextInventory?.totals ?? null);
+        setCustomOrders(nextCustomOrders);
+        setExpenses(nextExpenses);
         setTodaySnap(
           today ? { revenue: moneyNumber(today.kpis.revenue), orders: today.kpis.orders ?? 0 } : null,
         );
@@ -161,12 +267,136 @@ export default function DashboardPage(): React.JSX.Element {
           label: statusLabel(row.source),
           value: moneyNumber(row.revenue),
           count: row.count,
-          color: ['hsl(var(--erp-orange))', 'hsl(var(--erp-purple))', 'hsl(var(--erp-cyan))', 'hsl(var(--erp-lime))'][index % 4]!,
+          color: CHART_COLORS[index % CHART_COLORS.length]!,
         })),
     [summary],
   );
 
   const channelTotal = channelSlices.reduce((sum, slice) => sum + slice.value, 0);
+
+  const paymentSlices = useMemo(
+    () =>
+      (summary?.payments ?? [])
+        .filter((row) => moneyNumber(row.amount) > 0)
+        .map((row, index) => ({
+          key: row.method,
+          label: statusLabel(row.method),
+          value: moneyNumber(row.amount),
+          color: CHART_COLORS[index % CHART_COLORS.length]!,
+        })),
+    [summary],
+  );
+
+  const paymentTotal = paymentSlices.reduce((sum, slice) => sum + slice.value, 0);
+
+  const statusBars = useMemo(
+    () =>
+      (salesStatus?.byStatus ?? [])
+        .filter((row) => row.count > 0)
+        .map((row) => ({
+          key: row.status,
+          label: statusLabel(row.status),
+          value: row.count,
+        })),
+    [salesStatus],
+  );
+
+  const topProductBars = useMemo(
+    () =>
+      (widgets?.topProducts ?? []).slice(0, 8).map((row) => ({
+        key: row.productId,
+        label: row.productName.length > 18 ? `${row.productName.slice(0, 16)}…` : row.productName,
+        value: moneyNumber(row.revenue),
+      })),
+    [widgets],
+  );
+
+  const stockSlices = useMemo(() => {
+    if (!inventoryTotals) {
+      return [];
+    }
+    const inStock = Math.max(0, inventoryTotals.variants - inventoryTotals.lowStock - inventoryTotals.outOfStock);
+    return [
+      { key: 'in', label: 'In stock', value: inStock, color: CHART_COLORS[3]! },
+      { key: 'low', label: 'Low stock', value: inventoryTotals.lowStock, color: CHART_COLORS[0]! },
+      { key: 'out', label: 'Out of stock', value: inventoryTotals.outOfStock, color: CHART_COLORS[1]! },
+    ].filter((slice) => slice.value > 0);
+  }, [inventoryTotals]);
+
+  const stockTotal = stockSlices.reduce((sum, slice) => sum + slice.value, 0);
+
+  const pipelineBars = useMemo(() => {
+    if (!customOrders) {
+      return [];
+    }
+    const stages = [
+      { key: 'enquiries', label: 'Enquiries', value: customOrders.totals.enquiries },
+      { key: 'quotes', label: 'Quotes', value: customOrders.totals.quotes },
+      { key: 'confirmed', label: 'Confirmed', value: customOrders.totals.confirmedOrders },
+      { key: 'production', label: 'Production', value: customOrders.totals.productionOrders },
+      { key: 'completed', label: 'Completed', value: customOrders.totals.completedOrders },
+      { key: 'cancelled', label: 'Cancelled', value: customOrders.totals.cancelledOrders },
+    ];
+    return stages.filter((stage) => stage.value > 0);
+  }, [customOrders]);
+
+  const customerSlices = useMemo(() => {
+    if (!summary?.customers.available) {
+      return [];
+    }
+    return [
+      {
+        key: 'new',
+        label: 'New',
+        value: summary.customers.newCustomers,
+        color: CHART_COLORS[2]!,
+      },
+      {
+        key: 'repeat',
+        label: 'Returning',
+        value: summary.customers.repeatCustomers,
+        color: CHART_COLORS[1]!,
+      },
+    ].filter((slice) => slice.value > 0);
+  }, [summary]);
+
+  const customerMixTotal = customerSlices.reduce((sum, slice) => sum + slice.value, 0);
+
+  const expensesRevenuePoints = useMemo(() => {
+    const expenseTrend = expenses?.trend ?? [];
+    const revenuePoints = revenue?.points ?? [];
+    if (expenseTrend.length === 0 && revenuePoints.length === 0) {
+      const revenueTotal = moneyNumber(kpis?.revenue);
+      const expenseTotal = moneyNumber(kpis?.expenses);
+      if (revenueTotal <= 0 && expenseTotal <= 0) {
+        return [];
+      }
+      return [{ label: 'Period', revenue: revenueTotal, expenses: expenseTotal }];
+    }
+    const byLabel = new Map<string, { label: string; revenue: number; expenses: number }>();
+    for (const point of revenuePoints) {
+      byLabel.set(point.label, {
+        label: point.label,
+        revenue: moneyNumber(point.revenue),
+        expenses: 0,
+      });
+    }
+    for (const point of expenseTrend) {
+      const existing = byLabel.get(point.label) ?? { label: point.label, revenue: 0, expenses: 0 };
+      existing.expenses = moneyNumber(point.amount);
+      byLabel.set(point.label, existing);
+    }
+    return [...byLabel.values()];
+  }, [expenses, kpis?.expenses, kpis?.revenue, revenue]);
+
+  const showPaymentsChart = auth.can('payments.read') || auth.can('reports.read');
+  const showRevenueChart = auth.can('sales.read') || auth.can('reports.read');
+  const showTopProductsChart = showRevenueChart;
+  const showStatusChart = auth.can('reports.read');
+  const showStockChart = auth.can('inventory.read');
+  const showCustomOrdersChart = auth.can('customOrders.read');
+  const showExpensesChart = auth.can('expenses.read') && showRevenueChart;
+  const showCustomersChart = auth.can('customers.read');
 
   return (
     <div className="space-y-5">
@@ -319,6 +549,83 @@ export default function DashboardPage(): React.JSX.Element {
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold tracking-tight">More insights</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Additional charts from your live reports for this period.</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {showRevenueChart ? (
+            <ChartCard title="Revenue trend" hint="By day" loading={loading && !(revenue?.points?.length)}>
+              <RevenueChart points={revenue?.points ?? []} />
+            </ChartCard>
+          ) : null}
+
+          {showStatusChart ? (
+            <ChartCard title="Orders by status" hint="Sale status" loading={loading && statusBars.length === 0}>
+              <DashboardBarChart points={statusBars} emptyLabel="No sales statuses in this period." />
+            </ChartCard>
+          ) : null}
+
+          {showTopProductsChart ? (
+            <ChartCard title="Top products" hint="By revenue" loading={loading && topProductBars.length === 0}>
+              <DashboardBarChart
+                points={topProductBars}
+                emptyLabel="No product revenue in this period."
+                valueFormat="money"
+                layout="horizontal"
+              />
+            </ChartCard>
+          ) : null}
+
+          {showPaymentsChart ? (
+            <ChartCard title="Payments by method" hint="Collected" loading={loading && paymentSlices.length === 0}>
+              <SaleAnalyticsDonut
+                slices={paymentSlices}
+                centerLabel={paymentTotal > 0 ? formatMoney(paymentTotal) : 'No payments'}
+                emptyLabel="No payments in this period."
+              />
+            </ChartCard>
+          ) : null}
+
+          {showStockChart ? (
+            <ChartCard title="Stock health" hint="Variant snapshot" loading={loading && stockSlices.length === 0}>
+              <SaleAnalyticsDonut
+                slices={stockSlices}
+                centerLabel={stockTotal > 0 ? formatNumber(stockTotal) : 'No stock'}
+                emptyLabel="No inventory variants to chart."
+              />
+            </ChartCard>
+          ) : null}
+
+          {showCustomOrdersChart ? (
+            <ChartCard title="Custom orders pipeline" hint="By stage" loading={loading && pipelineBars.length === 0}>
+              <DashboardBarChart points={pipelineBars} emptyLabel="No custom orders in this period." />
+            </ChartCard>
+          ) : null}
+
+          {showExpensesChart ? (
+            <ChartCard
+              title="Expenses vs revenue"
+              hint="By day"
+              loading={loading && expensesRevenuePoints.length === 0}
+            >
+              <ExpensesRevenueChart points={expensesRevenuePoints} />
+            </ChartCard>
+          ) : null}
+
+          {showCustomersChart ? (
+            <ChartCard title="New vs returning" hint="Customers" loading={loading && customerSlices.length === 0}>
+              <SaleAnalyticsDonut
+                slices={customerSlices}
+                centerLabel={customerMixTotal > 0 ? formatNumber(customerMixTotal) : 'No customers'}
+                emptyLabel="No new or returning customers in this period."
+              />
+            </ChartCard>
+          ) : null}
         </div>
       </div>
 

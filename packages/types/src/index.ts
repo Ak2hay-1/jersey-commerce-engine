@@ -346,7 +346,23 @@ export {
   type CustomOrderTimelineItem,
   type PublicCustomOrder,
 } from './custom-orders';
-export { ERP_NAV, filterErpNav, staffHomePath, type ErpNavItem, type ErpNavSection } from './erp-nav';
+export {
+  ERP_NAV,
+  ERP_NAV_SEARCH_EXTRA,
+  STAFF_WORKSPACE_STORAGE_KEY,
+  filterErpNav,
+  filterErpNavSearchExtra,
+  isSharedStaffPath,
+  isWebsitePath,
+  resolveStaffWorkspace,
+  staffHomePath,
+  workspaceAccess,
+  workspaceFromPath,
+  workspaceHomePath,
+  type ErpNavItem,
+  type ErpNavSection,
+  type StaffWorkspace,
+} from './erp-nav';
 export {
   type AppliedPromoCode,
   type PromoCodeDto,

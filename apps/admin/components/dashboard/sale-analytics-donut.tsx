@@ -21,13 +21,15 @@ const FALLBACK_COLORS = [
 export function SaleAnalyticsDonut({
   slices,
   centerLabel,
+  emptyLabel = 'No channel mix for this period.',
 }: {
   slices: SaleAnalyticsSlice[];
   centerLabel: string;
+  emptyLabel?: string;
 }): React.JSX.Element {
   const total = slices.reduce((sum, slice) => sum + slice.value, 0);
   if (total <= 0 || slices.length === 0) {
-    return <p className="flex h-56 items-center justify-center text-sm text-muted-foreground">No channel mix for this period.</p>;
+    return <p className="flex h-56 items-center justify-center text-sm text-muted-foreground">{emptyLabel}</p>;
   }
 
   const chartData = slices.map((slice, index) => ({

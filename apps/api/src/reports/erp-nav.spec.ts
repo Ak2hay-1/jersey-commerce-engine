@@ -14,17 +14,19 @@ describe('filterErpNav', () => {
     ]);
     const ids = sections.map((section) => section.id);
     expect(ids).toContain('dashboard');
-    expect(ids).toContain('sales');
+    expect(ids).toContain('orders');
+    expect(ids).toContain('register');
     expect(ids).not.toContain('expenses');
     const reports = sections.find((section) => section.id === 'reports');
-    expect(reports?.items.some((item) => item.href === '/reports/sales')).toBe(false);
-    expect(reports?.items.some((item) => item.href === '/reports/expenses')).toBe(false);
-    expect(ids).not.toContain('users');
+    expect(reports).toBeUndefined();
+    expect(ids).not.toContain('website');
+    expect(ids).not.toContain('account');
   });
 
   it('keeps website CMS on the admin portal and ERP modules on the erp portal', () => {
     const admin = filterErpNav(['website.read', 'promoCodes.read', 'dashboard.read'], 'admin');
     expect(admin.map((section) => section.id)).toEqual(['website']);
+    expect(admin[0]?.items.map((item) => item.href)).toEqual(['/website', '/promo-codes']);
     const erp = filterErpNav(['website.read', 'promoCodes.read', 'dashboard.read'], 'erp');
     expect(erp.map((section) => section.id)).toEqual(['dashboard']);
   });
@@ -39,7 +41,7 @@ describe('filterErpNav', () => {
       'products.read',
     ]);
     expect(sections.map((section) => section.id)).toEqual(
-      expect.arrayContaining(['dashboard', 'inventory', 'purchasing', 'products']),
+      expect.arrayContaining(['dashboard', 'inventory', 'purchases', 'products']),
     );
     expect(sections.map((section) => section.id)).not.toContain('expenses');
   });
