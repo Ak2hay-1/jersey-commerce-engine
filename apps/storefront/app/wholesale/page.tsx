@@ -2,13 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@jersey-commerce/ui';
 import { storeApi } from '../../lib/api';
-import { serverStoreOptions } from '../../lib/server-options';
+import { serverTenantOptions } from '../../lib/server-options';
+import { fallbackCustomOrderConfig } from '../../lib/fallback-store';
 import { CustomOrderEnquiryForm } from '../../components/custom-orders/enquiry-form';
 import { pageShare } from '../../lib/page-meta';
 
+export const revalidate = 300;
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const store = await storeApi.bootstrap(await serverStoreOptions());
+    const store = await storeApi.bootstrap(await serverTenantOptions());
     return pageShare({
       title: 'Wholesale Jerseys',
       description: `Wholesale football jerseys for retailers, academies, and resellers from ${store.tenant.name}.`,
@@ -37,7 +40,12 @@ const BENEFITS = [
 ];
 
 export default async function WholesalePage(): Promise<React.JSX.Element> {
-  const config = await storeApi.customOrderConfig(await serverStoreOptions());
+  let config = fallbackCustomOrderConfig;
+  try {
+    config = await storeApi.customOrderConfig(await serverTenantOptions());
+  } catch {
+    // Offline/build-time prerender.
+  }
 
   return (
     <div>

@@ -26,6 +26,9 @@ import { DEFAULT_OG_IMAGE, HOME_TITLE } from '../lib/page-meta';
 
 const FALLBACK_DESCRIPTION = 'Shop club, national, and custom football jerseys at Jerzyfy.';
 
+/** ISR window for marketing HTML (cart/checkout/account/auth stay dynamic via cookies). */
+export const revalidate = 300;
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

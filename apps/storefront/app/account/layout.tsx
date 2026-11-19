@@ -4,6 +4,8 @@ import { RequireCustomer } from '../../components/account/require-customer';
 import { AccountNav } from '../../components/account/account-nav';
 import { pageShare } from '../../lib/page-meta';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = pageShare({
   title: 'Account',
   description: 'Your Jerzyfy orders and profile.',

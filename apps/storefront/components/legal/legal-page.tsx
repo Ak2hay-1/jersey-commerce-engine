@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { serverStoreOptions } from '../../lib/server-options';
+import { serverTenantOptions } from '../../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../../lib/cached-store';
 import { fallbackStore } from '../../lib/fallback-store';
 
@@ -35,7 +35,7 @@ export async function loadLegalContact(): Promise<LegalContact> {
   let grievanceOfficerName = process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME?.trim() || null;
   let grievanceEmail = process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_EMAIL?.trim() || null;
   try {
-    const store = await cachedBootstrap(tenantKey(await serverStoreOptions()));
+    const store = await cachedBootstrap(tenantKey(await serverTenantOptions()));
     storeName = store.tenant.name;
     email = store.website.contactEmail?.trim() || store.tenant.contactEmail?.trim() || null;
     phone = store.website.contactPhone?.trim() || store.tenant.contactPhone?.trim() || null;

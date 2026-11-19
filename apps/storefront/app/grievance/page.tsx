@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
 import { pageShare } from '../../lib/page-meta';
 
+export const revalidate = 300;
+
 export const metadata: Metadata = pageShare({
   title: 'Grievance officer',
   description: 'How to raise a complaint about an order, our service, or your personal data.',

@@ -5,8 +5,10 @@ import { ContactForm } from '../../components/contact/contact-form';
 import { loadLegalContact } from '../../components/legal/legal-page';
 import { whatsappHref } from '../../lib/contact';
 import { pageShare } from '../../lib/page-meta';
-import { serverStoreOptions } from '../../lib/server-options';
+import { serverTenantOptions } from '../../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../../lib/cached-store';
+
+export const revalidate = 300;
 
 export const metadata: Metadata = pageShare({
   title: 'Contact',
@@ -25,7 +27,7 @@ export default async function ContactPage(): Promise<React.JSX.Element> {
   const contact = await loadLegalContact();
   let socialEntries: Array<[string, string]> = [];
   try {
-    const store = await cachedBootstrap(tenantKey(await serverStoreOptions()));
+    const store = await cachedBootstrap(tenantKey(await serverTenantOptions()));
     socialEntries = Object.entries(store.website.socialLinks).filter(
       (entry): entry is [string, string] =>
         Boolean(entry[1]?.trim()) && entry[0].toLowerCase() !== 'whatsapp',

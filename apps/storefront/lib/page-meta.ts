@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 type ShareImage = string | { url: string; width?: number; height?: number; alt?: string };
 
 /** Default share image for non-product pages when no page-specific asset is provided. */
-export const DEFAULT_OG_IMAGE = '/demo/hero.jpg';
+export const DEFAULT_OG_IMAGE = '/demo/og-default.jpg';
 
 function normalizeShareImages(images: ShareImage[] | undefined): Array<{ url: string; width?: number; height?: number; alt?: string }> {
   const source = images?.length ? images : [DEFAULT_OG_IMAGE];
@@ -55,19 +55,21 @@ export function pageShare(input: {
 
 export const HOME_TITLE = 'Jerzyfy — Club, national and custom football jerseys';
 export const PRODUCTS_DESCRIPTION =
-  'Shop every Jerzyfy football jersey — club, national, player-version and master-version kits, with sizes and prices.';
-export const MASTER_VERSION_DESCRIPTION =
-  'Master-version football jerseys at Jerzyfy: the fuller fan fit for club and national kits, ready to wear.';
+  'Shop every Jerzyfy football jersey — club, national, and Player Version kits, with sizes and prices.';
+export const PLAYER_VERSION_DESCRIPTION =
+  'Player Version football jerseys at Jerzyfy: the slimmer match cut for club and national kits, ready to wear.';
+/** @deprecated Prefer PLAYER_VERSION_DESCRIPTION — kept for legacy category slug redirects. */
+export const MASTER_VERSION_DESCRIPTION = PLAYER_VERSION_DESCRIPTION;
 export const BARCELONA_HOME_DESCRIPTION =
-  'FC Barcelona 26/27 home player-version jersey at Jerzyfy — blaugrana stripes, match cut, sizes S–XXL.';
+  'FC Barcelona 26/27 home Player Version jersey at Jerzyfy — blaugrana stripes, match cut, sizes S–XXL.';
 
 export function categoryMetaDescription(slug: string, name: string, description?: string | null): string {
   const written = description?.trim();
   if (written) {
     return written;
   }
-  if (slug === 'master-version') {
-    return MASTER_VERSION_DESCRIPTION;
+  if (slug === 'master-version' || slug === 'player-versions') {
+    return PLAYER_VERSION_DESCRIPTION;
   }
   return `Shop ${name} football jerseys at Jerzyfy.`;
 }

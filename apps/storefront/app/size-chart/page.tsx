@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DEFAULT_STOREFRONT_GUIDES } from '@jersey-commerce/types';
-import { serverStoreOptions } from '../../lib/server-options';
+import { serverTenantOptions } from '../../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../../lib/cached-store';
 import { Magnetic } from '../../components/motion/magnetic';
 import { Reveal } from '../../components/motion/reveal';
 import { SplitHeading } from '../../components/motion/split-heading';
 import { pageShare } from '../../lib/page-meta';
+
+export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageShare({
@@ -21,7 +23,7 @@ export default async function SizeChartPage(): Promise<React.JSX.Element> {
   let rows = DEFAULT_STOREFRONT_GUIDES.sizeChartRows;
   let note = DEFAULT_STOREFRONT_GUIDES.sizeChartNote;
   try {
-    const options = await serverStoreOptions();
+    const options = await serverTenantOptions();
     const store = await cachedBootstrap(tenantKey(options));
     const guides = store.website.chrome?.guides;
     if (guides) {

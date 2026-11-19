@@ -1,6 +1,26 @@
 import { DEMO_CTA_IMAGE, DEMO_HERO_IMAGE, DEMO_KITS_IMAGE } from './demo-media';
-import { DEFAULT_STOREFRONT_CHROME, DEFAULT_STOREFRONT_FOOTER, type StorefrontBootstrap } from '@jersey-commerce/types';
+import {
+  CUSTOM_ORDER_TYPES,
+  DEFAULT_STOREFRONT_CHROME,
+  DEFAULT_STOREFRONT_FOOTER,
+  type CustomOrderPublicConfig,
+  type StorefrontBootstrap,
+} from '@jersey-commerce/types';
 import { JERZYFY_DARK_MATCHDAY } from './jerzyfy-brand';
+
+export const fallbackCustomOrderConfig: CustomOrderPublicConfig = {
+  tenant: { slug: 'demo-jersey-store', name: 'Jerzyfy', currency: 'INR' },
+  theme: {
+    primaryColor: null,
+    secondaryColor: null,
+    accentColor: null,
+    backgroundColor: null,
+    foregroundColor: null,
+    logo: null,
+  },
+  customizationOptions: [],
+  types: [...CUSTOM_ORDER_TYPES],
+};
 
 export const fallbackStore: StorefrontBootstrap = {
   tenant: {

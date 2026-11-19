@@ -1,79 +1,62 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { storeApi } from '../../../lib/api';
-import { serverStoreOptions } from '../../../lib/server-options';
-import { cachedBootstrap, cachedCategories, tenantKey } from '../../../lib/cached-store';
-import { CatalogLayout, type CatalogChip } from '../../../components/catalog/catalog-layout';
+import { serverTenantOptions } from '../../../lib/server-options';
+import { cachedBootstrap, cachedCategories, emptyProductList, tenantKey } from '../../../lib/cached-store';
+import { fallbackStore } from '../../../lib/fallback-store';
+import { CatalogView } from '../../../components/catalog/catalog-view';
+import type { CatalogChip } from '../../../components/catalog/catalog-layout';
 import { pageShare, PRODUCTS_DESCRIPTION } from '../../../lib/page-meta';
 
-type Search = {
-  search?: string;
-  categorySlug?: string;
-  size?: string;
-  sort?: string;
-  page?: string;
-};
+export const revalidate = 300;
 
-export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
-  const query = await searchParams;
-  const title = query.search ? `Search: ${query.search}` : 'Products';
+export async function generateMetadata(): Promise<Metadata> {
   return pageShare({
-    title,
-    description: query.search
-      ? `Football jerseys matching “${query.search}” at Jerzyfy.`
-      : PRODUCTS_DESCRIPTION,
+    title: 'Products',
+    description: PRODUCTS_DESCRIPTION,
     path: '/products',
   });
 }
 
-export default async function ProductsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Search>;
-}): Promise<React.JSX.Element> {
-  const query = await searchParams;
-  const options = await serverStoreOptions();
+export default async function ProductsPage(): Promise<React.JSX.Element> {
+  const options = await serverTenantOptions();
   const slug = tenantKey(options);
-  const [store, result, categories] = await Promise.all([
-    cachedBootstrap(slug),
-    storeApi.products(
-      {
-        search: query.search,
-        categorySlug: query.categorySlug,
-        size: query.size,
-        sort: query.sort,
-        page: query.page ? Number(query.page) : 1,
-        pageSize: 24,
-      },
-      options,
-    ),
-    cachedCategories(slug).catch(() => []),
-  ]);
+  let store = fallbackStore;
+  let result = emptyProductList();
+  let categories: Awaited<ReturnType<typeof cachedCategories>> = [];
+  try {
+    const [boot, products, cats] = await Promise.all([
+      cachedBootstrap(slug),
+      storeApi.products({ page: 1, pageSize: 24 }, options),
+      cachedCategories(slug).catch(() => []),
+    ]);
+    store = boot;
+    result = products;
+    categories = cats;
+  } catch {
+    // Build/ISR can proceed offline; runtime revalidation fills the catalog.
+  }
 
   const chips: CatalogChip[] = [
-    { label: 'All kits', href: '/products', active: !query.categorySlug && !query.search },
+    { label: 'All kits', href: '/products', active: true },
     ...categories
       .filter((category) => !category.parentId)
       .map((category) => ({ label: category.name, href: `/category/${category.slug}` })),
   ];
 
   return (
-    <CatalogLayout
-      kicker={query.search ? 'Search' : 'Catalog'}
-      title={query.search ? `“${query.search}”` : 'All jerseys'}
-      description={
-        query.search ? undefined : 'Club, national, and custom football kits — match-day ready.'
-      }
-      chips={chips}
-      result={result}
-      currency={store.tenant.currency}
-      basePath="/products"
-      query={query}
-      emptyTitle={query.search ? 'No matches' : 'No kits found'}
-      emptyDescription={
-        query.search
-          ? `We couldn’t find kits for “${query.search}”. Try a club, country or player name.`
-          : 'Try another filter or browse the full catalog.'
-      }
-    />
+    <Suspense fallback={<div className="mx-auto max-w-store store-gutter py-16 text-sm text-muted-foreground">Loading kits…</div>}>
+      <CatalogView
+        kicker="Catalog"
+        title="All jerseys"
+        description="Club, national, and custom football kits — match-day ready."
+        chips={chips}
+        initialResult={result}
+        currency={store.tenant.currency}
+        basePath="/products"
+        emptyTitle="No kits found"
+        emptyDescription="Try another filter or browse the full catalog."
+      />
+    </Suspense>
   );
 }

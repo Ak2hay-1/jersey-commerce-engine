@@ -1,17 +1,18 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Script from 'next/script';
+import { AdminDocumentTitle } from '@/components/admin-document-title';
 import { AuthProvider } from '@/lib/auth';
 import { RealtimeProvider } from '@/lib/realtime';
 import { ThemeProvider } from '@/lib/theme';
-import { getStaffPortal } from '@/lib/env';
 import { inter } from '@/lib/fonts';
 import './globals.css';
 
-const portal = getStaffPortal();
-
 export const metadata: Metadata = {
-  title: portal === 'admin' ? 'Admin Panel' : portal === 'erp' ? 'ERP' : 'Admin & ERP',
+  title: {
+    default: 'Dashboard · Jerzyfy Admin',
+    template: '%s · Jerzyfy Admin',
+  },
   description: 'Jerzyfy staff console.',
   robots: { index: false, follow: false },
 };
@@ -30,7 +31,10 @@ export default function RootLayout({
         </Script>
         <ThemeProvider>
           <AuthProvider>
-            <RealtimeProvider>{children}</RealtimeProvider>
+            <RealtimeProvider>
+              <AdminDocumentTitle />
+              {children}
+            </RealtimeProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

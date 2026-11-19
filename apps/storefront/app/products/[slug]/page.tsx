@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { storeApi } from '../../../lib/api';
 import { serverTenantOptions } from '../../../lib/server-options';
 import { cachedBootstrap, cachedProduct, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
@@ -29,7 +30,18 @@ function liveCategory(
   return PLAYER_VERSIONS;
 }
 
-export const revalidate = 60;
+export const revalidate = 300;
+export const dynamicParams = true;
+
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  try {
+    const options = await serverTenantOptions();
+    const result = await storeApi.products({ page: 1, pageSize: 100 }, options);
+    return result.items.map((item) => ({ slug: item.slug }));
+  } catch {
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;

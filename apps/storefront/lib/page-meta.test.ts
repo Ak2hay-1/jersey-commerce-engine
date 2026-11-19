@@ -14,11 +14,11 @@ describe('pageShare', () => {
       url: '/cart',
       title: 'Cart',
       description: 'Review the football jerseys in your Jerzyfy cart before checkout.',
-      images: [{ url: '/demo/hero.jpg', width: 1200, height: 630 }],
+      images: [{ url: '/demo/og-default.jpg', width: 1200, height: 630 }],
     });
     expect(meta.twitter).toMatchObject({
       title: 'Cart',
-      images: ['/demo/hero.jpg'],
+      images: ['/demo/og-default.jpg'],
     });
   });
 
@@ -35,8 +35,9 @@ describe('pageShare', () => {
 });
 
 describe('catalog descriptions', () => {
-  it('writes distinct copy for master version and falls back for other empty categories', () => {
-    expect(categoryMetaDescription('master-version', 'MASTER VERSION', null)).toMatch(/fan fit/i);
+  it('writes Player Version copy for legacy/empty player categories and falls back otherwise', () => {
+    expect(categoryMetaDescription('master-version', 'MASTER VERSION', null)).toMatch(/Player Version/i);
+    expect(categoryMetaDescription('player-versions', 'PLAYER VERSIONS', null)).toMatch(/Player Version/i);
     expect(categoryMetaDescription('player-versions', 'PLAYER VERSIONS', 'Slimmer match cut.')).toBe(
       'Slimmer match cut.',
     );

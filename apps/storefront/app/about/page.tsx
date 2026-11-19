@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { serverStoreOptions } from '../../lib/server-options';
+import { serverTenantOptions } from '../../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../../lib/cached-store';
 import { fallbackStore } from '../../lib/fallback-store';
 import { Magnetic } from '../../components/motion/magnetic';
@@ -8,9 +8,11 @@ import { Reveal } from '../../components/motion/reveal';
 import { SplitHeading } from '../../components/motion/split-heading';
 import { pageShare } from '../../lib/page-meta';
 
+export const revalidate = 300;
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const options = await serverStoreOptions();
+    const options = await serverTenantOptions();
     const store = await cachedBootstrap(tenantKey(options));
     return pageShare({
       title: store.website.footer.aboutTitle || 'About',
@@ -35,7 +37,7 @@ export default async function AboutPage(): Promise<React.JSX.Element> {
   let materialsTitle = 'Materials';
   let materials: string[] = [];
   try {
-    const options = await serverStoreOptions();
+    const options = await serverTenantOptions();
     const store = await cachedBootstrap(tenantKey(options));
     name = store.tenant.name;
     aboutTitle = store.website.footer.aboutTitle?.trim() || 'Wear the game.';

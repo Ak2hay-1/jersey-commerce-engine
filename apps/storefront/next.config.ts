@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
     const security = storefrontSecurityHeaders();
     const publicCache = {
       key: 'Cache-Control',
-      value: 'public, s-maxage=60, stale-while-revalidate=300',
+      value: 'public, s-maxage=300, stale-while-revalidate=600',
     };
     const privateNoStore = {
       key: 'Cache-Control',
@@ -52,6 +52,10 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/auth/:path*',
+        headers: [...security, privateNoStore],
+      },
+      {
+        source: '/wishlist',
         headers: [...security, privateNoStore],
       },
       {
@@ -84,6 +88,34 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/quality-check',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/privacy',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/terms',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/refund-policy',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/shipping-policy',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/grievance',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/wholesale',
+        headers: [...security, publicCache],
+      },
+      {
+        source: '/custom-orders',
         headers: [...security, publicCache],
       },
     ];

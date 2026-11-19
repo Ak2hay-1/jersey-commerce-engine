@@ -156,21 +156,21 @@ export const storeApi = {
   bootstrap(options?: StoreRequestOptions) {
     return storeFetch<StorefrontBootstrap>('/store/bootstrap', {
       ...options,
-      next: options?.next ?? { revalidate: 60, tags: ['store-bootstrap'] },
+      next: options?.next ?? { revalidate: 300, tags: ['store-bootstrap'] },
     });
   },
 
   products(query: ListQuery = {}, options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductListResult>(`/store/products${queryString(query)}`, {
       ...options,
-      next: options?.next ?? { revalidate: 30, tags: ['store-products'] },
+      next: options?.next ?? { revalidate: 300, tags: ['store-products'] },
     });
   },
 
   product(slug: string, options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductDetail>(`/store/products/${encodeURIComponent(slug)}`, {
       ...options,
-      next: options?.next ?? { revalidate: 60, tags: ['store-products'] },
+      next: options?.next ?? { revalidate: 300, tags: ['store-products'] },
       cache: options?.cache,
     });
   },
@@ -178,42 +178,42 @@ export const storeApi = {
   categories(options?: StoreRequestOptions) {
     return storeFetch<CategoryDetail[]>('/store/categories', {
       ...options,
-      next: options?.next ?? { revalidate: 60, tags: ['store-categories'] },
+      next: options?.next ?? { revalidate: 300, tags: ['store-categories'] },
     });
   },
 
   category(slug: string, slugPath?: string, options?: StoreRequestOptions) {
     return storeFetch<CategoryDetail>(
       `/store/categories/${encodeURIComponent(slug)}${queryString({ slugPath })}`,
-      { ...options, next: options?.next ?? { revalidate: 60, tags: ['store-categories'] } },
+      { ...options, next: options?.next ?? { revalidate: 300, tags: ['store-categories'] } },
     );
   },
 
   search(query: ListQuery, options?: StoreRequestOptions) {
     return storeFetch<StorefrontSearchResult>(`/store/search${queryString(query)}`, {
       ...options,
-      next: options?.next ?? { revalidate: 30, tags: ['store-products'] },
+      next: options?.next ?? { revalidate: 300, tags: ['store-products'] },
     });
   },
 
   featured(options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductListItem[]>('/store/collections/featured', {
       ...options,
-      next: options?.next ?? { revalidate: 60 },
+      next: options?.next ?? { revalidate: 300 },
     });
   },
 
   newest(options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductListItem[]>('/store/collections/new', {
       ...options,
-      next: options?.next ?? { revalidate: 60 },
+      next: options?.next ?? { revalidate: 300 },
     });
   },
 
   bestSellers(options?: StoreRequestOptions) {
     return storeFetch<StorefrontProductListItem[]>('/store/collections/best-sellers', {
       ...options,
-      next: options?.next ?? { revalidate: 60, tags: ['store-products'] },
+      next: options?.next ?? { revalidate: 300, tags: ['store-products'] },
     });
   },
 
@@ -496,7 +496,7 @@ export const storeApi = {
   customOrderConfig(options?: StoreRequestOptions) {
     return storeFetch<CustomOrderPublicConfig>('/store/custom-orders/config', {
       ...options,
-      next: options?.next ?? { revalidate: 60, tags: ['store-custom-orders'] },
+      next: options?.next ?? { revalidate: 300, tags: ['store-custom-orders'] },
     });
   },
 

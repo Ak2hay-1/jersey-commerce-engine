@@ -1,23 +1,32 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { storeApi } from '../../../lib/api';
 import { serverTenantOptions } from '../../../lib/server-options';
-import { cachedBootstrap, tenantKey } from '../../../lib/cached-store';
+import { cachedBootstrap, cachedCategories, tenantKey } from '../../../lib/cached-store';
 import { StoreApiError } from '../../../lib/errors';
-import { CatalogLayout, type CatalogChip } from '../../../components/catalog/catalog-layout';
+import { CatalogView } from '../../../components/catalog/catalog-view';
+import type { CatalogChip } from '../../../components/catalog/catalog-layout';
 import { JsonLd, breadcrumbJsonLd } from '../../../components/seo/json-ld';
 import { categoryMetaDescription, pageShare } from '../../../lib/page-meta';
 import { siteUrl } from '../../../lib/site-url';
 
 type Params = { slug?: string[] };
-type Search = {
-  size?: string;
-  sort?: string;
-  page?: string;
-  search?: string;
-};
+
+export const revalidate = 300;
+export const dynamicParams = true;
+
+export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
+  try {
+    const options = await serverTenantOptions();
+    const categories = await cachedCategories(tenantKey(options));
+    return categories.map((category) => ({ slug: [category.slug] }));
+  } catch {
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug = [] } = await params;
@@ -43,13 +52,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function CategoryPage({
   params,
-  searchParams,
 }: {
   params: Promise<Params>;
-  searchParams: Promise<Search>;
 }): Promise<React.JSX.Element> {
   const { slug = [] } = await params;
-  const query = await searchParams;
   if (slug.length === 0) {
     notFound();
   }
@@ -69,10 +75,7 @@ export default async function CategoryPage({
     storeApi.products(
       {
         categorySlug: category.slug,
-        search: query.search,
-        size: query.size,
-        sort: query.sort,
-        page: query.page ? Number(query.page) : 1,
+        page: 1,
         pageSize: 24,
       },
       options,
@@ -80,7 +83,13 @@ export default async function CategoryPage({
   ]);
   const origin = siteUrl();
   const basePath = `/category/${slug.join('/')}`;
-  const crumbs = [{ name: 'Home', href: '/' }, ...slug.map((part, index) => ({ name: part.replace(/-/g, ' '), href: `/category/${slug.slice(0, index + 1).join('/')}` }))];
+  const crumbs = [
+    { name: 'Home', href: '/' },
+    ...slug.map((part, index) => ({
+      name: part.replace(/-/g, ' '),
+      href: `/category/${slug.slice(0, index + 1).join('/')}`,
+    })),
+  ];
   crumbs[crumbs.length - 1] = { name: category.name, href: basePath };
 
   const chips: CatalogChip[] = category.children.length
@@ -105,20 +114,22 @@ export default async function CategoryPage({
 
   return (
     <>
-      <CatalogLayout
-        kicker="Collection"
-        title={category.name}
-        description={category.description}
-        image={category.image}
-        chips={chips}
-        result={result}
-        currency={store.tenant.currency}
-        basePath={basePath}
-        query={query}
-        emptyTitle="Nothing here yet"
-        emptyDescription="No kits in this collection right now. Browse the full catalog instead."
-        breadcrumb={breadcrumb}
-      />
+      <Suspense fallback={<div className="mx-auto max-w-store store-gutter py-16 text-sm text-muted-foreground">Loading kits…</div>}>
+        <CatalogView
+          kicker="Collection"
+          title={category.name}
+          description={category.description}
+          image={category.image}
+          chips={chips}
+          initialResult={result}
+          currency={store.tenant.currency}
+          basePath={basePath}
+          categorySlug={category.slug}
+          emptyTitle="Nothing here yet"
+          emptyDescription="No kits in this collection right now. Browse the full catalog instead."
+          breadcrumb={breadcrumb}
+        />
+      </Suspense>
       <JsonLd data={breadcrumbJsonLd(crumbs, origin)} />
     </>
   );

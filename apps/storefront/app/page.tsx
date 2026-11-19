@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { HomepageSection, StorefrontProductListItem } from '@jersey-commerce/types';
-import { serverStoreOptions } from '../lib/server-options';
+import { serverTenantOptions } from '../lib/server-options';
 import {
   cachedBootstrap,
   cachedCategories,
@@ -9,6 +9,7 @@ import {
   productsQueryKey,
   tenantKey,
 } from '../lib/cached-store';
+import { fallbackStore } from '../lib/fallback-store';
 import {
   CtaSection,
   EditorialBanner,
@@ -21,6 +22,8 @@ import {
 import { CinematicHero } from '../components/home/cinematic-hero';
 import { storeApi } from '../lib/api';
 import { HOME_TITLE, pageShare } from '../lib/page-meta';
+
+export const revalidate = 300;
 
 const PRODUCT_SECTIONS: ReadonlyArray<HomepageSection['type']> = ['featured-products', 'best-sellers', 'new-arrivals'];
 
@@ -50,7 +53,7 @@ function withCatalogCover(
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const options = await serverStoreOptions();
+    const options = await serverTenantOptions();
     const key = tenantKey(options);
     const [store, featured] = await Promise.all([
       cachedBootstrap(key),
@@ -79,16 +82,28 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  const options = await serverStoreOptions();
+  const options = await serverTenantOptions();
   const slug = tenantKey(options);
   const catalogKey = productsQueryKey({ pageSize: 24, sort: 'newest' });
 
-  const [store, featured, catalog, categories] = await Promise.all([
-    cachedBootstrap(slug),
-    cachedFeatured(slug).catch(() => [] as StorefrontProductListItem[]),
-    cachedProducts(slug, catalogKey).catch(() => null),
-    cachedCategories(slug).catch(() => []),
-  ]);
+  let store = fallbackStore;
+  let featured: StorefrontProductListItem[] = [];
+  let catalog: Awaited<ReturnType<typeof cachedProducts>> | null = null;
+  let categories: Awaited<ReturnType<typeof cachedCategories>> = [];
+  try {
+    const loaded = await Promise.all([
+      cachedBootstrap(slug),
+      cachedFeatured(slug).catch(() => [] as StorefrontProductListItem[]),
+      cachedProducts(slug, catalogKey).catch(() => null),
+      cachedCategories(slug).catch(() => []),
+    ]);
+    store = loaded[0];
+    featured = loaded[1];
+    catalog = loaded[2];
+    categories = loaded[3];
+  } catch {
+    // Offline/build-time prerender uses the fallback store shell.
+  }
 
   const currency = store.tenant.currency;
   const products = featured.length ? featured : (catalog?.items ?? []);
@@ -182,10 +197,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         <EditorialBanner
           key="editorial-default"
           kicker="Limited edition"
-          heading="Master versions"
+          heading="Player Version"
           subheading="Player-spec fabrics, heat-pressed crests and a match-day cut. The kits the pros wear, built for the stands."
-          ctaLabel="Shop master kits"
-          ctaHref="/products"
+          ctaLabel="Shop Player Version"
+          ctaHref="/category/player-versions"
           image={cover?.primaryImage?.url}
           imageAlt={cover?.primaryImage?.altText ?? cover?.name}
         />,

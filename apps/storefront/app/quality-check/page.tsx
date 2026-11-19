@@ -1,17 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DEFAULT_STOREFRONT_GUIDES } from '@jersey-commerce/types';
-import { serverStoreOptions } from '../../lib/server-options';
+import { serverTenantOptions } from '../../lib/server-options';
 import { cachedBootstrap, tenantKey } from '../../lib/cached-store';
 import { Magnetic } from '../../components/motion/magnetic';
 import { Reveal } from '../../components/motion/reveal';
 import { SplitHeading } from '../../components/motion/split-heading';
 import { pageShare } from '../../lib/page-meta';
 
+export const revalidate = 300;
+
 export async function generateMetadata(): Promise<Metadata> {
   return pageShare({
     title: 'Quality Check',
-    description: 'Compare Master, Player, Full Sleeves, and Retro jersey quality at Jerzyfy.',
+    description: 'Compare Master, Player Version, Full Sleeves, and Retro jersey quality at Jerzyfy.',
     path: '/quality-check',
   });
 }
@@ -19,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function QualityCheckPage(): Promise<React.JSX.Element> {
   let tiers = DEFAULT_STOREFRONT_GUIDES.qualityTiers;
   try {
-    const options = await serverStoreOptions();
+    const options = await serverTenantOptions();
     const store = await cachedBootstrap(tenantKey(options));
     tiers = store.website.chrome?.guides?.qualityTiers?.length
       ? store.website.chrome.guides.qualityTiers

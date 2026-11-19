@@ -12,13 +12,13 @@ import { EditorialBanner } from './editorial-banner';
 export { CollectionGrid } from './collection-grid';
 export { EditorialBanner } from './editorial-banner';
 
-/** CMS once pointed master banners at a dead search; send shoppers to the catalog instead. */
+/** CMS once pointed master banners at a dead search; send shoppers to Player Version kits. */
 function normalizeMasterCta(href?: string | null): string | undefined {
   if (!href) {
     return undefined;
   }
-  if (/[?&]search=master\b/i.test(href)) {
-    return '/products';
+  if (/[?&]search=master\b/i.test(href) || /master-version/i.test(href)) {
+    return '/category/player-versions';
   }
   return href;
 }
@@ -88,10 +88,10 @@ export function PromoBanner({
   return (
     <EditorialBanner
       kicker={kicker}
-      heading={section.heading || 'Master versions'}
+      heading={section.heading || 'Player Version'}
       subheading={section.subheading}
       ctaLabel={section.ctaLabel || 'Shop the range'}
-      ctaHref={normalizeMasterCta(section.ctaHref) || '/products'}
+      ctaHref={normalizeMasterCta(section.ctaHref) || '/category/player-versions'}
       image={section.image || image}
       imageAlt={imageAlt}
       reverse={reverse}

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ContactLine, LegalPage, LegalSection, loadLegalContact } from '../../components/legal/legal-page';
 import { pageShare } from '../../lib/page-meta';
 
+export const revalidate = 300;
+
 export const metadata: Metadata = pageShare({
   title: 'Terms of service',
   description: 'The terms that apply when you shop with us.',

@@ -34,6 +34,7 @@ const KITS = [
 
 const NAMED: Record<string, string> = {
   '/demo/hero.jpg': DEMO_HERO_IMAGE,
+  '/demo/og-default.jpg': DEMO_HERO_IMAGE,
   '/demo/cta.jpg': DEMO_CTA_IMAGE,
   '/demo/logo.png': DEMO_HERO_IMAGE,
   '/demo/favicon.png': DEMO_HERO_IMAGE,

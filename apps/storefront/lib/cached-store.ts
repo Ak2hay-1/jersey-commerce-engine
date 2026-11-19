@@ -8,6 +8,15 @@ import type {
 } from '@jersey-commerce/types';
 import { storeApi, type StoreRequestOptions } from './api';
 
+/** Empty catalog payload for offline / build-time prerender when the API is unreachable. */
+export function emptyProductList(pageSize = 24): StorefrontProductListResult {
+  return {
+    items: [],
+    meta: { page: 1, pageSize, totalItems: 0, totalPages: 0, limit: pageSize, total: 0 },
+    facets: { sizes: [], colours: [], brands: [], minPrice: null, maxPrice: null },
+  };
+}
+
 /** Per-request dedupe for layout + page + metadata sharing the same RSC tree. */
 
 export const cachedBootstrap = cache(

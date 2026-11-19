@@ -2,14 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@jersey-commerce/ui';
 import { storeApi } from '../../lib/api';
-import { serverStoreOptions } from '../../lib/server-options';
+import { serverTenantOptions } from '../../lib/server-options';
 import { formatMoney } from '../../lib/format';
+import { fallbackCustomOrderConfig, fallbackStore } from '../../lib/fallback-store';
 import { CustomOrderEnquiryForm } from '../../components/custom-orders/enquiry-form';
 import { pageShare } from '../../lib/page-meta';
 
+export const revalidate = 300;
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const store = await storeApi.bootstrap(await serverStoreOptions());
+    const store = await storeApi.bootstrap(await serverTenantOptions());
     return pageShare({
       title: 'Create Your Team Jersey',
       description: `Custom, team, college, and bulk jerseys from ${store.tenant.name}.`,
@@ -25,8 +28,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CustomOrdersPage(): Promise<React.JSX.Element> {
-  const options = await serverStoreOptions();
-  const [store, config] = await Promise.all([storeApi.bootstrap(options), storeApi.customOrderConfig(options)]);
+  const options = await serverTenantOptions();
+  let store = fallbackStore;
+  let config = fallbackCustomOrderConfig;
+  try {
+    [store, config] = await Promise.all([storeApi.bootstrap(options), storeApi.customOrderConfig(options)]);
+  } catch {
+    // Offline/build-time prerender.
+  }
   const currency = config.tenant.currency || store.tenant.currency;
 
   return (
