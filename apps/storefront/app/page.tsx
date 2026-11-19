@@ -55,21 +55,16 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const options = await serverTenantOptions();
     const key = tenantKey(options);
-    const [store, featured] = await Promise.all([
-      cachedBootstrap(key),
-      cachedFeatured(key).catch(() => [] as StorefrontProductListItem[]),
-    ]);
+    const store = await cachedBootstrap(key);
     const seoTitle = store.website.seoTitle?.trim();
     const title = !seoTitle || seoTitle === store.tenant.name ? HOME_TITLE : seoTitle;
     const description =
       store.website.seoDescription || 'Shop club, national, and custom football jerseys at Jerzyfy.';
-    const image = featured[0]?.primaryImage?.url || store.theme.logo || store.theme.favicon;
     return pageShare({
       title,
       description,
       path: '/',
       absoluteTitle: true,
-      images: image ? [{ url: image }] : undefined,
     });
   } catch {
     return pageShare({

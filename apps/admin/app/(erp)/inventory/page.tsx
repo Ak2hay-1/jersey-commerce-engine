@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { Button } from '@jersey-commerce/ui';
 import { ResourceList } from '@/components/resource-list';
 import { formatMoney, statusLabel } from '@/lib/format';
 
@@ -23,6 +25,11 @@ export default function InventoryPage(): React.JSX.Element {
       title="Stock"
       path="/inventory"
       rowHref={(row) => `/inventory/${row.productVariantId}`}
+      actions={
+        <Button asChild variant="outline">
+          <Link href="/inventory/labels">Print QR labels</Link>
+        </Button>
+      }
       columns={[
         { key: 'name', header: 'Product', render: (row) => `${row.productName} / ${row.variantLabel}` },
         { key: 'sku', header: 'SKU', hideOnMobile: true, render: (row) => row.sku },

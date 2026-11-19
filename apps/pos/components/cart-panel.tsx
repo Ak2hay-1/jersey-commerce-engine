@@ -83,7 +83,7 @@ export function CartPanel({
         ))}
       </div>
       {canDiscount ? (
-        <div className="grid grid-cols-[8rem_1fr_auto] gap-2 border-t bg-background/50 p-3">
+        <div className="grid grid-cols-1 gap-2 border-t bg-background/50 p-3 min-[390px]:grid-cols-[7.5rem_minmax(0,1fr)_auto]">
           <select
             className="h-10 rounded-lg border bg-transparent px-2 text-sm"
             value={cartDiscountType}
@@ -94,7 +94,7 @@ export function CartPanel({
             <option value="FIXED">Fixed</option>
           </select>
           <Input
-            className="h-10"
+            className="h-10 min-w-0"
             inputMode="decimal"
             value={cartDiscountValue}
             onChange={(e) => setCartDiscountValue(e.target.value)}
@@ -204,7 +204,7 @@ function CartLine({
         </Button>
       </div>
       {canDiscount ? (
-        <div className="mt-2 grid grid-cols-[7rem_1fr_auto] gap-2">
+        <div className="mt-2 grid grid-cols-1 gap-2 min-[360px]:grid-cols-[6.5rem_minmax(0,1fr)_auto]">
           <select
             className="h-9 rounded-md border bg-transparent px-2 text-xs"
             value={discountType}
@@ -215,7 +215,7 @@ function CartLine({
             <option value="FIXED">₹</option>
           </select>
           <Input
-            className="h-9"
+            className="h-9 min-w-0"
             inputMode="decimal"
             value={discountValue}
             onChange={(e) => setDiscountValue(e.target.value)}

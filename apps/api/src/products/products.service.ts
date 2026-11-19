@@ -497,7 +497,13 @@ export class ProductsService {
    * POS lookup reuses catalog identity (name / SKU / barcode) rather than a second catalog.
    * Barcode and SKU use exact unique indexes when provided.
    */
-  async lookupVariantsForPos(query: { barcode?: string; sku?: string; search?: string; take?: number }) {
+  async lookupVariantsForPos(query: {
+    barcode?: string;
+    sku?: string;
+    slug?: string;
+    search?: string;
+    take?: number;
+  }) {
     const tenantId = this.tenantContext.currentTenantId;
     const take = Math.min(Math.max(query.take ?? 20, 1), 50);
     if (query.barcode) {
@@ -518,6 +524,15 @@ export class ProductsService {
         include: posVariantInclude,
       });
       return variant ? [variant] : [];
+    }
+    if (query.slug?.trim()) {
+      const slug = query.slug.trim().toLowerCase();
+      return this.prisma.productVariant.findMany({
+        where: { tenantId, product: { slug } },
+        include: posVariantInclude,
+        orderBy: [{ size: 'asc' }, { color: 'asc' }, { sku: 'asc' }],
+        take,
+      });
     }
     const search = query.search?.trim();
     if (!search) {

@@ -1,11 +1,14 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Badge, Input } from '@jersey-commerce/ui';
+import { Badge, Button, Input } from '@jersey-commerce/ui';
 import type { PosLookupItem } from '@jersey-commerce/types';
+import { ScanLine } from 'lucide-react';
+import { CameraScanner } from '@/components/camera-scanner';
 import { formatMoney, statusLabel } from '@/lib/format';
-import { lookupBarcode, lookupProducts } from '@/lib/pos-api';
+import { lookupProducts } from '@/lib/pos-api';
 import { useRealtimeReload } from '@/lib/realtime';
+import { resolveScan } from '@/lib/resolve-scan';
 
 function variantLabel(item: PosLookupItem): string {
   return [item.variant.size, item.variant.colour].filter(Boolean).join(' · ') || item.variant.sku;
@@ -24,6 +27,7 @@ export function ProductSearch({
   const [error, setError] = useState('');
   const [searching, setSearching] = useState(false);
   const [addingId, setAddingId] = useState('');
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const scanQueue = useRef<Promise<void>>(Promise.resolve());
 
@@ -32,13 +36,13 @@ export function ProductSearch({
   }, []);
 
   useEffect(() => {
-    if (!busy) {
+    if (!busy && !scannerOpen) {
       const active = document.activeElement;
       if (!active || active === document.body) {
         inputRef.current?.focus();
       }
     }
-  }, [busy]);
+  }, [busy, scannerOpen]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
@@ -104,7 +108,9 @@ export function ProductSearch({
       await onAdd(item);
       setQuery((current) => (scannedValue === undefined || current.trim() === scannedValue ? '' : current));
       setResults([]);
-      inputRef.current?.focus();
+      if (!scannerOpen) {
+        inputRef.current?.focus();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to add item');
     } finally {
@@ -126,15 +132,10 @@ export function ProductSearch({
     setSearching(true);
     setError('');
     try {
-      const scanned = await lookupBarcode(value);
-      if (scanned) {
-        await addItem(scanned, value);
-        return;
-      }
-      const payload = await lookupProducts({ q: value, limit: 24 });
-      setResults(payload.items);
-      if (payload.items.length === 1) {
-        await addItem(payload.items[0]!, value);
+      const items = await resolveScan(value);
+      setResults(items);
+      if (items.length === 1) {
+        await addItem(items[0]!, value);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lookup failed');
@@ -154,16 +155,25 @@ export function ProductSearch({
           </div>
           <p className="hidden text-xs text-muted-foreground sm:block">Enter adds a single match</p>
         </div>
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} className="flex items-stretch gap-2">
           <Input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Scan barcode or search name / SKU"
             autoComplete="off"
-            className="h-14 rounded-xl border-border/80 bg-background text-base shadow-inner"
+            className="h-14 min-w-0 flex-1 rounded-xl border-border/80 bg-background text-base shadow-inner"
             aria-busy={busy || searching}
           />
+          <Button
+            type="button"
+            className="h-14 shrink-0 gap-2 rounded-xl px-4 text-base font-semibold sm:px-5"
+            aria-label="Scan with camera"
+            onClick={() => setScannerOpen(true)}
+          >
+            <ScanLine className="h-5 w-5" />
+            <span>Scan</span>
+          </Button>
         </form>
         {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
         {searching ? <p className="mt-3 text-sm text-muted-foreground">Searching…</p> : null}
@@ -173,7 +183,7 @@ export function ProductSearch({
         <div className="rounded-2xl border border-dashed bg-card/70 px-6 py-14 text-center">
           <p className="text-base font-medium">Ready for the next sale</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Start typing a club or national jersey name, or scan a barcode to add it to the cart.
+            Tap Scan to use the phone camera, or type a club name / SKU to add a jersey to the cart.
           </p>
         </div>
       ) : null}
@@ -211,6 +221,8 @@ export function ProductSearch({
       {!searching && query.trim() && results.length === 0 ? (
         <p className="rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">No matching jerseys.</p>
       ) : null}
+
+      <CameraScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onAdd={onAdd} busy={busy} />
     </div>
   );
 }

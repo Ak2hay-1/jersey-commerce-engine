@@ -10,6 +10,7 @@ import { apiRequest, queryString } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/env';
 import { statusLabel } from '@/lib/format';
 import { PageHeader } from '@/components/page-header';
+import { PrintQrLabelsButton } from '@/components/print-qr-labels-button';
 import { ProductStockPanel } from '@/components/product-stock-panel';
 import { ConfirmAction, FormError, selectClassName } from '@/components/confirm-action';
 import { useAuth } from '@/lib/auth';
@@ -484,7 +485,7 @@ export default function ProductDetailPage(): React.JSX.Element {
         title={isNew ? 'Add product' : product?.name ?? 'Product'}
         description={product ? `${statusLabel(product.status)} · ${product.variants.length} variants` : undefined}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-start gap-2">
             <Button asChild variant="outline">
               <Link href="/products">Cancel</Link>
             </Button>
@@ -492,6 +493,19 @@ export default function ProductDetailPage(): React.JSX.Element {
               <Button asChild variant="outline">
                 <a href="#stock-by-size">Set stock</a>
               </Button>
+            ) : null}
+            {!isNew && product?.variants.length ? (
+              <PrintQrLabelsButton
+                items={product.variants
+                  .filter((variant) => variant.sku)
+                  .map((variant) => ({
+                    sku: variant.sku,
+                    productName: product.name,
+                    size: variant.size,
+                    colour: variant.colour,
+                    sellingPrice: variant.sellingPrice,
+                  }))}
+              />
             ) : null}
           </div>
         }

@@ -21,6 +21,12 @@ export class PosLookupQueryDto {
   @MaxLength(64)
   sku?: string;
 
+  @ApiPropertyOptional({ description: 'Product slug from a storefront /products/... URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  slug?: string;
+
   @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 50 })
   @IsOptional()
   @Type(() => Number)

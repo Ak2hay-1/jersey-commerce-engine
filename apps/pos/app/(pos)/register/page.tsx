@@ -102,7 +102,7 @@ export default function RegisterPage(): React.JSX.Element {
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_26rem] xl:grid-cols-[minmax(0,1.7fr)_30rem]">
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         {error ? (
           <p className="rounded-2xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
             {error}
@@ -110,7 +110,7 @@ export default function RegisterPage(): React.JSX.Element {
         ) : null}
         <ProductSearch onAdd={addLookup} busy={busy} />
       </div>
-      <div className="lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)]">
+      <div className="min-w-0 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)]">
         <CartPanel
           cart={cart}
           canDiscount={auth.can('sales.discount')}

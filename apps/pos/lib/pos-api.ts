@@ -99,7 +99,13 @@ export function resumeCart(id: string): Promise<PosCartDto> {
   return apiRequest(`/pos/carts/${id}/resume`, { method: 'POST' });
 }
 
-export function lookupProducts(params: { q?: string; barcode?: string; sku?: string; limit?: number }): Promise<PosLookupResult> {
+export function lookupProducts(params: {
+  q?: string;
+  barcode?: string;
+  sku?: string;
+  slug?: string;
+  limit?: number;
+}): Promise<PosLookupResult> {
   return apiRequest(`/pos/products${queryString(params)}`);
 }
 

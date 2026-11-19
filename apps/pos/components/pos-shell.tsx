@@ -177,7 +177,7 @@ export function PosShell({ children }: { children: ReactNode }): React.JSX.Eleme
           No internet connection. Sales cannot be completed until the register is back online — the cart is kept.
         </div>
       )}
-      <main className="flex-1 p-4 lg:p-6">{children}</main>
+      <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">{children}</main>
     </div>
   );
 }

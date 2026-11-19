@@ -17,6 +17,10 @@ export class PosLookupService {
       const variants = await this.products.lookupVariantsForPos({ sku: query.sku, take: query.limit });
       return { items: variants.map(toLookupItem) };
     }
+    if (query.slug?.trim()) {
+      const variants = await this.products.lookupVariantsForPos({ slug: query.slug, take: query.limit });
+      return { items: variants.map(toLookupItem) };
+    }
     if (q && /^\d{8,}$/.test(q)) {
       const exact = await this.products.lookupVariantsForPos({ barcode: q, take: query.limit });
       if (exact.length > 0) {
@@ -25,6 +29,12 @@ export class PosLookupService {
     }
     if (!q) {
       return { items: [] };
+    }
+    if (/^[a-z0-9]+(?:-[a-z0-9]+)+$/i.test(q)) {
+      const bySlug = await this.products.lookupVariantsForPos({ slug: q, take: query.limit });
+      if (bySlug.length > 0) {
+        return { items: bySlug.map(toLookupItem) };
+      }
     }
     const variants = await this.products.lookupVariantsForPos({ search: q, take: query.limit });
     return { items: variants.map(toLookupItem) };

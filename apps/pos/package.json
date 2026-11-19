@@ -12,10 +12,13 @@
   },
   "dependencies": {
     "@jersey-commerce/config": "*",
-    "@sentry/nextjs": "^10.76.2",
     "@jersey-commerce/types": "*",
     "@jersey-commerce/ui": "*",
     "@jersey-commerce/utils": "*",
+    "@sentry/nextjs": "^10.76.2",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
+    "lucide-react": "^0.539.0",
     "next": "^15.4.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
